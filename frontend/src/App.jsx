@@ -271,7 +271,7 @@ export default function App() {
     try {
       const r = await api(`/api/search?${query({ q, limit: 1 })}`);
       if (!r.items.length) {
-        showToast("warn", `No match found for "${q}"`);
+        showToast("warn", `No matching record was found for "${q}"`);
         return;
       }
       const node = r.items[0];
@@ -300,7 +300,7 @@ export default function App() {
       setPathState((prev) => ({ ...prev, source_id: source }));
     }
     if (!source || !target) {
-      showToast("warn", "Path source and target are required");
+      showToast("warn", "Path source and target identifiers are required");
       return;
     }
     setGraphLoading(true);
@@ -316,7 +316,7 @@ export default function App() {
         })}`
       );
       if (!data.found) {
-        showToast("warn", `No path found within ${pathState.max_hops} hops`);
+        showToast("warn", `No path was identified within ${pathState.max_hops} hops`);
         return;
       }
       setGraph({
@@ -423,9 +423,9 @@ export default function App() {
     const url = `${window.location.origin}${window.location.pathname}?${params}`;
     try {
       await navigator.clipboard.writeText(url);
-      showToast("ok", "Share link copied");
+      showToast("ok", "Shareable link copied");
     } catch {
-      showToast("warn", "Copy failed");
+      showToast("warn", "Link copy failed");
     }
   }, [centerNode, graphControls, graphMode, showToast]);
 
@@ -452,7 +452,7 @@ export default function App() {
     const left = compareState.left_id.trim();
     const right = compareState.right_id.trim();
     if (!left || !right) {
-      showToast("warn", "Two drug IDs are required for comparison");
+      showToast("warn", "Two drug identifiers are required for comparison");
       return;
     }
     try {
@@ -468,7 +468,7 @@ export default function App() {
     const left = compareState.left_id.trim();
     const right = compareState.right_id.trim();
     if (!left || !right) {
-      showToast("warn", "Two drug IDs are required for comparison");
+      showToast("warn", "Two drug identifiers are required for comparison");
       return;
     }
     try {
@@ -486,7 +486,7 @@ export default function App() {
       setGraphMeta(`mode=compare · pair=${left} vs ${right} · nodes=${data.nodes?.length || 0} · edges=${data.edges?.length || 0}`);
       await loadDetail(left, { withNeighbors: true });
       setPage("analysis");
-      showToast("ok", "Shared mechanism subgraph loaded");
+      showToast("ok", "Comparison subgraph loaded");
     } catch (e) {
       showToast("warn", `Compare subgraph failed: ${e.message}`);
     }
@@ -552,31 +552,31 @@ export default function App() {
             }}
             onLoadGraph={async () => {
               if (!centerNode?.trim()) {
-                showToast("warn", "Center node is required");
+                showToast("warn", "A center node identifier is required");
                 return;
               }
               if (!graphControls.categories.length || !graphControls.types.length) {
-                showToast("warn", "Please keep at least one edge category/type selected");
+                showToast("warn", "At least one edge category and one evidence type must remain selected");
                 return;
               }
               await loadGraph(centerNode);
-              showToast("ok", "Graph updated");
+              showToast("ok", "Network view updated");
             }}
             onFindPath={findPath}
             onCompareModes={compareModes}
             onFitGraph={() => {
               if (!graph?.nodes?.length) {
-                showToast("warn", "No graph to fit");
+                showToast("warn", "No network view is available for fitting");
                 return;
               }
               setFitSignal((v) => v + 1);
-              showToast("ok", "View fitted");
+              showToast("ok", "View adjusted");
             }}
             onShareState={shareCurrentView}
             onExpandFromSelected={async () => {
               const selected = detail?.node?.id || selectedNodeId || centerNode;
               if (!selected) {
-                showToast("warn", "Select a node first");
+                showToast("warn", "Please select a node before expanding the current view");
                 return;
               }
               const nextDepth = Math.min(2, graphControls.depth + 1);
@@ -586,7 +586,7 @@ export default function App() {
               const next = { ...graphControls, depth: nextDepth, limit: nextLimit };
               setGraphControls(next);
               await loadGraph(selected, next);
-              showToast("ok", `Expanded from ${selected} (depth=${nextDepth}, limit=${nextLimit})`);
+              showToast("ok", `Network view expanded from ${selected} (depth=${nextDepth}, limit=${nextLimit})`);
             }}
             onResetFilters={async () => {
               const next = {
@@ -598,7 +598,7 @@ export default function App() {
               setGraphMode("full");
               setGraphControls(next);
               await loadGraph(centerNode, next);
-              showToast("ok", "Filters reset");
+              showToast("ok", "Network filters restored to default settings");
             }}
             onDenseGraph={async () => {
               const next = {
@@ -610,7 +610,7 @@ export default function App() {
               setGraphMode("full");
               setGraphControls(next);
               await loadGraph(centerNode, next);
-              showToast("ok", "Dense graph loaded");
+              showToast("ok", "Expanded network view loaded");
             }}
             onAllNetwork={async () => {
               const next = {
@@ -622,7 +622,7 @@ export default function App() {
               setGraphMode("full");
               setGraphControls(next);
               await loadGraph("__ALL__", next);
-              showToast("ok", "All-network view loaded (readable density)");
+              showToast("ok", "Full-network view loaded");
             }}
             onExportSubgraph={exportSubgraph}
             onNodeClick={async (id) => {
@@ -638,7 +638,7 @@ export default function App() {
               const next = { ...graphControls, depth: nextDepth, limit: nextLimit };
               setGraphControls(next);
               await loadGraph(id, next);
-              showToast("ok", `Expanded 1-hop from ${id}`);
+              showToast("ok", `One-hop expansion loaded from ${id}`);
             }}
             onRecentCenterClick={async (id) => {
               setCenterNode(id);
