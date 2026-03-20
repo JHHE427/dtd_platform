@@ -2,7 +2,7 @@ import React from "react";
 import GraphCanvas from "./GraphCanvas";
 
 function renderEdgeStats(items) {
-  if (!items?.length) return <div className="item muted">No edge stats</div>;
+  if (!items?.length) return <div className="item muted">No edge statistics available</div>;
   return items.map((x) => (
     <div className="item" key={`${x.edge_category}-${x.edge_type}`}>
       <div className="item-title">{x.edge_category} / {x.edge_type}</div>
@@ -149,20 +149,20 @@ export default function AnalysisPage({
     <section className="page is-active analysis-page">
       <div className="analysis-header">
         <div>
-          <h2>Sensitivity Analysis Dashboard</h2>
-          <div className="analysis-subtitle">Interactive Disease-Target-Drug atlas exploration with evidence-aware links</div>
+          <h2>Network Analysis Workspace</h2>
+          <div className="analysis-subtitle">Interactive exploration of Drug-Target-Disease relationships with evidence-aware annotations, filtering, and comparative views</div>
         </div>
         <div className="toolbar">
           <select value={densityMode} onChange={(e) => onDensityModeChange(e.target.value)}>
             <option value="sparse">Sparse</option>
             <option value="balanced">Balanced</option>
-            <option value="dense">Dense</option>
+            <option value="dense">Expanded</option>
           </select>
           <button className="btn-quiet" onClick={onResetFilters}>Reset</button>
-          <button className="btn-quiet" onClick={onDenseGraph}>Dense</button>
-          <button className="btn-quiet" onClick={onAllNetwork}>All</button>
-          <button className="btn-quiet" onClick={onCompareModes}>Compare</button>
-          <button className="btn-quiet" onClick={onShareState}>Share</button>
+          <button className="btn-quiet" onClick={onDenseGraph}>Expanded View</button>
+          <button className="btn-quiet" onClick={onAllNetwork}>Full Network</button>
+          <button className="btn-quiet" onClick={onCompareModes}>Comparison Mode</button>
+          <button className="btn-quiet" onClick={onShareState}>Copy Link</button>
           <button className="primary" onClick={onExportSubgraph}>Export CSV</button>
         </div>
       </div>
@@ -282,7 +282,7 @@ export default function AnalysisPage({
               />
             </label>
             <div className="path-actions">
-              <button onClick={onRunDrugCompare}>Compare Drugs</button>
+              <button onClick={onRunDrugCompare}>Run Comparison</button>
             </div>
           </div>
 
@@ -314,7 +314,7 @@ export default function AnalysisPage({
               ))}
             </div>
             <div className="filter-actions">
-              <button className="primary" onClick={onLoadGraph}>Load Graph</button>
+              <button className="primary" onClick={onLoadGraph}>Load Network</button>
               <button onClick={onFitGraph}>Fit View</button>
               <button onClick={onExpandFromSelected}>Expand Selected</button>
             </div>
@@ -364,7 +364,7 @@ export default function AnalysisPage({
 
         <aside className="side-column">
           <section className="card panel-pad rise-in">
-            <h3>Selected Node</h3>
+            <h3>Record Details</h3>
             <div key={`selected-${detailKey}`} className="card-swap">
               {detail?.node ? (
                 <>
@@ -373,7 +373,7 @@ export default function AnalysisPage({
                   {detail.node.node_type === "Drug" ? (
                     <div className="annot-box">
                       <div className="annot-title">SMILES</div>
-                      <pre className="annot-text smiles-box">{smiles || "No SMILES available"}</pre>
+                      <pre className="annot-text smiles-box">{smiles || "SMILES not available"}</pre>
                       {!smiles ? <div className="annot-reason">{drugMissingSmilesReason}</div> : null}
                       {textDescription ? (
                         <>
@@ -458,7 +458,7 @@ export default function AnalysisPage({
                             {uniprot}
                           </a>
                         ) : (
-                          "No UniProt available"
+                          "UniProt accession not available"
                         )}
                       </div>
                       {!uniprot ? <div className="annot-reason">{uniprotMissingReason}</div> : null}
@@ -473,14 +473,14 @@ export default function AnalysisPage({
                         </>
                       ) : (
                         <div className="item-meta">
-                          {unresolvedHint || "Sequence not provided yet"}
+                          {unresolvedHint || "Sequence information is not available for the current record."}
                         </div>
                       )}
                     </div>
                   ) : null}
                 </>
               ) : (
-                <div className="muted">Click node in graph or list</div>
+                <div className="muted">Select a node in the network or results list to view its details.</div>
               )}
               <div className="list compact">{renderEdgeStats(detail?.edge_stats)}</div>
             </div>
@@ -494,13 +494,13 @@ export default function AnalysisPage({
                 <strong>{profile.available_modalities}/{profile.total_modalities}</strong>
               </div>
               <div className="bar modality-bar"><i className="known" style={{ width: `${coveragePct}%` }} /></div>
-              <div className="item-meta">Pisces-inspired evidence view for current node</div>
+              <div className="item-meta">Current evidence coverage across available annotation modalities</div>
               <div className="quality-row">
                 <span className={`quality-pill quality-${String(profile.quality_tier || "low").toLowerCase()}`}>{profile.quality_tier || "Low"} quality</span>
                 <strong>{profile.quality_score ?? 0}</strong>
               </div>
               {(profile.missing_modalities || []).length ? (
-                <div className="annot-reason">Missing modalities: {profile.missing_modalities.join(", ")}</div>
+                <div className="annot-reason">Unavailable modalities: {profile.missing_modalities.join(", ")}</div>
               ) : null}
             </div>
             <div className="modality-grid">
@@ -548,7 +548,7 @@ export default function AnalysisPage({
                     <div className="mechanism-link-meta">{item.edge_category} / {item.edge_type}</div>
                     <div className="mechanism-link-meta">weight={item.weight ?? "NA"} · score={item.support_score ?? "NA"}</div>
                   </div>
-                )) : <div className="empty-state">No mechanism summary available.</div>}
+                )) : <div className="empty-state">No mechanism summary is available for the current record.</div>}
               </div>
             </div>
             <div className="mechanism-section">
@@ -556,7 +556,7 @@ export default function AnalysisPage({
               <div className="source-chip-wrap">
                 {(mechanism.evidence_sources || []).length ? mechanism.evidence_sources.map((item) => (
                   <span className="source-chip" key={item.name}>{item.name} ({item.count})</span>
-                )) : <div className="empty-state">No evidence source summary available.</div>}
+                )) : <div className="empty-state">No evidence source summary is available for the current record.</div>}
               </div>
             </div>
             <div className="mechanism-section">
@@ -566,7 +566,7 @@ export default function AnalysisPage({
                   <div className="mechanism-link-card" key={item}>
                     <div className="mechanism-link-meta">{item}</div>
                   </div>
-                )) : <div className="empty-state">No context summary available.</div>}
+                )) : <div className="empty-state">No contextual summary is available for the current record.</div>}
               </div>
             </div>
           </section>
@@ -580,7 +580,7 @@ export default function AnalysisPage({
                   <div className="comparison-score">{comparison.shared_mechanism_score}</div>
                   <div className="item-meta">{comparison.interpretation}</div>
                   <div className="comparison-actions">
-                    <button className="primary" onClick={onLoadCompareSubgraph}>Load Compare Subgraph</button>
+                    <button className="primary" onClick={onLoadCompareSubgraph}>Load Comparison Subgraph</button>
                   </div>
                 </div>
                 <div className="comparison-card">
@@ -613,7 +613,7 @@ export default function AnalysisPage({
                 </div>
               </div>
             ) : (
-              <div className="empty-state">Enter two Drug IDs above to compare target overlap, disease overlap, and shared mechanism score.</div>
+              <div className="empty-state">Enter two Drug identifiers above to compare target overlap, disease overlap, and shared mechanism score.</div>
             )}
           </section>
 
@@ -663,7 +663,7 @@ export default function AnalysisPage({
                   <div className="item-meta">{n.neighbor_type} | {n.neighbor_id}</div>
                   <div className="item-meta">{n.edge_category} / {n.edge_type} | score={n.support_score ?? "NA"}</div>
                 </div>
-              )) : <div className="empty-state">No neighbors under current filter.</div>}
+              )) : <div className="empty-state">No neighboring records match the current filter settings.</div>}
             </div>
             <div className="pager">
               <button onClick={() => onNeighborPage(-1)} disabled={neighborState.page <= 1}>Prev</button>
@@ -681,7 +681,7 @@ export default function AnalysisPage({
         <div className="structure-modal-overlay" onClick={() => setStructureModalOpen(false)} role="presentation">
           <div className="structure-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className="structure-modal-head">
-              <div className="structure-modal-title">Chemical Structure</div>
+              <div className="structure-modal-title">Chemical Structure View</div>
               <button className="btn-quiet" type="button" onClick={() => setStructureModalOpen(false)}>Close</button>
             </div>
             <img className="structure-modal-img" src={structureUrl} alt="chemical structure large view" />

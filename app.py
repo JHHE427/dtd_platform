@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import json
 import sqlite3
 from collections import deque
 from pathlib import Path
@@ -150,6 +151,38 @@ def get_node_annotation(conn: sqlite3.Connection, node_id: str, node_type: str) 
             ann["structure_image_url"] = f"/static/structures/{node_id}.png"
         elif s.exists():
             ann["structure_image_url"] = f"/static/structures/{node_id}.svg"
+    if node_type == "Disease":
+        try:
+            alias_rows = conn.execute(
+                """
+                SELECT alias
+                FROM disease_aliases
+                WHERE disease_id = ?
+                ORDER BY LENGTH(alias), alias
+                """,
+                [node_id],
+            ).fetchall()
+        except sqlite3.OperationalError:
+            alias_rows = []
+        alias_values = [str(row["alias"]).strip() for row in alias_rows if str(row["alias"]).strip()]
+        if alias_values:
+            existing: list[str] = []
+            if ann.get("synonyms_json"):
+                try:
+                    parsed = json.loads(ann["synonyms_json"])
+                    if isinstance(parsed, list):
+                        existing = [str(x).strip() for x in parsed if str(x).strip()]
+                except json.JSONDecodeError:
+                    existing = []
+            merged = []
+            seen = set()
+            for value in [*existing, *alias_values]:
+                key = value.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+                merged.append(value)
+            ann["synonyms_json"] = json.dumps(merged[:30], ensure_ascii=False)
     return ann
 
 
@@ -624,9 +657,28 @@ def list_nodes(
             where.append("node_type = ?")
             params.append(node_type)
         if q:
-            where.append("(label LIKE ? OR id LIKE ?)")
             kw = f"%{q.strip()}%"
-            params.extend([kw, kw])
+            where.append(
+                """
+                (
+                    label LIKE ?
+                    OR id LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM node_annotations na
+                        WHERE na.node_id = network_nodes.id
+                          AND na.synonyms_json LIKE ?
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM disease_aliases da
+                        WHERE da.disease_id = network_nodes.id
+                          AND da.alias LIKE ?
+                    )
+                )
+                """
+            )
+            params.extend([kw, kw, kw, kw])
         where_sql = f"WHERE {' AND '.join(where)}" if where else ""
         total = conn.execute(f"SELECT COUNT(*) AS n FROM network_nodes {where_sql}", params).fetchone()["n"]
         offset = (page - 1) * page_size
@@ -654,9 +706,26 @@ def search(
     conn = get_conn()
     try:
         params: list[Any] = []
-        where = "(label LIKE ? OR id LIKE ?)"
+        where = """
+            (
+                label LIKE ?
+                OR id LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM node_annotations na
+                    WHERE na.node_id = network_nodes.id
+                      AND na.synonyms_json LIKE ?
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM disease_aliases da
+                    WHERE da.disease_id = network_nodes.id
+                      AND da.alias LIKE ?
+                )
+            )
+        """
         kw = f"%{q.strip()}%"
-        params.extend([kw, kw])
+        params.extend([kw, kw, kw, kw])
         if node_type:
             where += " AND node_type = ?"
             params.append(node_type)
@@ -689,8 +758,25 @@ def suggest(
         term = q.strip()
         kw = f"%{term}%"
         prefix = f"{term}%"
-        params: list[Any] = [kw, kw]
-        where = "(label LIKE ? OR id LIKE ?)"
+        params: list[Any] = [kw, kw, kw, kw]
+        where = """
+            (
+                label LIKE ?
+                OR id LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM node_annotations na
+                    WHERE na.node_id = network_nodes.id
+                      AND na.synonyms_json LIKE ?
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM disease_aliases da
+                    WHERE da.disease_id = network_nodes.id
+                      AND da.alias LIKE ?
+                )
+            )
+        """
         if node_type:
             where += " AND node_type = ?"
             params.append(node_type)

@@ -8,8 +8,8 @@ export default function HelpPage() {
           <div className="help-hero-text">
             <h2>Documentation & User Guide</h2>
             <p className="muted">
-              This React frontend is directly connected to your production SQLite graph database through
-              FastAPI endpoints.
+              This interface provides access to the curated Drug-Target-Disease network database and
+              associated analytical views through the platform API.
             </p>
             <div className="help-badges">
               <span className="chip">Drug</span>
@@ -44,34 +44,34 @@ export default function HelpPage() {
         </div>
 
         <div className="help-flow card panel-pad">
-          <h3>How To Use This Platform</h3>
+          <h3>Recommended Workflow</h3>
           <div className="help-steps">
             <div className="help-step">
               <div className="step-num">1</div>
               <div className="step-body">
                 <div className="step-title">Search & Center</div>
-                <div className="muted">Use quick search or node ID to set graph center.</div>
+                <div className="muted">Use quick search or a node identifier to define the analysis center.</div>
               </div>
             </div>
             <div className="help-step">
               <div className="step-num">2</div>
               <div className="step-body">
                 <div className="step-title">Filter & Expand</div>
-                <div className="muted">Adjust category/type/depth and expand selected nodes.</div>
+                <div className="muted">Adjust edge category, evidence type, and depth, then expand the selected node.</div>
               </div>
             </div>
             <div className="help-step">
               <div className="step-num">3</div>
               <div className="step-body">
                 <div className="step-title">Inspect Evidence</div>
-                <div className="muted">Review score composition, structure, SMILES and sequence.</div>
+                <div className="muted">Review evidence composition, chemical structure, SMILES, and target sequence.</div>
               </div>
             </div>
             <div className="help-step">
               <div className="step-num">4</div>
               <div className="step-body">
                 <div className="step-title">Export & Share</div>
-                <div className="muted">Export subgraph CSV and share URL state with collaborators.</div>
+                <div className="muted">Export the current subgraph and preserve the page state for downstream use.</div>
               </div>
             </div>
           </div>
@@ -89,17 +89,17 @@ export default function HelpPage() {
           <article className="card panel-pad">
             <h3>Analysis Workflow</h3>
             <ul>
-              <li>Select center node and load subgraph</li>
-              <li>Filter by edge category/type and adjust depth</li>
-              <li>Click nodes to inspect evidence and neighbors</li>
+              <li>Specify a center node and load the corresponding subgraph</li>
+              <li>Filter by edge category, evidence type, and graph depth</li>
+              <li>Select nodes to inspect evidence, annotations, and neighborhood context</li>
             </ul>
           </article>
           <article className="card panel-pad">
             <h3>Database Browser</h3>
             <ul>
-              <li>Browse all nodes and edges with pagination</li>
-              <li>Use filters for QA and curation checks</li>
-              <li>Jump any node directly into analysis view</li>
+              <li>Browse nodes and edges with pagination support</li>
+              <li>Use structured filters for review and curation</li>
+              <li>Open any node directly in the analysis view</li>
             </ul>
           </article>
           <article className="card panel-pad">
@@ -123,7 +123,7 @@ export default function HelpPage() {
             <ul>
               <li>Build frontend: <code>npm run build</code></li>
               <li>Start backend: <code>uvicorn app:app --host 0.0.0.0 --port 8787</code></li>
-              <li>Serve <code>/static</code> in production with reverse proxy</li>
+              <li>Serve <code>/static</code> in production through a reverse proxy</li>
             </ul>
           </article>
         </div>

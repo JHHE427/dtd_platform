@@ -13,15 +13,15 @@ export default function HomePage({ stats, onAnalyze }) {
   const featureCards = [
     {
       title: "Known + Predicted",
-      body: "Unified browsing of validated links and model-supported associations in one atlas."
+      body: "Integrated presentation of validated associations and model-supported relationships within a unified atlas."
     },
     {
       title: "Interactive Graph",
-      body: "Zoom, pan, expand, inspect, and compare subnetworks in a publication-grade network view."
+      body: "Support for graph navigation, local expansion, node inspection, and subnetwork comparison in an interactive network view."
     },
     {
       title: "Multi-Modal Detail",
-      body: "Surface structures, SMILES, sequences, ontology, summaries, and evidence context together."
+      body: "Unified display of chemical structures, SMILES, target sequences, ontology terms, summaries, and evidence context."
     }
   ];
 
@@ -34,17 +34,17 @@ export default function HomePage({ stats, onAnalyze }) {
           <span>Interaction Atlas</span>
         </h1>
         <p>
-          Explore known and predicted links in the unified DTD heterogeneous network built from
-          your curated database pipeline.
+          Browse known and predicted associations within the integrated Drug-Target-Disease
+          heterogeneous network.
         </p>
         <div className="hero-search">
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onAnalyze(keyword)}
-            placeholder="Search by DB ID / BE ID / disease name..."
+            placeholder="Search by DrugBank ID, target ID, disease name, or alias..."
           />
-          <button onClick={() => onAnalyze(keyword)}>Analyze</button>
+          <button onClick={() => onAnalyze(keyword)}>Open Analysis</button>
         </div>
         <div className="home-stats">
           <article className="stat-card">

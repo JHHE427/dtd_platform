@@ -36,7 +36,7 @@ export default function DatabasePage({
       <div className="analysis-header page-head">
         <div>
           <h2>Database Browser</h2>
-          <div className="analysis-subtitle">Browse and audit nodes/edges from the production DTD network database</div>
+          <div className="analysis-subtitle">Structured access to nodes and relationships in the curated DTD network database</div>
         </div>
         <div className="toolbar">
           <button className="btn-quiet" onClick={onExportNodes}>Export Nodes</button>
@@ -122,7 +122,7 @@ export default function DatabasePage({
           <div className="db-panel-head">
             <div>
               <h3>Node Browser</h3>
-              <div className="db-panel-subtitle">Search drugs, targets, and diseases from the production network.</div>
+              <div className="db-panel-subtitle">Search and review drug, target, and disease records in the current network release.</div>
             </div>
             <div className="muted">page {nodesState.page} · size {nodesState.page_size} · total {nodesState.total}</div>
           </div>
@@ -148,7 +148,7 @@ export default function DatabasePage({
           <div className="db-panel-head">
             <div>
               <h3>Edge Browser</h3>
-              <div className="db-panel-subtitle">Audit relation type, evidence class, and support score in one view.</div>
+              <div className="db-panel-subtitle">Review relationship category, evidence class, and support metrics in a unified list.</div>
             </div>
             <div className="muted">page {edgesState.page} · size {edgesState.page_size} · total {edgesState.total}</div>
           </div>

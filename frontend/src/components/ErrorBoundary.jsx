@@ -7,7 +7,7 @@ export default class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(err) {
-    return { hasError: true, msg: err?.message || "Unknown render error" };
+    return { hasError: true, msg: err?.message || "Unknown rendering error" };
   }
 
   componentDidCatch() {
@@ -19,7 +19,7 @@ export default class ErrorBoundary extends React.Component {
       return (
         <div style={{ padding: 24 }}>
           <div className="card panel-pad">
-            <h3 style={{ marginTop: 0 }}>Analysis Render Failed</h3>
+            <h3 style={{ marginTop: 0 }}>Analysis View Unavailable</h3>
             <div className="item-meta">{this.state.msg}</div>
           </div>
         </div>
