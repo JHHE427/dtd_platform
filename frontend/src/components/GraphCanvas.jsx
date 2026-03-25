@@ -72,6 +72,25 @@ function mixColor(hex, amount = 0.3) {
   return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
 }
 
+function rgbaFromHex(hex, alpha) {
+  const normalized = (hex || "#94a3b8").replace("#", "");
+  const value = normalized.length === 3 ? normalized.split("").map((c) => c + c).join("") : normalized;
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function colorChannels(hex) {
+  const normalized = (hex || "#94a3b8").replace("#", "");
+  const value = normalized.length === 3 ? normalized.split("").map((c) => c + c).join("") : normalized;
+  return {
+    r: parseInt(value.slice(0, 2), 16),
+    g: parseInt(value.slice(2, 4), 16),
+    b: parseInt(value.slice(4, 6), 16)
+  };
+}
+
 export default function GraphCanvas({
   graph,
   onNodeClick,
@@ -157,8 +176,24 @@ export default function GraphCanvas({
       const s = linkNodeId(l.source);
       const t = linkNodeId(l.target);
       const curveSeed = hash01(`${s}->${t}`);
-      const curve = (curveSeed - 0.5) * 0.34;
-      return { ...l, source: s, target: t, curve };
+      const categoryBoost =
+        l.edge_category === "Drug-Disease"
+          ? 1.65
+          : l.edge_category === "Target-Disease"
+            ? 1.52
+            : 1.16;
+      const curve = (curveSeed - 0.5) * 0.62 * categoryBoost;
+      const supportScore = Number.isFinite(Number(l.support_score)) ? Number(l.support_score) : 0;
+      const weight = Number.isFinite(Number(l.weight)) ? Number(l.weight) : 0;
+      const predictedSupportTier =
+        l.edge_type === "Predicted"
+          ? supportScore >= 0.85 || weight >= 2.2
+            ? "high"
+            : supportScore >= 0.6 || weight >= 1.5
+              ? "medium"
+              : "base"
+          : "base";
+      return { ...l, source: s, target: t, curve, supportScore, predictedSupportTier };
     });
     return { nodes, links };
   }, [graph, centerId, densityMode]);
@@ -256,40 +291,85 @@ export default function GraphCanvas({
           const isSelected = node.id === selectedId;
           const isHit = needle ? `${node.display_name || node.label} ${node.id}`.toLowerCase().includes(needle) : false;
           const inFocus = !focusNeighbors || focusNeighbors.has(node.id);
-          const r = Math.max(3, 2 + Math.sqrt(node.importance || 1) * 1.8);
+          const diseaseBoost = node.node_type === "Disease" ? 1.08 : 1;
+          const centerBoost = node.id === centerId ? 1.18 : 1;
+          const r = Math.max(3, (2 + Math.sqrt(node.importance || 1) * 1.8) * diseaseBoost * centerBoost);
           const ev = nodeEvidence.get(node.id) || { Known: 0, Predicted: 0, "Known+Predicted": 0 };
           const evTotal = ev.Known + ev.Predicted + ev["Known+Predicted"];
           const baseNodeColor = nodeColor(node.node_type);
           const softNodeColor = mixColor(baseNodeColor, 0.48);
-          const haloAlpha = isHover || isSelected || node.id === centerId ? 0.28 : (node.importance || 0) >= 10 ? 0.12 : 0.07;
+          const { r: cr, g: cg, b: cb } = colorChannels(baseNodeColor);
+          const haloAlpha = isHover || isSelected || node.id === centerId ? 0.3 : (node.importance || 0) >= 10 ? 0.14 : 0.08;
+          const pedestalAlpha = isHover || isSelected ? 0.18 : node.id === centerId ? 0.13 : 0.08;
 
           ctx.save();
           ctx.globalAlpha = inFocus ? 1 : 0.2;
           ctx.beginPath();
-          ctx.arc(node.x, node.y, r + 6.8, 0, 2 * Math.PI);
-          ctx.fillStyle = `rgba(${baseNodeColor === "#3b82f6" ? "59,130,246" : baseNodeColor === "#f59e0b" ? "245,158,11" : baseNodeColor === "#ef4444" ? "239,68,68" : "148,163,184"}, ${haloAlpha})`;
+          ctx.ellipse(node.x, node.y + r * 1.02, r * 1.75, Math.max(2.4, r * 0.62), 0, 0, 2 * Math.PI);
+          ctx.fillStyle = `rgba(15, 23, 42, ${pedestalAlpha})`;
           ctx.fill();
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, r + 10.2, 0, 2 * Math.PI);
+          ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${haloAlpha * 0.72})`;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, r + 6.8, 0, 2 * Math.PI);
+          ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${haloAlpha})`;
+          ctx.fill();
+          if (node.node_type === "Disease") {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, r + 4.8, 0, 2 * Math.PI);
+            ctx.strokeStyle = "rgba(239, 68, 68, 0.18)";
+            ctx.lineWidth = 2.1;
+            ctx.stroke();
+          }
           if (isSelected) {
             ctx.beginPath();
             ctx.arc(node.x, node.y, r + 7.5, 0, 2 * Math.PI);
             ctx.fillStyle = "rgba(37,99,235,0.12)";
             ctx.fill();
           }
+          if (node.id === centerId) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, r + 9.6, 0, 2 * Math.PI);
+            ctx.strokeStyle = "rgba(37, 99, 235, 0.3)";
+            ctx.lineWidth = 2.3;
+            ctx.stroke();
+          }
 
           if (isHover || isSelected) {
             ctx.shadowColor = "rgba(15,23,42,0.32)";
             ctx.shadowBlur = 10;
           }
+          ctx.shadowColor = isHover || isSelected
+            ? "rgba(15,23,42,0.34)"
+            : node.id === centerId
+              ? rgbaFromHex(baseNodeColor, 0.28)
+              : rgbaFromHex(baseNodeColor, 0.14);
+          ctx.shadowBlur = isHover || isSelected ? 14 : node.id === centerId ? 11 : 7;
+          ctx.shadowOffsetY = 2;
           ctx.beginPath();
           ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
           const gradient = ctx.createRadialGradient(node.x - r * 0.32, node.y - r * 0.34, Math.max(0.5, r * 0.18), node.x, node.y, r);
-          gradient.addColorStop(0, softNodeColor);
+          gradient.addColorStop(0, mixColor(baseNodeColor, 0.68));
+          gradient.addColorStop(0.42, softNodeColor);
           gradient.addColorStop(1, baseNodeColor);
           ctx.fillStyle = gradient;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(node.x - r * 0.26, node.y - r * 0.32, Math.max(1.6, r * 0.34), 0, 2 * Math.PI);
+          ctx.fillStyle = "rgba(255,255,255,0.36)";
           ctx.fill();
           ctx.lineWidth = isHover || isSelected || isHit ? 2 : 1.2;
           ctx.strokeStyle = isHover || isSelected || isHit ? "#111827" : "#ffffff";
           ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, Math.max(1.2, r - 1.7), 0, 2 * Math.PI);
+          ctx.strokeStyle = `rgba(255,255,255,${node.id === centerId ? 0.42 : 0.18})`;
+          ctx.lineWidth = 0.9;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
           if (evTotal > 0) {
             let start = -Math.PI / 2;
             const drawArc = (count, color) => {
@@ -432,18 +512,32 @@ export default function GraphCanvas({
           if (!s || !t || !Number.isFinite(s.x) || !Number.isFinite(s.y) || !Number.isFinite(t.x) || !Number.isFinite(t.y)) return;
           const inFocus = !focusNeighbors || (focusNeighbors.has(s.id) && focusNeighbors.has(t.id));
           const zoomAlpha = 0.62 + fadeBetween(fgRef.current?.zoom?.() || 1, 0.95, 1.85) * 0.34;
-          const alpha = (inFocus ? 0.84 : 0.1) * zoomAlpha;
+          const supportBoost = l.predictedSupportTier === "high" ? 1.18 : l.predictedSupportTier === "medium" ? 1.08 : 1;
+          const alpha = (inFocus ? 0.84 : 0.1) * zoomAlpha * supportBoost;
           const zoomWidthBoost = fadeBetween(fgRef.current?.zoom?.() || 1, 1.05, 2.1) * 0.42;
-          const lw = Math.min(0.75 + (l.weight || 1) * 0.42 + zoomWidthBoost, 2.8) + (inFocus ? 0.12 : 0);
+          const lw = Math.min(0.75 + (l.weight || 1) * 0.42 + zoomWidthBoost, 2.8) * supportBoost + (inFocus ? 0.12 : 0);
           const color = edgeColor(l.edge_type);
+          const glowColor = rgbaFromHex(color, inFocus ? 0.22 + (l.predictedSupportTier === "high" ? 0.06 : 0) : 0.08);
           const cx = (s.x + t.x) / 2 + (t.y - s.y) * (l.curve || 0);
           const cy = (s.y + t.y) / 2 + (s.x - t.x) * (l.curve || 0);
           ctx.save();
           ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.quadraticCurveTo(cx, cy, t.x, t.y);
+          ctx.strokeStyle = rgbaFromHex(color, inFocus ? 0.12 : 0.04);
+          ctx.lineWidth = lw + (l.predictedSupportTier === "high" ? 6.2 : 5.1);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.quadraticCurveTo(cx, cy, t.x, t.y);
+          ctx.strokeStyle = glowColor;
+          ctx.lineWidth = lw + (l.predictedSupportTier === "high" ? 3.1 : 2.2);
+          ctx.stroke();
           const edgeGradient = ctx.createLinearGradient(s.x, s.y, t.x, t.y);
-          edgeGradient.addColorStop(0, mixColor(color, 0.2));
+          edgeGradient.addColorStop(0, mixColor(color, 0.28));
           edgeGradient.addColorStop(0.5, color);
-          edgeGradient.addColorStop(1, mixColor(color, 0.35));
+          edgeGradient.addColorStop(1, mixColor(color, 0.38));
           ctx.strokeStyle = edgeGradient;
           ctx.lineWidth = lw;
           if (l.edge_type === "Predicted") ctx.setLineDash([4, 3]);
@@ -452,6 +546,15 @@ export default function GraphCanvas({
           ctx.moveTo(s.x, s.y);
           ctx.quadraticCurveTo(cx, cy, t.x, t.y);
           ctx.stroke();
+          if (inFocus) {
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(s.x, s.y);
+            ctx.quadraticCurveTo(cx, cy, t.x, t.y);
+            ctx.strokeStyle = l.predictedSupportTier === "high" ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.18)";
+            ctx.lineWidth = Math.max(0.5, lw * (l.predictedSupportTier === "high" ? 0.4 : 0.32));
+            ctx.stroke();
+          }
           ctx.restore();
         }}
         linkDirectionalParticles={(l) => {
@@ -465,10 +568,13 @@ export default function GraphCanvas({
         onNodeHover={(n) => {
           setHoverId(n?.id || "");
           if (!n) return onNodeHover?.(null);
+          const evidence = nodeEvidence.get(n.id) || { Known: 0, Predicted: 0, "Known+Predicted": 0 };
           onNodeHover?.({
             id: n.id,
             label: n.display_name || n.label,
             node_type: n.node_type,
+            degree: n.degree || 0,
+            evidence,
             x: mouseRef.current.x,
             y: mouseRef.current.y
           });

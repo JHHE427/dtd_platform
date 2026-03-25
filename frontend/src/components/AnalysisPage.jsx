@@ -2,7 +2,7 @@ import React from "react";
 import GraphCanvas from "./GraphCanvas";
 
 function renderEdgeStats(items) {
-  if (!items?.length) return <div className="item muted">No edge statistics available</div>;
+  if (!items?.length) return <div className="item muted">No edge statistics are available for the current record.</div>;
   return items.map((x) => (
     <div className="item" key={`${x.edge_category}-${x.edge_type}`}>
       <div className="item-title">{x.edge_category} / {x.edge_type}</div>
@@ -57,6 +57,7 @@ export default function AnalysisPage({
 }) {
   const [structureModalOpen, setStructureModalOpen] = React.useState(false);
   const [sequenceCopied, setSequenceCopied] = React.useState(false);
+  const [resultSort, setResultSort] = React.useState({ key: "support_score", direction: "desc" });
   const { depth, limit, categories, types } = controls;
 
   const toggleArrValue = (arr, value) => (arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value]);
@@ -72,6 +73,7 @@ export default function AnalysisPage({
   const ann = detail?.annotation || {};
   const profile = detail?.multimodal_profile || { modalities: [], available_modalities: 0, total_modalities: 0, coverage_ratio: 0 };
   const mechanism = detail?.mechanism_snapshot || { top_links: [], evidence_sources: [], by_neighbor_type: {}, context_summary: [] };
+  const algorithmEvidence = detail?.algorithm_evidence || { available: false, row_count: 0, methods: [], top_rows: [] };
   const comparison = compareState?.data || null;
   const smiles = ann.smiles || "";
   const textDescription = ann.text_description || "";
@@ -115,6 +117,40 @@ export default function AnalysisPage({
   const hasRenderableGraph = (graph?.nodes?.length || 0) > 1 && (graph?.edges?.length || 0) > 0;
   const graphNodeCount = graph?.nodes?.length || 0;
   const graphEdgeCount = graph?.edges?.length || 0;
+  const graphNodeLabelMap = React.useMemo(
+    () => Object.fromEntries((graph?.nodes || []).map((n) => [n.id, n.display_name || n.label || n.id])),
+    [graph]
+  );
+  const sortResultIcon = (key) => {
+    if (resultSort.key !== key) return "↕";
+    return resultSort.direction === "asc" ? "↑" : "↓";
+  };
+  const toggleResultSort = (key) => {
+    setResultSort((prev) => (
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: key === "source_label" || key === "target_label" ? "asc" : "desc" }
+    ));
+  };
+  const visibleEdgeRows = React.useMemo(() => {
+    const numKeys = new Set(["weight", "support_score"]);
+    const rows = (graph?.edges || []).map((edge) => ({
+      ...edge,
+      source_label: graphNodeLabelMap[edge.source] || edge.source,
+      target_label: graphNodeLabelMap[edge.target] || edge.target,
+    }));
+    rows.sort((a, b) => {
+      const { key, direction } = resultSort;
+      const dir = direction === "asc" ? 1 : -1;
+      if (numKeys.has(key)) {
+        const av = Number(a?.[key] ?? Number.NEGATIVE_INFINITY);
+        const bv = Number(b?.[key] ?? Number.NEGATIVE_INFINITY);
+        return (av - bv) * dir;
+      }
+      return String(a?.[key] ?? "").localeCompare(String(b?.[key] ?? "")) * dir;
+    });
+    return rows.slice(0, 18);
+  }, [graph, graphNodeLabelMap, resultSort]);
   const nodeTypeMap = (graph?.nodes || []).reduce((acc, n) => {
     const k = n.node_type || "Other";
     acc[k] = (acc[k] || 0) + 1;
@@ -124,6 +160,37 @@ export default function AnalysisPage({
   const targetCount = nodeTypeMap.Target || 0;
   const diseaseCount = nodeTypeMap.Disease || 0;
   const coveragePct = Math.round((profile.coverage_ratio || 0) * 100);
+  const algoRowLabel = (row) => {
+    if (!row) return "-";
+    return `${row.Drug_Label || row.Drug_ID} -> ${row.Target_Label || row.Target_ID} -> ${row.Disease_Label || row.Disease_ID}`;
+  };
+  const edgeTypeBadgeClass = (value) => {
+    if (value === "Known") return "is-known";
+    if (value === "Predicted") return "is-predicted";
+    if (value === "Known+Predicted") return "is-kp";
+    return "";
+  };
+  const renderCoreSupportMeter = (value) => {
+    const count = Number(value || 0);
+    return (
+      <div className="support-meter">
+        <span className={`support-dot ${count >= 1 ? "is-on" : ""}`} />
+        <span className={`support-dot ${count >= 2 ? "is-on" : ""}`} />
+        <span className={`support-dot ${count >= 3 ? "is-on" : ""}`} />
+        <strong>{count}/3</strong>
+      </div>
+    );
+  };
+  const renderVoteMeter = (value) => {
+    const count = Number(value || 0);
+    const pct = Math.max(0, Math.min(100, (count / 7) * 100));
+    return (
+      <div className="vote-meter">
+        <div className="vote-meter-bar"><i style={{ width: `${pct}%` }} /></div>
+        <strong>{count}/7</strong>
+      </div>
+    );
+  };
 
   React.useEffect(() => {
     if (!structureModalOpen) return undefined;
@@ -149,8 +216,8 @@ export default function AnalysisPage({
     <section className="page is-active analysis-page">
       <div className="analysis-header">
         <div>
-          <h2>Network Analysis Workspace</h2>
-          <div className="analysis-subtitle">Interactive exploration of Drug-Target-Disease relationships with evidence-aware annotations, filtering, and comparative views</div>
+          <h2>Network Analysis</h2>
+          <div className="analysis-subtitle">Interactive exploration of Drug-Target-Disease relationships with evidence-aware annotation, filtering, comparison, and released result views.</div>
         </div>
         <div className="toolbar">
           <select value={densityMode} onChange={(e) => onDensityModeChange(e.target.value)}>
@@ -158,12 +225,12 @@ export default function AnalysisPage({
             <option value="balanced">Balanced</option>
             <option value="dense">Expanded</option>
           </select>
-          <button className="btn-quiet" onClick={onResetFilters}>Reset</button>
-          <button className="btn-quiet" onClick={onDenseGraph}>Expanded View</button>
-          <button className="btn-quiet" onClick={onAllNetwork}>Full Network</button>
-          <button className="btn-quiet" onClick={onCompareModes}>Comparison Mode</button>
-          <button className="btn-quiet" onClick={onShareState}>Copy Link</button>
-          <button className="primary" onClick={onExportSubgraph}>Export CSV</button>
+          <button className="btn-quiet" onClick={onResetFilters}>Reset Filters</button>
+          <button className="btn-quiet" onClick={onDenseGraph}>Expanded Network</button>
+          <button className="btn-quiet" onClick={onAllNetwork}>Load Full Atlas</button>
+          <button className="btn-quiet" onClick={onCompareModes}>Comparison View</button>
+          <button className="btn-quiet" onClick={onShareState}>Copy Share Link</button>
+          <button className="primary" onClick={onExportSubgraph}>Export Current View</button>
         </div>
       </div>
 
@@ -200,8 +267,8 @@ export default function AnalysisPage({
       <div className="analysis-layout">
         <section className="card graph-panel">
           <div className="card-head">
-            <h3>Disease-Target-Drug Network</h3>
-            <div className="muted">{graphMeta}</div>
+            <h3>Drug-Target-Disease Network</h3>
+            <div className="muted">Released atlas view · {graphMeta}</div>
           </div>
           <div className="control-grid">
             <label>
@@ -260,7 +327,7 @@ export default function AnalysisPage({
               </select>
             </label>
             <div className="path-actions">
-              <button onClick={onFindPath}>Find Shortest Path</button>
+              <button onClick={onFindPath}>Run Path Analysis</button>
             </div>
           </div>
 
@@ -315,8 +382,8 @@ export default function AnalysisPage({
             </div>
             <div className="filter-actions">
               <button className="primary" onClick={onLoadGraph}>Load Network</button>
-              <button onClick={onFitGraph}>Fit View</button>
-              <button onClick={onExpandFromSelected}>Expand Selected</button>
+              <button onClick={onFitGraph}>Fit Network</button>
+              <button onClick={onExpandFromSelected}>Expand Selected Node</button>
             </div>
           </div>
 
@@ -357,9 +424,52 @@ export default function AnalysisPage({
                 <div className="hover-k">{hoverState.node_type}</div>
                 <div className="hover-v">{hoverState.label}</div>
                 <div className="hover-id">{hoverState.id}</div>
+                <div className="hover-meta">degree {hoverState.degree ?? 0}</div>
+                <div className="algo-chip-row compact">
+                  <span className="algo-chip is-on">Known {hoverState.evidence?.Known ?? 0}</span>
+                  <span className="algo-chip is-on">Pred {hoverState.evidence?.Predicted ?? 0}</span>
+                  <span className="algo-chip is-on">K+P {hoverState.evidence?.["Known+Predicted"] ?? 0}</span>
+                </div>
               </div>
             ) : null}
           </div>
+
+          <section className="analysis-results-panel">
+            <div className="card-head">
+              <h3>Current Network Results</h3>
+              <div className="muted">Top visible relationships in the current network view. Click column labels to sort the current result set.</div>
+            </div>
+            <div className="result-table-wrap analysis-result-wrap">
+              <table className="result-table edge-result-table analysis-result-table">
+                <thead>
+                  <tr>
+                    <th><button className="table-sort-btn" onClick={() => toggleResultSort("source_label")}>Source {sortResultIcon("source_label")}</button></th>
+                    <th><button className="table-sort-btn" onClick={() => toggleResultSort("target_label")}>Target {sortResultIcon("target_label")}</button></th>
+                    <th><button className="table-sort-btn" onClick={() => toggleResultSort("edge_category")}>Category {sortResultIcon("edge_category")}</button></th>
+                    <th><button className="table-sort-btn" onClick={() => toggleResultSort("edge_type")}>Evidence {sortResultIcon("edge_type")}</button></th>
+                    <th><button className="table-sort-btn" onClick={() => toggleResultSort("support_score")}>Score {sortResultIcon("support_score")}</button></th>
+                    <th>Remark</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleEdgeRows.length ? visibleEdgeRows.map((edge, idx) => (
+                    <tr key={`${edge.source}-${edge.target}-${idx}`}>
+                      <td>{edge.source_label || edge.source}</td>
+                      <td>{edge.target_label || edge.target}</td>
+                      <td>{edge.edge_category}</td>
+                      <td><span className={`db-badge ${edgeTypeBadgeClass(edge.edge_type)}`}>{edge.edge_type}</span></td>
+                      <td>{edge.support_score ?? "NA"}</td>
+                      <td>{edge.remark || "-"}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={6}>No released relationships are visible in the current network view.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </section>
 
         <aside className="side-column">
@@ -430,7 +540,7 @@ export default function AnalysisPage({
                               onClick={() => setStructureModalOpen(true)}
                               type="button"
                             >
-                              Zoom
+                              Enlarge Structure
                             </button>
                             <a
                               className="structure-download-btn"
@@ -439,7 +549,7 @@ export default function AnalysisPage({
                               rel="noreferrer"
                               download={`${detail.node.id || "drug"}_structure.png`}
                             >
-                              Download PNG
+                              Download Structure PNG
                             </a>
                           </div>
                           {drugStructureReason ? <div className="annot-reason">{drugStructureReason}</div> : null}
@@ -467,7 +577,7 @@ export default function AnalysisPage({
                           <pre className="seq-box">{seq}</pre>
                           <div className="sequence-actions">
                             <button className="btn-quiet" type="button" onClick={copySequence}>
-                              {sequenceCopied ? "Copied" : "Copy Sequence"}
+                              {sequenceCopied ? "Sequence Copied" : "Copy Sequence"}
                             </button>
                           </div>
                         </>
@@ -534,6 +644,75 @@ export default function AnalysisPage({
             </div>
           </section>
 
+          <section className="card panel-pad rise-in delay-1">
+            <h3>Algorithm Evidence</h3>
+            {algorithmEvidence.available ? (
+              <>
+                <div className="algo-evidence-summary">
+                  <span className="source-chip">prediction rows {algorithmEvidence.row_count}</span>
+                  <span className="source-chip">max released support {algorithmEvidence.max_n_algo_pass ?? 0}/3</span>
+                  <span className="source-chip">avg 7-model votes {algorithmEvidence.avg_total_votes ?? 0}/7</span>
+                  <span className="source-chip">max 7-model votes {algorithmEvidence.max_total_votes ?? 0}/7</span>
+                </div>
+                <div className="algo-evidence-grid">
+                  {(algorithmEvidence.methods || []).map((item) => (
+                    <div className={`algo-evidence-card ${(item.positive_count || 0) > 0 ? "is-on" : "is-off"}`} key={item.key}>
+                      <div className="algo-evidence-head">
+                        <span>{item.label}</span>
+                        <strong>{item.positive_count}/{item.row_count}</strong>
+                      </div>
+                      <div className="algo-evidence-meta">{item.headline}</div>
+                      <div className="bar mini"><i className="known" style={{ width: `${Math.max(6, Math.min(100, item.coverage_pct || 0))}%` }} /></div>
+                      <div className="algo-evidence-value">{item.coverage_pct}% support</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mechanism-section">
+                  <div className="annot-title">Top Prediction Records</div>
+                  <div className="mechanism-links">
+                    {(algorithmEvidence.top_rows || []).map((row, idx) => (
+                      <div className="mechanism-link-card" key={`${row.Drug_ID}-${row.Target_ID}-${row.Disease_ID}-${idx}`}>
+                        <div className="mechanism-link-head">
+                          <span>{algoRowLabel(row)}</span>
+                          <em>{row.gene_name || "gene annotation unavailable"}</em>
+                        </div>
+                        <div className="algo-chip-row compact">
+                          <span className={`algo-chip ${String(row.TXGNN_pass) === "1" ? "is-on" : "is-off"}`}>TXGNN</span>
+                          <span className={`algo-chip ${String(row.ENR_pass) === "1" ? "is-on" : "is-off"}`}>ENR</span>
+                          <span className={`algo-chip ${String(row.RWR_pass) === "1" ? "is-on" : "is-off"}`}>RWR</span>
+                        </div>
+                        <div className="algo-chip-row compact">
+                          {["GraphDTA","DTIAM","DrugBAN","DeepPurpose","DeepDTAGen","MolTrans","Conplex"].map((label) => (
+                            <span
+                              className={`algo-chip ${(row.seven_model_supporting_models || []).includes(label) || row.seven_model_scores?.[label] != null ? "is-on" : "is-off"}`}
+                              key={label}
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="support-meter-row">
+                          <div className="support-meter-card">
+                            <span>Released method support</span>
+                            {renderCoreSupportMeter(row.n_algo_pass)}
+                          </div>
+                          <div className="support-meter-card">
+                            <span>7-model vote support</span>
+                            {renderVoteMeter(row.seven_model_total_votes)}
+                          </div>
+                        </div>
+                        <div className="mechanism-link-meta">TXGNN score={row.TXGNN_score ?? "-"} · ENR FDR={row.ENR_FDR ?? "-"}</div>
+                        <div className="mechanism-link-meta">{((row.seven_model_supporting_models || []).join(", ")) || "no explicit per-model list"}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="empty-state">No prediction-model summary is available for the current record.</div>
+            )}
+          </section>
+
           <section className="card panel-pad rise-in delay-2">
             <h3>Mechanism Snapshot</h3>
             <div className="mechanism-section">
@@ -556,7 +735,7 @@ export default function AnalysisPage({
               <div className="source-chip-wrap">
                 {(mechanism.evidence_sources || []).length ? mechanism.evidence_sources.map((item) => (
                   <span className="source-chip" key={item.name}>{item.name} ({item.count})</span>
-                )) : <div className="empty-state">No evidence source summary is available for the current record.</div>}
+                )) : <div className="empty-state">No evidence-source summary is available for the current record.</div>}
               </div>
             </div>
             <div className="mechanism-section">
@@ -613,7 +792,7 @@ export default function AnalysisPage({
                 </div>
               </div>
             ) : (
-              <div className="empty-state">Enter two Drug identifiers above to compare target overlap, disease overlap, and shared mechanism score.</div>
+              <div className="empty-state">Enter two Drug identifiers above to compare target overlap, disease overlap, and shared mechanism support.</div>
             )}
           </section>
 
@@ -666,12 +845,12 @@ export default function AnalysisPage({
               )) : <div className="empty-state">No neighboring records match the current filter settings.</div>}
             </div>
             <div className="pager">
-              <button onClick={() => onNeighborPage(-1)} disabled={neighborState.page <= 1}>Prev</button>
+              <button onClick={() => onNeighborPage(-1)} disabled={neighborState.page <= 1}>Previous</button>
               <button
                 onClick={() => onNeighborPage(1)}
                 disabled={neighborState.page * neighborState.page_size >= neighborState.total}
               >
-                Next
+                Next Page
               </button>
             </div>
           </section>
@@ -682,7 +861,7 @@ export default function AnalysisPage({
           <div className="structure-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className="structure-modal-head">
               <div className="structure-modal-title">Chemical Structure View</div>
-              <button className="btn-quiet" type="button" onClick={() => setStructureModalOpen(false)}>Close</button>
+              <button className="btn-quiet" type="button" onClick={() => setStructureModalOpen(false)}>Close Viewer</button>
             </div>
             <img className="structure-modal-img" src={structureUrl} alt="chemical structure large view" />
           </div>

@@ -3,10 +3,12 @@ from __future__ import annotations
 
 import os
 import json
+import csv
 import sqlite3
 from collections import deque
 from pathlib import Path
 from typing import Any
+from functools import lru_cache
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.gzip import GZipMiddleware
@@ -24,6 +26,28 @@ BRAND_ICON = STATIC_DIR / "brand-icon.svg"
 DEFAULT_DB_PATH = "/Users/jhhe/Documents/dtdplat/dtd_network.sqlite"
 DB_PATH = Path(os.environ.get("DTD_DB_PATH", DEFAULT_DB_PATH)).expanduser()
 DEFAULT_ORIGINS = "http://127.0.0.1:8787,http://localhost:8787"
+RESULTS_DTI_DIR = Path("/Users/jhhe/Downloads/resultsdti")
+SEVEN_MODEL_FILE = RESULTS_DTI_DIR / "Candidates_withNames_andDisease_TXGNN.csv"
+SEVEN_MODEL_FIELDS = [
+    ("graphdta_score", "GraphDTA"),
+    ("dtiam_score", "DTIAM"),
+    ("drugban_score", "DrugBAN"),
+    ("deeppurpose_score", "DeepPurpose"),
+    ("deepdtagan_score", "DeepDTAGen"),
+    ("moltrans_score", "MolTrans"),
+    ("conplex_score", "Conplex"),
+]
+REPRESENTATIVE_DRUGS = [
+    ("DB01229", "Paclitaxel"),
+    ("DB00619", "Imatinib"),
+    ("DB01409", "Tiotropium"),
+    ("DB00897", "Triazolam"),
+    ("DB00623", "Fluphenazine"),
+    ("DB09030", "Vorapaxar"),
+    ("DB00706", "Tamsulosin"),
+    ("DB01126", "Dutasteride"),
+    ("DB00361", "Vinorelbine"),
+]
 
 
 def parse_cors_origins() -> tuple[list[str], bool]:
@@ -82,6 +106,61 @@ def normalize_list(values: str | None) -> list[str]:
 
 def to_dicts(rows: list[sqlite3.Row]) -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
+
+
+@lru_cache(maxsize=1)
+def load_seven_model_lookup() -> dict[str, dict[str, Any]]:
+    lookup: dict[str, dict[str, Any]] = {}
+    if not SEVEN_MODEL_FILE.exists():
+        return lookup
+    with SEVEN_MODEL_FILE.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            pair_id = (row.get("pair_id") or "").strip()
+            if not pair_id:
+                drug_id = (row.get("Drug_ID") or "").strip()
+                target_id = (row.get("Target_ID") or "").strip()
+                if drug_id and target_id:
+                    pair_id = f"{drug_id}|{target_id}"
+            if not pair_id:
+                continue
+            supporting = [x.strip() for x in (row.get("Supporting_Models") or "").split(";") if x.strip()]
+            scores = {}
+            for field, label in SEVEN_MODEL_FIELDS:
+                raw = row.get(field)
+                try:
+                    scores[label] = float(raw) if raw not in (None, "", "NA") else None
+                except ValueError:
+                    scores[label] = None
+            lookup[pair_id] = {
+                "pair_id": pair_id,
+                "supporting_models": supporting,
+                "scores": scores,
+                "core5_votes": row.get("Core5_Votes"),
+                "optional_votes": row.get("Optional_Votes"),
+                "total_votes_optional7": row.get("Total_Votes_Optional7"),
+            }
+    return lookup
+
+
+def enrich_with_seven_models(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    lookup = load_seven_model_lookup()
+    enriched: list[dict[str, Any]] = []
+    for item in items:
+        pair_id = item.get("pair_id") or f'{item.get("Drug_ID", "")}|{item.get("Target_ID", "")}'
+        model_info = lookup.get(pair_id, {})
+        enriched.append(
+            {
+                **item,
+                "pair_id": pair_id,
+                "seven_model_supporting_models": model_info.get("supporting_models", []),
+                "seven_model_scores": model_info.get("scores", {}),
+                "seven_model_core5_votes": model_info.get("core5_votes"),
+                "seven_model_optional_votes": model_info.get("optional_votes"),
+                "seven_model_total_votes": model_info.get("total_votes_optional7") or item.get("Total_Votes_Optional7"),
+            }
+        )
+    return enriched
 
 
 def get_node_annotation(conn: sqlite3.Connection, node_id: str, node_type: str) -> dict[str, Any]:
@@ -392,6 +471,123 @@ def build_mechanism_snapshot(
     }
 
 
+def build_algorithm_evidence(conn: sqlite3.Connection, node: dict[str, Any]) -> dict[str, Any]:
+    node_id = node["id"]
+    node_type = node["node_type"]
+    if node_type == "Drug":
+        where_sql = "h.Drug_ID = ?"
+        params: list[Any] = [node_id]
+    elif node_type == "Target":
+        where_sql = "h.Target_ID = ?"
+        params = [node_id]
+    elif node_type == "Disease":
+        disease_name = node_id.replace("DIS::", "", 1)
+        where_sql = "h.Ensemble_Disease_Name = ?"
+        params = [disease_name]
+    else:
+        return {"available": False, "row_count": 0, "methods": [], "top_rows": []}
+
+    summary_row = conn.execute(
+        f"""
+        SELECT
+            COUNT(*) AS row_count,
+            SUM(CASE WHEN COALESCE(h.TXGNN_pass, 0) != 0 THEN 1 ELSE 0 END) AS txgnn_count,
+            SUM(CASE WHEN COALESCE(h.ENR_pass, 0) != 0 THEN 1 ELSE 0 END) AS enr_count,
+            SUM(CASE WHEN COALESCE(h.RWR_pass, 0) != 0 THEN 1 ELSE 0 END) AS rwr_count,
+            AVG(COALESCE(h.TXGNN_score, 0)) AS avg_txgnn_score,
+            AVG(COALESCE(h.Total_Votes_Optional7, 0)) AS avg_total_votes,
+            MAX(COALESCE(h.Total_Votes_Optional7, 0)) AS max_total_votes,
+            MIN(h.ENR_FDR) AS best_enr_fdr,
+            MAX(COALESCE(h.n_algo_pass, 0)) AS max_n_algo_pass
+        FROM src_highconfidence_expand_vote4_top50_tx07 h
+        WHERE {where_sql}
+        """,
+        params,
+    ).fetchone()
+    row_count = int((summary_row["row_count"] if summary_row else 0) or 0)
+    if row_count <= 0:
+        return {"available": False, "row_count": 0, "methods": [], "top_rows": []}
+
+    top_rows = conn.execute(
+        f"""
+        SELECT
+            h.pair_id,
+            h.Drug_ID,
+            COALESCE(nd.display_name, nd.label, h.Drug_Name) AS Drug_Label,
+            h.Target_ID,
+            COALESCE(nt.display_name, nt.label, h.target_name) AS Target_Label,
+            ('DIS::' || h.Ensemble_Disease_Name) AS Disease_ID,
+            COALESCE(nx.display_name, nx.label, h.Ensemble_Disease_Name) AS Disease_Label,
+            h.gene_name,
+            h.n_algo_pass,
+            h.TXGNN_pass,
+            h.ENR_pass,
+            h.RWR_pass,
+            h.TXGNN_score,
+            h.ENR_FDR
+        FROM src_highconfidence_expand_vote4_top50_tx07 h
+        LEFT JOIN network_nodes nd ON nd.id = h.Drug_ID
+        LEFT JOIN network_nodes nt ON nt.id = h.Target_ID
+        LEFT JOIN network_nodes nx ON nx.id = ('DIS::' || h.Ensemble_Disease_Name)
+        WHERE {where_sql}
+        ORDER BY h.n_algo_pass DESC, h.TXGNN_score DESC, h.ENR_FDR ASC, h.Drug_ID, h.Target_ID
+        LIMIT 3
+        """,
+        params,
+    ).fetchall()
+
+    methods = [
+        {
+            "key": "TXGNN",
+            "label": "TXGNN",
+            "positive_count": int((summary_row["txgnn_count"] if summary_row else 0) or 0),
+            "row_count": row_count,
+            "coverage_pct": round(((summary_row["txgnn_count"] or 0) / row_count) * 100, 1),
+            "headline": f'avg score {round(float((summary_row["avg_txgnn_score"] or 0) or 0), 3)}',
+        },
+        {
+            "key": "ENR",
+            "label": "ENR",
+            "positive_count": int((summary_row["enr_count"] if summary_row else 0) or 0),
+            "row_count": row_count,
+            "coverage_pct": round(((summary_row["enr_count"] or 0) / row_count) * 100, 1),
+            "headline": (
+                f'best FDR {round(float(summary_row["best_enr_fdr"]), 4)}'
+                if summary_row and summary_row["best_enr_fdr"] is not None
+                else "best FDR unavailable"
+            ),
+        },
+        {
+            "key": "RWR",
+            "label": "RWR",
+            "positive_count": int((summary_row["rwr_count"] if summary_row else 0) or 0),
+            "row_count": row_count,
+            "coverage_pct": round(((summary_row["rwr_count"] or 0) / row_count) * 100, 1),
+            "headline": f'max vote tier {int((summary_row["max_n_algo_pass"] if summary_row else 0) or 0)}',
+        },
+        {
+            "key": "Optional7",
+            "label": "7-model vote",
+            "positive_count": int((summary_row["max_total_votes"] if summary_row else 0) or 0),
+            "row_count": row_count,
+            "coverage_pct": round(((summary_row["avg_total_votes"] or 0) / 7) * 100, 1),
+            "headline": (
+                f'avg votes {round(float((summary_row["avg_total_votes"] or 0) or 0), 2)} / 7'
+            ),
+        },
+    ]
+
+    return {
+        "available": True,
+        "row_count": row_count,
+        "max_n_algo_pass": int((summary_row["max_n_algo_pass"] if summary_row else 0) or 0),
+        "avg_total_votes": round(float((summary_row["avg_total_votes"] if summary_row else 0) or 0), 2),
+        "max_total_votes": int((summary_row["max_total_votes"] if summary_row else 0) or 0),
+        "methods": methods,
+        "top_rows": enrich_with_seven_models(to_dicts(top_rows)),
+    }
+
+
 def build_drug_comparison(conn: sqlite3.Connection, left_id: str, right_id: str) -> dict[str, Any]:
     rows = conn.execute(
         """
@@ -642,6 +838,249 @@ def meta_stats() -> dict[str, Any]:
     return {"node_by_type": node_by_type, "edge_by_type": edge_by_type}
 
 
+@app.get("/api/meta/research-summary")
+def meta_research_summary() -> dict[str, Any]:
+    conn = get_conn()
+    try:
+        overview = {
+            "nodes": conn.execute("SELECT COUNT(*) FROM network_nodes").fetchone()[0],
+            "edges": conn.execute("SELECT COUNT(*) FROM network_edges").fetchone()[0],
+            "drugs": conn.execute("SELECT COUNT(*) FROM network_nodes WHERE node_type='Drug'").fetchone()[0],
+            "targets": conn.execute("SELECT COUNT(*) FROM network_nodes WHERE node_type='Target'").fetchone()[0],
+            "diseases": conn.execute("SELECT COUNT(*) FROM network_nodes WHERE node_type='Disease'").fetchone()[0],
+            "disease_aliases": conn.execute("SELECT COUNT(*) FROM disease_aliases").fetchone()[0],
+        }
+
+        source_tables = [
+            {
+                "dataset": "Drug-Target merged layer",
+                "table": "src_dti_layer_known_predicted_merged_tx07",
+                "description": "Integrated known and predicted DTI layer used for formal Drug-Target edges.",
+            },
+            {
+                "dataset": "Drug-Disease known",
+                "table": "src_known_drug_disease_drugbank",
+                "description": "DrugBank indication-derived Drug-Disease evidence.",
+            },
+            {
+                "dataset": "Target-Disease loose",
+                "table": "src_known_target_disease_ctd_alltargets",
+                "description": "CTD-based Target-Disease evidence including exact and substring matching.",
+            },
+            {
+                "dataset": "High-confidence prediction set",
+                "table": "src_highconfidence_expand_vote4_top50_tx07",
+                "description": "Multi-model predicted Drug-Disease and Target-Disease candidates.",
+            },
+        ]
+        for item in source_tables:
+            table = item["table"]
+            item["rows"] = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+
+        edge_summary = to_dicts(
+            conn.execute(
+                """
+                SELECT edge_category, edge_type, COUNT(*) AS count
+                FROM network_edges
+                GROUP BY edge_category, edge_type
+                ORDER BY edge_category, edge_type
+                """
+            ).fetchall()
+        )
+
+        pred = conn.execute(
+            """
+            SELECT
+                COUNT(*) AS total_rows,
+                COUNT(DISTINCT Drug_ID) AS drugs,
+                COUNT(DISTINCT Target_ID) AS targets,
+                COUNT(DISTINCT Ensemble_Disease_Name) AS diseases,
+                SUM(CASE WHEN TXGNN_pass IN (1, '1', 'True', 'true') THEN 1 ELSE 0 END) AS txgnn_pass,
+                SUM(CASE WHEN ENR_pass IN (1, '1', 'True', 'true') THEN 1 ELSE 0 END) AS enr_pass,
+                SUM(CASE WHEN RWR_pass IN (1, '1', 'True', 'true') THEN 1 ELSE 0 END) AS rwr_pass
+            FROM src_highconfidence_expand_vote4_top50_tx07
+            """
+        ).fetchone()
+
+        algo_distribution = to_dicts(
+            conn.execute(
+                """
+                SELECT CAST(n_algo_pass AS TEXT) AS algorithm_support, COUNT(*) AS count
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                GROUP BY CAST(n_algo_pass AS TEXT)
+                ORDER BY CAST(n_algo_pass AS INTEGER)
+                """
+            ).fetchall()
+        )
+        vote_distribution = to_dicts(
+            conn.execute(
+                """
+                SELECT CAST(Total_Votes_Optional7 AS TEXT) AS total_votes, COUNT(*) AS count
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                GROUP BY CAST(Total_Votes_Optional7 AS TEXT)
+                ORDER BY CAST(Total_Votes_Optional7 AS INTEGER)
+                """
+            ).fetchall()
+        )
+        support_pattern_distribution = to_dicts(
+            conn.execute(
+                """
+                SELECT
+                    CASE
+                        WHEN COALESCE(TXGNN_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(ENR_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN + ENR + RWR'
+                        WHEN COALESCE(TXGNN_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(ENR_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN + ENR'
+                        WHEN COALESCE(TXGNN_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN + RWR'
+                        WHEN COALESCE(ENR_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'ENR + RWR'
+                        WHEN COALESCE(TXGNN_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN only'
+                        WHEN COALESCE(ENR_pass, 0) IN (1, '1', 'True', 'true') THEN 'ENR only'
+                        WHEN COALESCE(RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'RWR only'
+                        ELSE 'No method passed'
+                    END AS support_pattern_label,
+                    COUNT(*) AS count
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                GROUP BY support_pattern_label
+                ORDER BY count DESC, support_pattern_label
+                """
+            ).fetchall()
+        )
+
+        target_disease_match = to_dicts(
+            conn.execute(
+                """
+                SELECT COALESCE(match_type, 'NA') AS match_type, COUNT(*) AS count
+                FROM src_known_target_disease_ctd_alltargets
+                GROUP BY COALESCE(match_type, 'NA')
+                ORDER BY count DESC
+                """
+            ).fetchall()
+        )
+
+        disease_distribution = to_dicts(
+            conn.execute(
+                """
+                SELECT
+                    n.id AS disease_id,
+                    n.label AS disease_label,
+                    COUNT(*) AS edge_count
+                FROM network_edges e
+                JOIN network_nodes n ON n.id = e.target
+                WHERE e.edge_category IN ('Drug-Disease', 'Target-Disease')
+                  AND n.node_type = 'Disease'
+                GROUP BY n.id, n.label
+                ORDER BY edge_count DESC, n.label
+                LIMIT 10
+                """
+            ).fetchall()
+        )
+        disease_total_links = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM network_edges e
+            JOIN network_nodes n ON n.id = e.target
+            WHERE e.edge_category IN ('Drug-Disease', 'Target-Disease')
+              AND n.node_type = 'Disease'
+            """
+        ).fetchone()[0]
+        for item in disease_distribution:
+            item["share_pct"] = round((item["edge_count"] / disease_total_links) * 100, 2) if disease_total_links else 0.0
+
+        representative_rows: list[dict[str, Any]] = []
+        rep_ids = [item[0] for item in REPRESENTATIVE_DRUGS]
+        rep_name_map = dict(REPRESENTATIVE_DRUGS)
+        placeholders = ",".join(["?"] * len(rep_ids))
+        rep_query = conn.execute(
+            f"""
+            SELECT
+                Drug_ID,
+                Drug_Name,
+                Target_ID,
+                Target_Name,
+                Ensemble_Disease_Name,
+                TXGNN_score,
+                ENR_FDR,
+                n_algo_pass,
+                Total_Votes_Optional7
+            FROM src_highconfidence_expand_vote4_top50_tx07
+            WHERE Drug_ID IN ({placeholders})
+            ORDER BY Drug_ID, TXGNN_score DESC, ENR_FDR ASC
+            """,
+            rep_ids,
+        ).fetchall()
+        seen_rep = set()
+        for row in rep_query:
+            drug_id = row["Drug_ID"]
+            if drug_id in seen_rep:
+                continue
+            representative_rows.append(
+                {
+                    "drug_id": drug_id,
+                    "drug_label": row["Drug_Name"] or rep_name_map.get(drug_id, drug_id),
+                    "target_id": row["Target_ID"],
+                    "target_label": row["Target_Name"] or row["Target_ID"],
+                    "disease_label": row["Ensemble_Disease_Name"],
+                    "txgnn_score": row["TXGNN_score"],
+                    "enr_fdr": row["ENR_FDR"],
+                    "n_algo_pass": row["n_algo_pass"],
+                    "seven_model_votes": row["Total_Votes_Optional7"],
+                }
+            )
+            seen_rep.add(drug_id)
+        for drug_id, label in REPRESENTATIVE_DRUGS:
+            if drug_id not in seen_rep:
+                representative_rows.append(
+                    {
+                        "drug_id": drug_id,
+                        "drug_label": label,
+                        "target_id": None,
+                        "target_label": None,
+                        "disease_label": None,
+                        "txgnn_score": None,
+                        "enr_fdr": None,
+                        "n_algo_pass": None,
+                        "seven_model_votes": None,
+                    }
+                )
+
+        result_tables = [
+            {"name": "Formal network nodes", "rows": overview["nodes"], "description": "Unified node table used by the platform."},
+            {"name": "Formal network edges", "rows": overview["edges"], "description": "Unified edge table used by the platform."},
+            {"name": "Disease aliases", "rows": overview["disease_aliases"], "description": "Disease synonym expansion and normalization mapping."},
+            {"name": "Predicted high-confidence rows", "rows": pred["total_rows"], "description": "Rows retained in the current high-confidence prediction table."},
+        ]
+
+        return {
+            "overview": overview,
+            "source_tables": source_tables,
+            "edge_summary": edge_summary,
+            "prediction_summary": {
+                "total_rows": pred["total_rows"],
+                "drugs": pred["drugs"],
+                "targets": pred["targets"],
+                "diseases": pred["diseases"],
+                "txgnn_pass": pred["txgnn_pass"],
+                "enr_pass": pred["enr_pass"],
+                "rwr_pass": pred["rwr_pass"],
+                "algorithm_support_distribution": algo_distribution,
+                "vote_distribution": vote_distribution,
+                "support_pattern_distribution": support_pattern_distribution,
+            },
+            "target_disease_match": target_disease_match,
+            "disease_distribution": {
+                "total_links": disease_total_links,
+                "top_diseases": disease_distribution,
+            },
+            "representative_drugs": representative_rows,
+            "result_tables": result_tables,
+        }
+    finally:
+        conn.close()
+
+
 @app.get("/api/nodes")
 def list_nodes(
     node_type: str | None = Query(default=None),
@@ -866,6 +1305,109 @@ def list_edges(
         conn.close()
 
 
+@app.get("/api/results/predictions")
+def list_prediction_results(
+    q: str | None = Query(default=None),
+    n_algo_pass: str | None = Query(default=None),
+    txgnn_pass: str | None = Query(default=None),
+    enr_pass: str | None = Query(default=None),
+    rwr_pass: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=200),
+) -> dict[str, Any]:
+    conn = get_conn()
+    try:
+        where = ["1=1"]
+        params: list[Any] = []
+        if q:
+            kw = f"%{q.strip()}%"
+            where.append(
+                """
+                (
+                    h.Drug_ID LIKE ?
+                    OR h.Target_ID LIKE ?
+                    OR h.Ensemble_Disease_Name LIKE ?
+                    OR h.Drug_Name LIKE ?
+                    OR h.target_name LIKE ?
+                    OR h.gene_name LIKE ?
+                )
+                """
+            )
+            params.extend([kw, kw, kw, kw, kw, kw])
+        if n_algo_pass:
+            where.append("CAST(h.n_algo_pass AS TEXT) = ?")
+            params.append(n_algo_pass)
+        if txgnn_pass:
+            where.append("CAST(h.TXGNN_pass AS TEXT) = ?")
+            params.append(txgnn_pass)
+        if enr_pass:
+            where.append("CAST(h.ENR_pass AS TEXT) = ?")
+            params.append(enr_pass)
+        if rwr_pass:
+            where.append("CAST(h.RWR_pass AS TEXT) = ?")
+            params.append(rwr_pass)
+
+        where_sql = " AND ".join(where)
+        total = conn.execute(
+            f"""
+            SELECT COUNT(*) AS n
+            FROM src_highconfidence_expand_vote4_top50_tx07 h
+            WHERE {where_sql}
+            """,
+            params,
+        ).fetchone()["n"]
+
+        offset = (page - 1) * page_size
+        rows = conn.execute(
+            f"""
+            WITH filtered AS (
+                SELECT
+                    h.*,
+                    ROW_NUMBER() OVER (
+                        ORDER BY h.n_algo_pass DESC, h.TXGNN_score DESC, h.ENR_FDR ASC, h.Drug_ID, h.Target_ID
+                    ) AS result_rank
+                FROM src_highconfidence_expand_vote4_top50_tx07 h
+                WHERE {where_sql}
+            )
+            SELECT
+                f.result_rank,
+                f.Drug_ID,
+                COALESCE(nd.display_name, nd.label, f.Drug_Name) AS Drug_Label,
+                f.Drug_Name,
+                f.Target_ID,
+                COALESCE(nt.display_name, nt.label, f.target_name) AS Target_Label,
+                f.target_name AS Target_Name,
+                f.gene_name,
+                ('DIS::' || f.Ensemble_Disease_Name) AS Disease_ID,
+                f.Ensemble_Disease_Name,
+                COALESCE(nx.display_name, nx.label, f.Ensemble_Disease_Name) AS Disease_Label,
+                f.n_algo_pass,
+                f.TXGNN_pass,
+                f.ENR_pass,
+                f.RWR_pass,
+                f.TXGNN_score,
+                f.ENR_FDR,
+                f.Total_Votes_Optional7,
+                (
+                    'TXGNN:' || CAST(COALESCE(f.TXGNN_pass, 0) AS TEXT) ||
+                    ' | ENR:' || CAST(COALESCE(f.ENR_pass, 0) AS TEXT) ||
+                    ' | RWR:' || CAST(COALESCE(f.RWR_pass, 0) AS TEXT)
+                ) AS support_pattern,
+                'HighConfidence_expand_vote4_top50_TX07' AS source_table
+            FROM filtered f
+            LEFT JOIN network_nodes nd ON nd.id = f.Drug_ID
+            LEFT JOIN network_nodes nt ON nt.id = f.Target_ID
+            LEFT JOIN network_nodes nx ON nx.id = ('DIS::' || f.Ensemble_Disease_Name)
+            ORDER BY f.result_rank ASC
+            LIMIT ? OFFSET ?
+            """,
+            [*params, page_size, offset],
+        ).fetchall()
+        return {"total": total, "page": page, "page_size": page_size, "items": enrich_with_seven_models(to_dicts(rows))}
+    finally:
+        conn.close()
+
+
 @app.get("/api/node/{node_id:path}/neighbors")
 def node_neighbors(
     node_id: str,
@@ -1013,6 +1555,7 @@ def node_detail(
             to_dicts(mechanism_rows),
             to_dicts(evidence_source_rows),
         )
+        algorithm_evidence = build_algorithm_evidence(conn, node_dict)
 
         if not include_neighbors:
             neighbor_rows = conn.execute(
@@ -1039,6 +1582,7 @@ def node_detail(
                 "edge_stats": edge_stats_dicts,
                 "multimodal_profile": multimodal_profile,
                 "mechanism_snapshot": mechanism_snapshot,
+                "algorithm_evidence": algorithm_evidence,
                 "neighbors": to_dicts(neighbor_rows),
             }
 
@@ -1103,6 +1647,7 @@ def node_detail(
             "edge_stats": edge_stats_dicts,
             "multimodal_profile": multimodal_profile,
             "mechanism_snapshot": mechanism_snapshot,
+            "algorithm_evidence": algorithm_evidence,
             "neighbors_page": {
                 "total": total,
                 "page": neighbor_page,

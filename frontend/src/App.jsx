@@ -35,6 +35,7 @@ export default function App() {
   const graphReqKeyRef = React.useRef("");
   const [page, setPage] = React.useState("home");
   const [stats, setStats] = React.useState({ node_by_type: [], edge_by_type: [] });
+  const [researchSummary, setResearchSummary] = React.useState(null);
   const [centerNode, setCenterNode] = React.useState(init.centerNode);
   const [graph, setGraph] = React.useState({ nodes: [], edges: [], depth: 2, center_id: "" });
   const [graphMeta, setGraphMeta] = React.useState("");
@@ -57,8 +58,16 @@ export default function App() {
 
   const [nodeFilters, setNodeFilters] = React.useState({ q: "", node_type: "" });
   const [edgeFilters, setEdgeFilters] = React.useState({ q: "", edge_category: "", edge_type: "" });
+  const [predictionFilters, setPredictionFilters] = React.useState({
+    q: "",
+    n_algo_pass: "",
+    txgnn_pass: "",
+    enr_pass: "",
+    rwr_pass: "",
+  });
   const [nodesState, setNodesState] = React.useState(defaultNodesState());
   const [edgesState, setEdgesState] = React.useState(defaultNodesState());
+  const [predictionState, setPredictionState] = React.useState(defaultNodesState());
   const [selectedNodeId, setSelectedNodeId] = React.useState(init.centerNode);
   const [neighborState, setNeighborState] = React.useState({
     q: "",
@@ -88,6 +97,7 @@ export default function App() {
   const loadStats = React.useCallback(async () => {
     try {
       setStats(await api("/api/meta/stats"));
+      setResearchSummary(await api("/api/meta/research-summary"));
     } catch (e) {
       showToast("warn", `Load stats failed: ${e.message}`);
     }
@@ -265,13 +275,27 @@ export default function App() {
     }
   }, [edgeFilters, edgesState.page_size, showToast]);
 
+  const loadPredictionResults = React.useCallback(async (nextPage = 1) => {
+    try {
+      const params = query({
+        ...predictionFilters,
+        page: Math.max(1, nextPage),
+        page_size: predictionState.page_size
+      });
+      const data = await api(`/api/results/predictions?${params}`);
+      setPredictionState(data);
+    } catch (e) {
+      showToast("warn", `Load prediction results failed: ${e.message}`);
+    }
+  }, [predictionFilters, predictionState.page_size, showToast]);
+
   const searchAndAnalyze = React.useCallback(async (keyword) => {
     const q = (keyword || "").trim();
     if (!q) return;
     try {
       const r = await api(`/api/search?${query({ q, limit: 1 })}`);
       if (!r.items.length) {
-        showToast("warn", `No matching record was found for "${q}"`);
+        showToast("warn", `No released atlas record matched "${q}"`);
         return;
       }
       const node = r.items[0];
@@ -300,7 +324,7 @@ export default function App() {
       setPathState((prev) => ({ ...prev, source_id: source }));
     }
     if (!source || !target) {
-      showToast("warn", "Path source and target identifiers are required");
+      showToast("warn", "Path source and target identifiers are required for path analysis");
       return;
     }
     setGraphLoading(true);
@@ -316,7 +340,7 @@ export default function App() {
         })}`
       );
       if (!data.found) {
-        showToast("warn", `No path was identified within ${pathState.max_hops} hops`);
+        showToast("warn", `No atlas path was identified within ${pathState.max_hops} hops`);
         return;
       }
       setGraph({
@@ -393,6 +417,38 @@ export default function App() {
     }
   }, [downloadCsv, edgeFilters, showToast]);
 
+  const exportPredictionResults = React.useCallback(async () => {
+    try {
+      const data = await api(`/api/results/predictions?${query({ ...predictionFilters, page: 1, page_size: 5000 })}`);
+      downloadCsv(
+        `dtd_prediction_results_${Date.now()}.csv`,
+        [
+          "result_rank",
+          "Drug_Label",
+          "Drug_ID",
+          "Target_Label",
+          "Target_ID",
+          "Disease_Label",
+          "Disease_ID",
+          "gene_name",
+          "n_algo_pass",
+          "Total_Votes_Optional7",
+          "TXGNN_pass",
+          "ENR_pass",
+          "RWR_pass",
+          "TXGNN_score",
+          "ENR_FDR",
+          "support_pattern",
+          "source_table"
+        ],
+        data.items || []
+      );
+      showToast("ok", `Exported ${data.items?.length || 0} prediction rows`);
+    } catch (e) {
+      showToast("warn", `Export prediction results failed: ${e.message}`);
+    }
+  }, [downloadCsv, predictionFilters, showToast]);
+
   const exportSubgraph = React.useCallback(() => {
     if (!graph.edges?.length) return;
     const lines = ["source,target,edge_category,edge_type,weight,support_score,remark"];
@@ -452,7 +508,7 @@ export default function App() {
     const left = compareState.left_id.trim();
     const right = compareState.right_id.trim();
     if (!left || !right) {
-      showToast("warn", "Two drug identifiers are required for comparison");
+      showToast("warn", "Two Drug identifiers are required for comparison analysis");
       return;
     }
     try {
@@ -468,7 +524,7 @@ export default function App() {
     const left = compareState.left_id.trim();
     const right = compareState.right_id.trim();
     if (!left || !right) {
-      showToast("warn", "Two drug identifiers are required for comparison");
+      showToast("warn", "Two Drug identifiers are required for comparison analysis");
       return;
     }
     try {
@@ -496,6 +552,7 @@ export default function App() {
     loadStats();
     loadNodes(1);
     loadEdges(1);
+    loadPredictionResults(1);
     loadGraph(centerNode);
     loadDetail(centerNode, { withNeighbors: true });
   }, [loadStats]); // intentionally single-run
@@ -523,7 +580,19 @@ export default function App() {
     <>
       <Header page={page} onPageChange={setPage} onQuickSearch={searchAndAnalyze} onSuggest={suggestQuick} />
       <main className="main-wrap">
-        {page === "home" && <HomePage stats={stats} onAnalyze={searchAndAnalyze} />}
+        {page === "home" && (
+          <HomePage
+            stats={stats}
+            researchSummary={researchSummary}
+            onAnalyze={searchAndAnalyze}
+            onOpenDatabase={async () => {
+              setPage("database");
+              await loadNodes(1);
+              await loadEdges(1);
+              await loadPredictionResults(1);
+            }}
+          />
+        )}
         {page === "analysis" && (
           <ErrorBoundary>
           <AnalysisPage
@@ -552,7 +621,7 @@ export default function App() {
             }}
             onLoadGraph={async () => {
               if (!centerNode?.trim()) {
-                showToast("warn", "A center node identifier is required");
+                showToast("warn", "A center node identifier is required to load the network view");
                 return;
               }
               if (!graphControls.categories.length || !graphControls.types.length) {
@@ -566,7 +635,7 @@ export default function App() {
             onCompareModes={compareModes}
             onFitGraph={() => {
               if (!graph?.nodes?.length) {
-                showToast("warn", "No network view is available for fitting");
+                showToast("warn", "No released network view is currently available for fitting");
                 return;
               }
               setFitSignal((v) => v + 1);
@@ -663,20 +732,29 @@ export default function App() {
           <DatabasePage
             nodesState={nodesState}
             edgesState={edgesState}
+            predictionState={predictionState}
             nodeFilters={nodeFilters}
             edgeFilters={edgeFilters}
+            predictionFilters={predictionFilters}
             onNodeFiltersChange={(patch) => setNodeFilters((prev) => ({ ...prev, ...patch }))}
             onEdgeFiltersChange={(patch) => setEdgeFilters((prev) => ({ ...prev, ...patch }))}
+            onPredictionFiltersChange={(patch) => setPredictionFilters((prev) => ({ ...prev, ...patch }))}
             onNodeSearch={() => loadNodes(1)}
             onEdgeSearch={() => loadEdges(1)}
+            onPredictionSearch={() => loadPredictionResults(1)}
             onNodePage={(delta) => loadNodes(nodesState.page + delta)}
             onEdgePage={(delta) => loadEdges(edgesState.page + delta)}
+            onPredictionPage={(delta) => loadPredictionResults(predictionState.page + delta)}
             onExportNodes={exportCurrentNodes}
             onExportEdges={exportCurrentEdges}
+            onExportPredictions={exportPredictionResults}
+            researchSummary={researchSummary}
             canNodePrev={nodesState.page > 1}
             canNodeNext={nodesState.page * nodesState.page_size < nodesState.total}
             canEdgePrev={edgesState.page > 1}
             canEdgeNext={edgesState.page * edgesState.page_size < edgesState.total}
+            canPredictionPrev={predictionState.page > 1}
+            canPredictionNext={predictionState.page * predictionState.page_size < predictionState.total}
             onJumpToNode={async (id) => {
               setPage("analysis");
               await loadDetail(id, { withNeighbors: true });
