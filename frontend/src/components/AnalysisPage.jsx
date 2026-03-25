@@ -75,6 +75,7 @@ export default function AnalysisPage({
   const mechanism = detail?.mechanism_snapshot || { top_links: [], evidence_sources: [], by_neighbor_type: {}, context_summary: [] };
   const algorithmEvidence = detail?.algorithm_evidence || { available: false, row_count: 0, methods: [], top_rows: [] };
   const comparison = compareState?.data || null;
+  const sevenDtiModels = ["GraphDTA", "DTIAM", "DrugBAN", "DeepPurpose", "DeepDTAGen", "MolTrans", "Conplex"];
   const smiles = ann.smiles || "";
   const textDescription = ann.text_description || "";
   const sideEffectSummary = ann.side_effect_summary || "";
@@ -191,6 +192,23 @@ export default function AnalysisPage({
       </div>
     );
   };
+  const hoverMatchesDetail = Boolean(hoverState?.id && detail?.node?.id && hoverState.id === detail.node.id);
+  const sevenModelOverview = React.useMemo(() => {
+    const rows = algorithmEvidence?.top_rows || [];
+    const counts = Object.fromEntries(sevenDtiModels.map((label) => [label, 0]));
+    rows.forEach((row) => {
+      const supporting = new Set(row?.seven_model_supporting_models || []);
+      const scores = row?.seven_model_scores || {};
+      sevenDtiModels.forEach((label) => {
+        if (supporting.has(label) || scores[label] != null) counts[label] += 1;
+      });
+    });
+    return sevenDtiModels.map((label) => ({
+      label,
+      count: counts[label],
+      active: counts[label] > 0,
+    }));
+  }, [algorithmEvidence, sevenDtiModels]);
 
   React.useEffect(() => {
     if (!structureModalOpen) return undefined;
@@ -263,6 +281,21 @@ export default function AnalysisPage({
           ))}
         </div>
       ) : null}
+
+      <section className="card panel-pad analysis-seven-model-panel">
+        <div className="card-head">
+          <h3>Seven DTI Model Support</h3>
+          <div className="muted">The optional DTI vote layer is composed of seven upstream DTI models. Active counts below summarize the current top prediction records for this network view.</div>
+        </div>
+        <div className="analysis-seven-model-grid">
+          {sevenModelOverview.map((item) => (
+            <article className={`analysis-seven-model-card ${item.active ? "is-on" : "is-off"}`} key={item.label}>
+              <strong>{item.label}</strong>
+              <span>{item.active ? `${item.count} visible records` : "No visible record"}</span>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <div className="analysis-layout">
         <section className="card graph-panel">
@@ -430,6 +463,18 @@ export default function AnalysisPage({
                   <span className="algo-chip is-on">Pred {hoverState.evidence?.Predicted ?? 0}</span>
                   <span className="algo-chip is-on">K+P {hoverState.evidence?.["Known+Predicted"] ?? 0}</span>
                 </div>
+                {hoverMatchesDetail && algorithmEvidence.available ? (
+                  <div className="hover-support-block">
+                    <div className="hover-support-row">
+                      <span className="hover-support-label">Released support</span>
+                      {renderCoreSupportMeter(algorithmEvidence.max_n_algo_pass)}
+                    </div>
+                    <div className="hover-support-row">
+                      <span className="hover-support-label">7-model votes</span>
+                      {renderVoteMeter(algorithmEvidence.max_total_votes)}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>

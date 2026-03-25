@@ -201,6 +201,37 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           ))}
         </div>
 
+        <section className="home-panel-card home-panel-wide home-seven-model-card">
+          <div className="home-panel-head">
+            <h3>Seven DTI Models</h3>
+            <div className="home-panel-subtitle">The released atlas integrates seven upstream DTI models in the optional vote layer before retention by TXGNN, ENR, and RWR.</div>
+          </div>
+          <div className="seven-model-chip-grid">
+            {sevenDtiModels.map((model) => (
+              <article className="seven-model-chip-card" key={model}>
+                <strong>{model}</strong>
+                <span>Included in DTI screening</span>
+              </article>
+            ))}
+          </div>
+          <div className="result-summary-strip">
+            <span className="result-summary-pill">
+              <strong>7 models</strong>
+              <em>Explicitly displayed in the atlas</em>
+            </span>
+            <span className="result-summary-pill">
+              <strong>{predictionSummary?.total_rows || 0}</strong>
+              <em>Rows linked to the DTI vote layer</em>
+            </span>
+          </div>
+          <div className="home-action-row">
+            <button className="quick-access-card is-inline-action" onClick={() => onOpenDatabase?.("predictions")}>
+              <strong>Open Prediction Result Table</strong>
+              <span>View the 7 DTI models for each released prediction record.</span>
+            </button>
+          </div>
+        </section>
+
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Model-Stratified Result Overview</h3>
