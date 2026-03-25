@@ -110,7 +110,7 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
                 onQuickSearch(keyword);
               }
             }}
-            placeholder="Search drug, target, disease, or alias..."
+            placeholder="Search a drug, target, disease, or registered alias..."
           />
           <button onClick={() => onQuickSearch(keyword)}>Go</button>
           {open && suggestions.length > 0 ? (

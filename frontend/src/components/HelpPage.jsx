@@ -6,10 +6,10 @@ export default function HelpPage() {
       <div className="help-wrap">
         <div className="help-hero card">
           <div className="help-hero-text">
-            <h2>Documentation & User Guide</h2>
+            <h2>Documentation and User Guide</h2>
             <p className="muted">
-              This interface provides access to the curated Drug-Target-Disease network database and
-              associated analytical views through the platform API.
+              This interface provides access to the curated Drug-Target-Disease network atlas and
+              its released analytical views.
             </p>
             <div className="help-badges">
               <span className="chip">Drug</span>
@@ -95,11 +95,11 @@ export default function HelpPage() {
             </ul>
           </article>
           <article className="card panel-pad">
-            <h3>Database Browser</h3>
+            <h3>Database Access</h3>
             <ul>
-              <li>Browse nodes and edges with pagination support</li>
-              <li>Use structured filters for review and curation</li>
-              <li>Open any node directly in the analysis view</li>
+              <li>Review node and relationship tables with pagination support</li>
+              <li>Use structured filters for atlas review and curation</li>
+              <li>Open any node directly in the network analysis view</li>
             </ul>
           </article>
           <article className="card panel-pad">
@@ -119,11 +119,11 @@ export default function HelpPage() {
             </ul>
           </article>
           <article className="card panel-pad">
-            <h3>Deployment Reminder</h3>
+            <h3>Release Access Notes</h3>
             <ul>
-              <li>Build frontend: <code>npm run build</code></li>
-              <li>Start backend: <code>uvicorn app:app --host 0.0.0.0 --port 8787</code></li>
-              <li>Serve <code>/static</code> in production through a reverse proxy</li>
+              <li>Use the atlas home page to enter the released network view</li>
+              <li>Open database tables for sortable result records and algorithm evidence</li>
+              <li>Export current views and result tables for downstream reporting</li>
             </ul>
           </article>
         </div>
