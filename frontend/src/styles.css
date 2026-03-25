@@ -836,6 +836,48 @@ button.primary,
   text-transform: uppercase;
 }
 
+.home-seven-model-card {
+  border-color: #d7e4f7;
+}
+
+.seven-model-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.seven-model-chip-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px 12px 11px;
+  border-radius: 14px;
+  border: 1px solid #dbe6f6;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(244, 248, 255, 0.97));
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.seven-model-chip-card strong {
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+.seven-model-chip-card span {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.home-action-row {
+  margin-top: 14px;
+}
+
+.quick-access-card.is-inline-action {
+  width: 100%;
+  text-align: left;
+}
+
 .pipeline-flow {
   display: grid;
   grid-template-columns: 1fr 40px 1fr 40px 1fr;
@@ -1255,6 +1297,69 @@ button.primary,
   gap: 16px;
   min-height: calc(100vh - 220px);
   align-items: stretch;
+}
+
+.analysis-seven-model-panel {
+  margin-bottom: 14px;
+}
+
+.analysis-seven-model-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.analysis-seven-model-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px 12px 11px;
+  border-radius: 14px;
+  border: 1px solid #dbe6f6;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(244, 248, 255, 0.97));
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.analysis-seven-model-card.is-on {
+  border-color: #bfdbfe;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.08);
+}
+
+.analysis-seven-model-card.is-off {
+  opacity: 0.8;
+}
+
+.analysis-seven-model-card strong {
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+.analysis-seven-model-card span {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.hover-support-block {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(219, 230, 246, 0.9);
+}
+
+.hover-support-row {
+  display: grid;
+  gap: 4px;
+}
+
+.hover-support-label {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .card {
