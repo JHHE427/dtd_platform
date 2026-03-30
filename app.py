@@ -980,6 +980,27 @@ def meta_research_summary() -> dict[str, Any]:
             src_target_label_expr = "Target_ID"
 
         src_gene_name_expr = "COALESCE(gene_name, '-')" if "gene_name" in src_prediction_cols else "'-'"
+        src_support_pattern_expr = (
+            "support_pattern"
+            if "support_pattern" in src_prediction_cols
+            else """
+            CASE
+                WHEN COALESCE(TXGNN_pass, 0) IN (1, '1', 'True', 'true')
+                     AND COALESCE(ENR_pass, 0) IN (1, '1', 'True', 'true')
+                     AND COALESCE(RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN + ENR + RWR'
+                WHEN COALESCE(TXGNN_pass, 0) IN (1, '1', 'True', 'true')
+                     AND COALESCE(ENR_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN + ENR'
+                WHEN COALESCE(TXGNN_pass, 0) IN (1, '1', 'True', 'true')
+                     AND COALESCE(RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN + RWR'
+                WHEN COALESCE(ENR_pass, 0) IN (1, '1', 'True', 'true')
+                     AND COALESCE(RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'ENR + RWR'
+                WHEN COALESCE(TXGNN_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN only'
+                WHEN COALESCE(ENR_pass, 0) IN (1, '1', 'True', 'true') THEN 'ENR only'
+                WHEN COALESCE(RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'RWR only'
+                ELSE 'No method passed'
+            END
+            """
+        )
 
         edge_summary = to_dicts(
             conn.execute(
@@ -1289,7 +1310,7 @@ def meta_research_summary() -> dict[str, Any]:
                         Total_Votes_Optional7,
                         TXGNN_score,
                         ENR_FDR,
-                        support_pattern
+                        {src_support_pattern_expr} AS support_pattern
                     FROM src_highconfidence_expand_vote4_top50_tx07
                 )
                 SELECT *
@@ -1325,7 +1346,7 @@ def meta_research_summary() -> dict[str, Any]:
                         Total_Votes_Optional7,
                         TXGNN_score,
                         ENR_FDR,
-                        support_pattern
+                        {src_support_pattern_expr} AS support_pattern
                     FROM src_highconfidence_expand_vote4_top50_tx07
                     WHERE CAST(COALESCE(n_algo_pass, 0) AS INTEGER) = 3
                       AND CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) >= 4
