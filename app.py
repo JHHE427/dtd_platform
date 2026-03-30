@@ -961,6 +961,25 @@ def meta_research_summary() -> dict[str, Any]:
             if "Disease_Label" in src_prediction_cols
             else "Ensemble_Disease_Name"
         )
+        if "Drug_Name" in src_prediction_cols and "Drug_Label" in src_prediction_cols:
+            src_drug_label_expr = "COALESCE(Drug_Name, Drug_Label, Drug_ID)"
+        elif "Drug_Name" in src_prediction_cols:
+            src_drug_label_expr = "COALESCE(Drug_Name, Drug_ID)"
+        elif "Drug_Label" in src_prediction_cols:
+            src_drug_label_expr = "COALESCE(Drug_Label, Drug_ID)"
+        else:
+            src_drug_label_expr = "Drug_ID"
+
+        if "Target_Name" in src_prediction_cols and "Target_Label" in src_prediction_cols:
+            src_target_label_expr = "COALESCE(Target_Name, Target_Label, Target_ID)"
+        elif "Target_Name" in src_prediction_cols:
+            src_target_label_expr = "COALESCE(Target_Name, Target_ID)"
+        elif "Target_Label" in src_prediction_cols:
+            src_target_label_expr = "COALESCE(Target_Label, Target_ID)"
+        else:
+            src_target_label_expr = "Target_ID"
+
+        src_gene_name_expr = "COALESCE(gene_name, '-')" if "gene_name" in src_prediction_cols else "'-'"
 
         edge_summary = to_dicts(
             conn.execute(
@@ -1154,13 +1173,13 @@ def meta_research_summary() -> dict[str, Any]:
 
         drug_distribution = to_dicts(
             conn.execute(
-                """
+                f"""
                 SELECT
                     Drug_ID AS drug_id,
-                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    {src_drug_label_expr} AS drug_label,
                     COUNT(*) AS row_count
                 FROM src_highconfidence_expand_vote4_top50_tx07
-                GROUP BY Drug_ID, COALESCE(Drug_Name, Drug_Label, Drug_ID)
+                GROUP BY Drug_ID, drug_label
                 ORDER BY row_count DESC, drug_label
                 LIMIT 10
                 """
@@ -1172,13 +1191,13 @@ def meta_research_summary() -> dict[str, Any]:
 
         target_distribution = to_dicts(
             conn.execute(
-                """
+                f"""
                 SELECT
                     Target_ID AS target_id,
-                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                    {src_target_label_expr} AS target_label,
                     COUNT(*) AS row_count
                 FROM src_highconfidence_expand_vote4_top50_tx07
-                GROUP BY Target_ID, COALESCE(Target_Name, Target_Label, Target_ID)
+                GROUP BY Target_ID, target_label
                 ORDER BY row_count DESC, target_label
                 LIMIT 10
                 """
@@ -1195,9 +1214,9 @@ def meta_research_summary() -> dict[str, Any]:
             f"""
             SELECT
                 Drug_ID,
-                Drug_Name,
+                {src_drug_label_expr} AS drug_label,
                 Target_ID,
-                Target_Name,
+                {src_target_label_expr} AS target_label,
                 Ensemble_Disease_Name,
                 TXGNN_score,
                 ENR_FDR,
@@ -1217,9 +1236,9 @@ def meta_research_summary() -> dict[str, Any]:
             representative_rows.append(
                 {
                     "drug_id": drug_id,
-                    "drug_label": row["Drug_Name"] or rep_name_map.get(drug_id, drug_id),
+                    "drug_label": row["drug_label"] or rep_name_map.get(drug_id, drug_id),
                     "target_id": row["Target_ID"],
-                    "target_label": row["Target_Name"] or row["Target_ID"],
+                    "target_label": row["target_label"] or row["Target_ID"],
                     "disease_label": row["Ensemble_Disease_Name"],
                     "txgnn_score": row["TXGNN_score"],
                     "enr_fdr": row["ENR_FDR"],
@@ -1250,12 +1269,12 @@ def meta_research_summary() -> dict[str, Any]:
                 WITH ranked AS (
                     SELECT
                         Drug_ID AS drug_id,
-                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        {src_drug_label_expr} AS drug_label,
                         Target_ID AS target_id,
-                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        {src_target_label_expr} AS target_label,
                         {src_disease_id_expr} AS disease_id,
                         {src_disease_label_expr} AS disease_label,
-                        COALESCE(gene_name, '-') AS gene_name,
+                        {src_gene_name_expr} AS gene_name,
                         ROW_NUMBER() OVER (
                             ORDER BY
                                 CAST(COALESCE(n_algo_pass, 0) AS INTEGER) DESC,
@@ -1287,12 +1306,12 @@ def meta_research_summary() -> dict[str, Any]:
                 WITH ranked AS (
                     SELECT
                         Drug_ID AS drug_id,
-                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        {src_drug_label_expr} AS drug_label,
                         Target_ID AS target_id,
-                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        {src_target_label_expr} AS target_label,
                         {src_disease_id_expr} AS disease_id,
                         {src_disease_label_expr} AS disease_label,
-                        COALESCE(gene_name, '-') AS gene_name,
+                        {src_gene_name_expr} AS gene_name,
                         ROW_NUMBER() OVER (
                             ORDER BY
                                 CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
@@ -1347,7 +1366,7 @@ def meta_research_summary() -> dict[str, Any]:
                 f"""
                 SELECT
                     Drug_ID AS drug_id,
-                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    {src_drug_label_expr} AS drug_label,
                     COUNT(*) AS row_count,
                     MAX(CAST(COALESCE(n_algo_pass, 0) AS INTEGER)) AS max_algo_pass,
                     MAX(CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER)) AS max_votes,
@@ -1355,7 +1374,7 @@ def meta_research_summary() -> dict[str, Any]:
                     MIN(CAST(COALESCE(ENR_FDR, 999999) AS REAL)) AS best_enr_fdr
                 FROM src_highconfidence_expand_vote4_top50_tx07
                 WHERE Drug_ID IN ({placeholders})
-                GROUP BY Drug_ID, COALESCE(Drug_Name, Drug_Label, Drug_ID)
+                GROUP BY Drug_ID, drug_label
                 ORDER BY max_algo_pass DESC, max_votes DESC, top_txgnn_score DESC, drug_label
                 """
                 ,
@@ -1379,13 +1398,13 @@ def meta_research_summary() -> dict[str, Any]:
                 top_drug AS (
                     SELECT
                         {src_disease_id_expr} AS disease_id,
-                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        {src_drug_label_expr} AS drug_label,
                         ROW_NUMBER() OVER (
                             PARTITION BY {src_disease_id_expr}
                             ORDER BY
                                 COUNT(*) DESC,
                                 MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
-                                COALESCE(Drug_Name, Drug_Label, Drug_ID)
+                                {src_drug_label_expr}
                         ) AS rn
                     FROM src_highconfidence_expand_vote4_top50_tx07
                     GROUP BY disease_id, drug_label
@@ -1393,13 +1412,13 @@ def meta_research_summary() -> dict[str, Any]:
                 top_target AS (
                     SELECT
                         {src_disease_id_expr} AS disease_id,
-                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        {src_target_label_expr} AS target_label,
                         ROW_NUMBER() OVER (
                             PARTITION BY {src_disease_id_expr}
                             ORDER BY
                                 COUNT(*) DESC,
                                 MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
-                                COALESCE(Target_Name, Target_Label, Target_ID)
+                                {src_target_label_expr}
                         ) AS rn
                     FROM src_highconfidence_expand_vote4_top50_tx07
                     GROUP BY disease_id, target_label
@@ -1439,7 +1458,7 @@ def meta_research_summary() -> dict[str, Any]:
                 WITH drug_scope AS (
                     SELECT
                         Drug_ID AS drug_id,
-                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        {src_drug_label_expr} AS drug_label,
                         COUNT(*) AS row_count
                     FROM src_highconfidence_expand_vote4_top50_tx07
                     GROUP BY drug_id, drug_label
@@ -1463,13 +1482,13 @@ def meta_research_summary() -> dict[str, Any]:
                 top_target AS (
                     SELECT
                         Drug_ID AS drug_id,
-                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        {src_target_label_expr} AS target_label,
                         ROW_NUMBER() OVER (
                             PARTITION BY Drug_ID
                             ORDER BY
                                 COUNT(*) DESC,
                                 MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
-                                COALESCE(Target_Name, Target_Label, Target_ID)
+                                {src_target_label_expr}
                         ) AS rn
                     FROM src_highconfidence_expand_vote4_top50_tx07
                     GROUP BY drug_id, target_label
@@ -1509,7 +1528,7 @@ def meta_research_summary() -> dict[str, Any]:
                 WITH target_scope AS (
                     SELECT
                         Target_ID AS target_id,
-                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        {src_target_label_expr} AS target_label,
                         COUNT(*) AS row_count
                     FROM src_highconfidence_expand_vote4_top50_tx07
                     GROUP BY target_id, target_label
@@ -1533,13 +1552,13 @@ def meta_research_summary() -> dict[str, Any]:
                 top_drug AS (
                     SELECT
                         Target_ID AS target_id,
-                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        {src_drug_label_expr} AS drug_label,
                         ROW_NUMBER() OVER (
                             PARTITION BY Target_ID
                             ORDER BY
                                 COUNT(*) DESC,
                                 MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
-                                COALESCE(Drug_Name, Drug_Label, Drug_ID)
+                                {src_drug_label_expr}
                         ) AS rn
                     FROM src_highconfidence_expand_vote4_top50_tx07
                     GROUP BY target_id, drug_label
@@ -1578,9 +1597,9 @@ def meta_research_summary() -> dict[str, Any]:
                 f"""
                 SELECT
                     Drug_ID AS drug_id,
-                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    {src_drug_label_expr} AS drug_label,
                     Target_ID AS target_id,
-                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                    {src_target_label_expr} AS target_label,
                     {src_disease_id_expr} AS disease_id,
                     {src_disease_label_expr} AS disease_label,
                     CAST(COALESCE(n_algo_pass, 0) AS INTEGER) AS n_algo_pass,
@@ -1604,9 +1623,9 @@ def meta_research_summary() -> dict[str, Any]:
                 f"""
                 SELECT
                     Drug_ID AS drug_id,
-                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    {src_drug_label_expr} AS drug_label,
                     Target_ID AS target_id,
-                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                    {src_target_label_expr} AS target_label,
                     {src_disease_id_expr} AS disease_id,
                     {src_disease_label_expr} AS disease_label,
                     CAST(COALESCE(n_algo_pass, 0) AS INTEGER) AS n_algo_pass,
