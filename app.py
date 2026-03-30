@@ -27,8 +27,7 @@ BRAND_ICON = STATIC_DIR / "brand-icon.svg"
 DEFAULT_DB_PATH = "/Users/jhhe/Documents/dtdplat/dtd_network.sqlite"
 DB_PATH = Path(os.environ.get("DTD_DB_PATH", DEFAULT_DB_PATH)).expanduser()
 DEFAULT_ORIGINS = "http://127.0.0.1:8787,http://localhost:8787"
-RESULTS_DTI_DIR = Path("/Users/jhhe/Downloads/resultsdti")
-SEVEN_MODEL_FILE = RESULTS_DTI_DIR / "Candidates_withNames_andDisease_TXGNN.csv"
+DEFAULT_SEVEN_MODEL_FILENAME = "Candidates_withNames_andDisease_TXGNN.csv"
 SEVEN_MODEL_FIELDS = [
     ("graphdta_score", "GraphDTA"),
     ("dtiam_score", "DTIAM"),
@@ -110,11 +109,34 @@ def to_dicts(rows: list[sqlite3.Row]) -> list[dict[str, Any]]:
 
 
 @lru_cache(maxsize=1)
+def resolve_seven_model_file() -> Path | None:
+    explicit_file = os.environ.get("DTD_RESULTS_DTI_FILE")
+    explicit_dir = os.environ.get("DTD_RESULTS_DTI_DIR")
+    candidates = []
+    if explicit_file:
+        candidates.append(Path(explicit_file).expanduser())
+    if explicit_dir:
+        candidates.append(Path(explicit_dir).expanduser() / DEFAULT_SEVEN_MODEL_FILENAME)
+    candidates.extend(
+        [
+            BASE_DIR / "resultsdti" / DEFAULT_SEVEN_MODEL_FILENAME,
+            BASE_DIR / "data" / "resultsdti" / DEFAULT_SEVEN_MODEL_FILENAME,
+            Path("/Users/jhhe/Downloads/resultsdti") / DEFAULT_SEVEN_MODEL_FILENAME,
+        ]
+    )
+    for path in candidates:
+        if path.exists():
+            return path
+    return None
+
+
+@lru_cache(maxsize=1)
 def load_seven_model_lookup() -> dict[str, dict[str, Any]]:
     lookup: dict[str, dict[str, Any]] = {}
-    if not SEVEN_MODEL_FILE.exists():
+    seven_model_file = resolve_seven_model_file()
+    if not seven_model_file:
         return lookup
-    with SEVEN_MODEL_FILE.open("r", encoding="utf-8-sig", newline="") as handle:
+    with seven_model_file.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         for row in reader:
             pair_id = (row.get("pair_id") or "").strip()
