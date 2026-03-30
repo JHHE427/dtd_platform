@@ -5,7 +5,18 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: "../static",
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("react-force-graph-2d") || id.includes("/d3")) return "graph-vendor";
+          if (id.includes("vis-network")) return "network-vendor";
+          if (id.includes("/react/") || id.includes("/react-dom/")) return "react-vendor";
+          return undefined;
+        }
+      }
+    }
   },
   server: {
     port: 5173,

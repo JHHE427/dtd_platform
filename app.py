@@ -5,7 +5,8 @@ import os
 import json
 import csv
 import sqlite3
-from collections import deque
+from collections import Counter, deque
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 from functools import lru_cache
@@ -161,6 +162,55 @@ def enrich_with_seven_models(items: list[dict[str, Any]]) -> list[dict[str, Any]
             }
         )
     return enriched
+
+
+def build_support_pattern_label(row: sqlite3.Row | dict[str, Any]) -> str:
+    def is_on(value: Any) -> bool:
+        return str(value) in {"1", "True", "true"}
+
+    tx = is_on(row.get("TXGNN_pass") if isinstance(row, dict) else row["TXGNN_pass"])
+    enr = is_on(row.get("ENR_pass") if isinstance(row, dict) else row["ENR_pass"])
+    rwr = is_on(row.get("RWR_pass") if isinstance(row, dict) else row["RWR_pass"])
+    active = [label for label, ok in (("TXGNN", tx), ("ENR", enr), ("RWR", rwr)) if ok]
+    return " + ".join(active) if active else "No method passed"
+
+
+def build_online_analysis_where(
+    focus: str,
+    focus_type: str,
+    min_algo_pass: int,
+    min_votes: int,
+    txgnn_pass: str | None,
+    enr_pass: str | None,
+    rwr_pass: str | None,
+) -> tuple[str, list[Any]]:
+    where = ["CAST(COALESCE(h.n_algo_pass, 0) AS INTEGER) >= ?", "CAST(COALESCE(h.Total_Votes_Optional7, 0) AS INTEGER) >= ?"]
+    params: list[Any] = [min_algo_pass, min_votes]
+
+    if focus_type == "Drug":
+        where.append("h.Drug_ID = ?")
+        params.append(focus)
+    elif focus_type == "Target":
+        where.append("h.Target_ID = ?")
+        params.append(focus)
+    elif focus_type == "Disease":
+        disease_label = focus.removeprefix("DIS::")
+        where.append("h.Ensemble_Disease_Name = ?")
+        params.append(disease_label)
+    else:
+        raise HTTPException(status_code=422, detail=f"Online analysis is not available for node type: {focus_type}")
+
+    if txgnn_pass:
+        where.append("CAST(h.TXGNN_pass AS TEXT) = ?")
+        params.append(txgnn_pass)
+    if enr_pass:
+        where.append("CAST(h.ENR_pass AS TEXT) = ?")
+        params.append(enr_pass)
+    if rwr_pass:
+        where.append("CAST(h.RWR_pass AS TEXT) = ?")
+        params.append(rwr_pass)
+
+    return " AND ".join(where), params
 
 
 def get_node_annotation(conn: sqlite3.Connection, node_id: str, node_type: str) -> dict[str, Any]:
@@ -577,6 +627,18 @@ def build_algorithm_evidence(conn: sqlite3.Connection, node: dict[str, Any]) -> 
         },
     ]
 
+    enriched_rows = enrich_with_seven_models(to_dicts(top_rows))
+    pair_counts: dict[str, int] = {}
+    pattern_counts: dict[str, int] = {}
+    for row in enriched_rows:
+        supporting_models = sorted(set(row.get("seven_model_supporting_models") or []))
+        if supporting_models:
+            pattern_label = " + ".join(supporting_models)
+            pattern_counts[pattern_label] = pattern_counts.get(pattern_label, 0) + 1
+        for left, right in combinations(supporting_models, 2):
+            pair_label = f"{left} + {right}"
+            pair_counts[pair_label] = pair_counts.get(pair_label, 0) + 1
+
     return {
         "available": True,
         "row_count": row_count,
@@ -584,7 +646,15 @@ def build_algorithm_evidence(conn: sqlite3.Connection, node: dict[str, Any]) -> 
         "avg_total_votes": round(float((summary_row["avg_total_votes"] if summary_row else 0) or 0), 2),
         "max_total_votes": int((summary_row["max_total_votes"] if summary_row else 0) or 0),
         "methods": methods,
-        "top_rows": enrich_with_seven_models(to_dicts(top_rows)),
+        "top_rows": enriched_rows,
+        "top_dti_pairs": [
+            {"pair_label": label, "count": count}
+            for label, count in sorted(pair_counts.items(), key=lambda item: (-item[1], item[0]))[:3]
+        ],
+        "top_dti_patterns": [
+            {"pattern_label": label, "count": count}
+            for label, count in sorted(pattern_counts.items(), key=lambda item: (-item[1], item[0]))[:3]
+        ],
     }
 
 
@@ -949,6 +1019,67 @@ def meta_research_summary() -> dict[str, Any]:
             ).fetchall()
         )
 
+        released_prediction_rows = to_dicts(
+            conn.execute(
+                """
+                SELECT Drug_ID, Target_ID, result_rank, Total_Votes_Optional7
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                """
+            ).fetchall()
+        )
+        released_prediction_rows = enrich_with_seven_models(released_prediction_rows)
+        dti_model_counter: Counter[str] = Counter()
+        dti_pair_counter: Counter[tuple[str, str]] = Counter()
+        dti_pattern_counter: Counter[str] = Counter()
+        dti_model_score_accumulator = {label: [] for _, label in SEVEN_MODEL_FIELDS}
+
+        for row in released_prediction_rows:
+            scores = row.get("seven_model_scores") or {}
+            supporting = set(row.get("seven_model_supporting_models") or [])
+            active_models = []
+            for _, label in SEVEN_MODEL_FIELDS:
+                score = scores.get(label)
+                if label in supporting or score is not None:
+                    active_models.append(label)
+                    dti_model_counter[label] += 1
+                    if score is not None:
+                        dti_model_score_accumulator[label].append(float(score))
+            if active_models:
+                pattern_label = " + ".join(active_models)
+                dti_pattern_counter[pattern_label] += 1
+                for left, right in combinations(active_models, 2):
+                    dti_pair_counter[(left, right)] += 1
+
+        dti_model_consistency = {
+            "model_coverage": [
+                {
+                    "model": label,
+                    "count": dti_model_counter[label],
+                    "share_pct": round((dti_model_counter[label] / pred["total_rows"]) * 100, 2) if pred["total_rows"] else 0.0,
+                    "avg_score": round(sum(dti_model_score_accumulator[label]) / len(dti_model_score_accumulator[label]), 4)
+                    if dti_model_score_accumulator[label]
+                    else None,
+                }
+                for _, label in SEVEN_MODEL_FIELDS
+            ],
+            "top_pairs": [
+                {
+                    "pair_label": f"{left} + {right}",
+                    "count": count,
+                    "share_pct": round((count / pred["total_rows"]) * 100, 2) if pred["total_rows"] else 0.0,
+                }
+                for (left, right), count in dti_pair_counter.most_common(10)
+            ],
+            "top_patterns": [
+                {
+                    "pattern_label": pattern,
+                    "count": count,
+                    "share_pct": round((count / pred["total_rows"]) * 100, 2) if pred["total_rows"] else 0.0,
+                }
+                for pattern, count in dti_pattern_counter.most_common(10)
+            ],
+        }
+
         target_disease_match = to_dicts(
             conn.execute(
                 """
@@ -988,6 +1119,41 @@ def meta_research_summary() -> dict[str, Any]:
         ).fetchone()[0]
         for item in disease_distribution:
             item["share_pct"] = round((item["edge_count"] / disease_total_links) * 100, 2) if disease_total_links else 0.0
+
+        drug_distribution = to_dicts(
+            conn.execute(
+                """
+                SELECT
+                    Drug_ID AS drug_id,
+                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    COUNT(*) AS row_count
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                GROUP BY Drug_ID, COALESCE(Drug_Name, Drug_Label, Drug_ID)
+                ORDER BY row_count DESC, drug_label
+                LIMIT 10
+                """
+            ).fetchall()
+        )
+        drug_total_rows = pred["total_rows"] or 0
+        for item in drug_distribution:
+            item["share_pct"] = round((item["row_count"] / drug_total_rows) * 100, 2) if drug_total_rows else 0.0
+
+        target_distribution = to_dicts(
+            conn.execute(
+                """
+                SELECT
+                    Target_ID AS target_id,
+                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                    COUNT(*) AS row_count
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                GROUP BY Target_ID, COALESCE(Target_Name, Target_Label, Target_ID)
+                ORDER BY row_count DESC, target_label
+                LIMIT 10
+                """
+            ).fetchall()
+        )
+        for item in target_distribution:
+            item["share_pct"] = round((item["row_count"] / drug_total_rows) * 100, 2) if drug_total_rows else 0.0
 
         representative_rows: list[dict[str, Any]] = []
         rep_ids = [item[0] for item in REPRESENTATIVE_DRUGS]
@@ -1046,12 +1212,433 @@ def meta_research_summary() -> dict[str, Any]:
                     }
                 )
 
+        representative_cases = to_dicts(
+            conn.execute(
+                """
+                SELECT
+                    Drug_ID AS drug_id,
+                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    Target_ID AS target_id,
+                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                    COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                    COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                    COALESCE(gene_name, '-') AS gene_name,
+                    result_rank,
+                    n_algo_pass,
+                    Total_Votes_Optional7,
+                    TXGNN_score,
+                    ENR_FDR,
+                    support_pattern
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                ORDER BY
+                    CAST(COALESCE(n_algo_pass, 0) AS INTEGER) DESC,
+                    CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                    CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
+                    CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC,
+                    CAST(COALESCE(result_rank, 999999) AS INTEGER) ASC
+                LIMIT 12
+                """
+            ).fetchall()
+        )
+
+        high_consensus_cases = to_dicts(
+            conn.execute(
+                """
+                SELECT
+                    Drug_ID AS drug_id,
+                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    Target_ID AS target_id,
+                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                    COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                    COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                    COALESCE(gene_name, '-') AS gene_name,
+                    result_rank,
+                    n_algo_pass,
+                    Total_Votes_Optional7,
+                    TXGNN_score,
+                    ENR_FDR,
+                    support_pattern
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                WHERE CAST(COALESCE(n_algo_pass, 0) AS INTEGER) = 3
+                  AND CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) >= 4
+                ORDER BY
+                    CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                    CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
+                    CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC,
+                    CAST(COALESCE(result_rank, 999999) AS INTEGER) ASC
+                LIMIT 12
+                """
+            ).fetchall()
+        )
+
+        disease_result_rows = to_dicts(
+            conn.execute(
+                """
+                WITH disease_agg AS (
+                    SELECT
+                        COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                        COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                        COUNT(*) AS row_count,
+                        MAX(CAST(COALESCE(n_algo_pass, 0) AS INTEGER)) AS max_algo_pass,
+                        MAX(CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER)) AS max_votes,
+                        MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) AS top_txgnn_score,
+                        MIN(CAST(COALESCE(ENR_FDR, 999999) AS REAL)) AS best_enr_fdr
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY disease_id, disease_label
+                )
+                SELECT *
+                FROM disease_agg
+                ORDER BY row_count DESC, disease_label
+                LIMIT 15
+                """
+            ).fetchall()
+        )
+
+        approved_drug_deep_results = to_dicts(
+            conn.execute(
+                f"""
+                SELECT
+                    Drug_ID AS drug_id,
+                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    COUNT(*) AS row_count,
+                    MAX(CAST(COALESCE(n_algo_pass, 0) AS INTEGER)) AS max_algo_pass,
+                    MAX(CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER)) AS max_votes,
+                    MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) AS top_txgnn_score,
+                    MIN(CAST(COALESCE(ENR_FDR, 999999) AS REAL)) AS best_enr_fdr
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                WHERE Drug_ID IN ({placeholders})
+                GROUP BY Drug_ID, COALESCE(Drug_Name, Drug_Label, Drug_ID)
+                ORDER BY max_algo_pass DESC, max_votes DESC, top_txgnn_score DESC, drug_label
+                """
+                ,
+                rep_ids,
+            ).fetchall()
+        )
+
+        disease_spotlights = to_dicts(
+            conn.execute(
+                """
+                WITH disease_scope AS (
+                    SELECT
+                        COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                        COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                        COUNT(*) AS row_count
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY disease_id, disease_label
+                    ORDER BY row_count DESC, disease_label
+                    LIMIT 6
+                ),
+                top_drug AS (
+                    SELECT
+                        COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name)
+                            ORDER BY
+                                COUNT(*) DESC,
+                                MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
+                                COALESCE(Drug_Name, Drug_Label, Drug_ID)
+                        ) AS rn
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY disease_id, drug_label
+                ),
+                top_target AS (
+                    SELECT
+                        COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name)
+                            ORDER BY
+                                COUNT(*) DESC,
+                                MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
+                                COALESCE(Target_Name, Target_Label, Target_ID)
+                        ) AS rn
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY disease_id, target_label
+                ),
+                disease_metrics AS (
+                    SELECT
+                        COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                        MAX(CAST(COALESCE(n_algo_pass, 0) AS INTEGER)) AS max_algo_pass,
+                        MAX(CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER)) AS max_votes,
+                        MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) AS top_txgnn_score,
+                        MIN(CAST(COALESCE(ENR_FDR, 999999) AS REAL)) AS best_enr_fdr
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY disease_id
+                )
+                SELECT
+                    ds.disease_id,
+                    ds.disease_label,
+                    ds.row_count,
+                    td.drug_label AS top_drug_label,
+                    tt.target_label AS top_target_label,
+                    dm.max_algo_pass,
+                    dm.max_votes,
+                    dm.top_txgnn_score,
+                    dm.best_enr_fdr
+                FROM disease_scope ds
+                LEFT JOIN top_drug td ON td.disease_id = ds.disease_id AND td.rn = 1
+                LEFT JOIN top_target tt ON tt.disease_id = ds.disease_id AND tt.rn = 1
+                LEFT JOIN disease_metrics dm ON dm.disease_id = ds.disease_id
+                ORDER BY ds.row_count DESC, ds.disease_label
+                """
+            ).fetchall()
+        )
+
+        drug_spotlights = to_dicts(
+            conn.execute(
+                """
+                WITH drug_scope AS (
+                    SELECT
+                        Drug_ID AS drug_id,
+                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        COUNT(*) AS row_count
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY drug_id, drug_label
+                    ORDER BY row_count DESC, drug_label
+                    LIMIT 6
+                ),
+                top_disease AS (
+                    SELECT
+                        Drug_ID AS drug_id,
+                        COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY Drug_ID
+                            ORDER BY
+                                COUNT(*) DESC,
+                                MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
+                                COALESCE(Disease_Label, Ensemble_Disease_Name)
+                        ) AS rn
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY drug_id, disease_label
+                ),
+                top_target AS (
+                    SELECT
+                        Drug_ID AS drug_id,
+                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY Drug_ID
+                            ORDER BY
+                                COUNT(*) DESC,
+                                MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
+                                COALESCE(Target_Name, Target_Label, Target_ID)
+                        ) AS rn
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY drug_id, target_label
+                ),
+                drug_metrics AS (
+                    SELECT
+                        Drug_ID AS drug_id,
+                        MAX(CAST(COALESCE(n_algo_pass, 0) AS INTEGER)) AS max_algo_pass,
+                        MAX(CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER)) AS max_votes,
+                        MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) AS top_txgnn_score,
+                        MIN(CAST(COALESCE(ENR_FDR, 999999) AS REAL)) AS best_enr_fdr
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY drug_id
+                )
+                SELECT
+                    ds.drug_id,
+                    ds.drug_label,
+                    ds.row_count,
+                    td.disease_label AS top_disease_label,
+                    tt.target_label AS top_target_label,
+                    dm.max_algo_pass,
+                    dm.max_votes,
+                    dm.top_txgnn_score,
+                    dm.best_enr_fdr
+                FROM drug_scope ds
+                LEFT JOIN top_disease td ON td.drug_id = ds.drug_id AND td.rn = 1
+                LEFT JOIN top_target tt ON tt.drug_id = ds.drug_id AND tt.rn = 1
+                LEFT JOIN drug_metrics dm ON dm.drug_id = ds.drug_id
+                ORDER BY ds.row_count DESC, ds.drug_label
+                """
+            ).fetchall()
+        )
+
+        target_spotlights = to_dicts(
+            conn.execute(
+                """
+                WITH target_scope AS (
+                    SELECT
+                        Target_ID AS target_id,
+                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        COUNT(*) AS row_count
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY target_id, target_label
+                    ORDER BY row_count DESC, target_label
+                    LIMIT 6
+                ),
+                top_disease AS (
+                    SELECT
+                        Target_ID AS target_id,
+                        COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY Target_ID
+                            ORDER BY
+                                COUNT(*) DESC,
+                                MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
+                                COALESCE(Disease_Label, Ensemble_Disease_Name)
+                        ) AS rn
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY target_id, disease_label
+                ),
+                top_drug AS (
+                    SELECT
+                        Target_ID AS target_id,
+                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY Target_ID
+                            ORDER BY
+                                COUNT(*) DESC,
+                                MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) DESC,
+                                COALESCE(Drug_Name, Drug_Label, Drug_ID)
+                        ) AS rn
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY target_id, drug_label
+                ),
+                target_metrics AS (
+                    SELECT
+                        Target_ID AS target_id,
+                        MAX(CAST(COALESCE(n_algo_pass, 0) AS INTEGER)) AS max_algo_pass,
+                        MAX(CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER)) AS max_votes,
+                        MAX(CAST(COALESCE(TXGNN_score, -1) AS REAL)) AS top_txgnn_score,
+                        MIN(CAST(COALESCE(ENR_FDR, 999999) AS REAL)) AS best_enr_fdr
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    GROUP BY target_id
+                )
+                SELECT
+                    ts.target_id,
+                    ts.target_label,
+                    ts.row_count,
+                    td.disease_label AS top_disease_label,
+                    tg.drug_label AS top_drug_label,
+                    tm.max_algo_pass,
+                    tm.max_votes,
+                    tm.top_txgnn_score,
+                    tm.best_enr_fdr
+                FROM target_scope ts
+                LEFT JOIN top_disease td ON td.target_id = ts.target_id AND td.rn = 1
+                LEFT JOIN top_drug tg ON tg.target_id = ts.target_id AND tg.rn = 1
+                LEFT JOIN target_metrics tm ON tm.target_id = ts.target_id
+                ORDER BY ts.row_count DESC, ts.target_label
+                """
+            ).fetchall()
+        )
+
+        top_consensus_leaderboard = to_dicts(
+            conn.execute(
+                """
+                SELECT
+                    Drug_ID AS drug_id,
+                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    Target_ID AS target_id,
+                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                    COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                    COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                    CAST(COALESCE(n_algo_pass, 0) AS INTEGER) AS n_algo_pass,
+                    CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) AS Total_Votes_Optional7,
+                    CAST(COALESCE(TXGNN_score, -1) AS REAL) AS TXGNN_score,
+                    CAST(COALESCE(ENR_FDR, 999999) AS REAL) AS ENR_FDR
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                WHERE CAST(COALESCE(n_algo_pass, 0) AS INTEGER) >= 2
+                ORDER BY
+                    CAST(COALESCE(n_algo_pass, 0) AS INTEGER) DESC,
+                    CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                    CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
+                    CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC
+                LIMIT 15
+                """
+            ).fetchall()
+        )
+
+        top_approved_leaderboard = to_dicts(
+            conn.execute(
+                f"""
+                SELECT
+                    Drug_ID AS drug_id,
+                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                    Target_ID AS target_id,
+                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                    COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                    COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                    CAST(COALESCE(n_algo_pass, 0) AS INTEGER) AS n_algo_pass,
+                    CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) AS Total_Votes_Optional7,
+                    CAST(COALESCE(TXGNN_score, -1) AS REAL) AS TXGNN_score,
+                    CAST(COALESCE(ENR_FDR, 999999) AS REAL) AS ENR_FDR
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                WHERE Drug_ID IN ({placeholders})
+                ORDER BY
+                    CAST(COALESCE(n_algo_pass, 0) AS INTEGER) DESC,
+                    CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                    CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
+                    CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC
+                LIMIT 15
+                """,
+                rep_ids,
+            ).fetchall()
+        )
+
+        pipeline_shrinkage = {
+            "raw_dti_pairs": 18016322,
+            "vote4_retained": 9912,
+            "released_prediction_rows": pred["total_rows"],
+            "formal_network_edges": overview["edges"],
+            "formal_nodes": overview["nodes"],
+        }
+
+        support_tier_overview = {
+            "released_support": [
+                {
+                    "tier": f"{item['algorithm_support']}/3",
+                    "count": item["count"],
+                    "share_pct": round((item["count"] / pred["total_rows"]) * 100, 2) if pred["total_rows"] else 0.0,
+                }
+                for item in algo_distribution
+            ],
+            "seven_model_support": [
+                {
+                    "tier": f"{item['total_votes']}/7",
+                    "count": item["count"],
+                    "share_pct": round((item["count"] / pred["total_rows"]) * 100, 2) if pred["total_rows"] else 0.0,
+                }
+                for item in vote_distribution
+            ],
+            "high_consensus_rows": len(high_consensus_cases),
+        }
+
         result_tables = [
             {"name": "Formal network nodes", "rows": overview["nodes"], "description": "Unified node table used by the platform."},
             {"name": "Formal network edges", "rows": overview["edges"], "description": "Unified edge table used by the platform."},
             {"name": "Disease aliases", "rows": overview["disease_aliases"], "description": "Disease synonym expansion and normalization mapping."},
             {"name": "Predicted high-confidence rows", "rows": pred["total_rows"], "description": "Rows retained in the current high-confidence prediction table."},
+            {"name": "Pipeline shrinkage summary", "rows": 5, "description": "Scale reduction from raw DTI candidates to released atlas results."},
+            {"name": "Support tier overview", "rows": len(algo_distribution) + len(vote_distribution), "description": "Released-method and seven-model support tiers for retained rows."},
+            {"name": "Drug-level prediction distribution", "rows": len(drug_distribution), "description": "Top retained drugs ranked by released prediction-row count."},
+            {"name": "Target-level prediction distribution", "rows": len(target_distribution), "description": "Top retained targets ranked by released prediction-row count."},
+            {"name": "Disease-level result table", "rows": len(disease_result_rows), "description": "Disease-centered released prediction summaries."},
+            {"name": "Disease summary table", "rows": len(disease_spotlights), "description": "Top diseases with leading drugs, targets, and retained support levels."},
+            {"name": "Drug summary table", "rows": len(drug_spotlights), "description": "Top drugs with dominant diseases, targets, and retained support peaks."},
+            {"name": "Target summary table", "rows": len(target_spotlights), "description": "Top targets with dominant diseases, drugs, and retained support peaks."},
+            {"name": "Consensus result table", "rows": len(high_consensus_cases), "description": "Rows jointly retained by all three released methods and strong 7-model vote support."},
+            {"name": "Consensus priority table", "rows": len(top_consensus_leaderboard), "description": "Highest-priority released rows ranked by support and score."},
+            {"name": "Approved drug result table", "rows": len(approved_drug_deep_results), "description": "Approved drugs ranked by released prediction support."},
+            {"name": "Approved drug priority table", "rows": len(top_approved_leaderboard), "description": "Best supported retained rows among approved drugs."},
+            {"name": "Selected prediction results", "rows": len(representative_cases), "description": "High-support released rows selected for direct review."},
         ]
+
+        approved_validation = {
+            "approved_total": 4640,
+            "entered_dti_space": 1761,
+            "entered_high_confidence": 222,
+            "retained_final": 221,
+            "dti_space_coverage_pct": 37.9,
+            "final_retention_pct": 99.5,
+            "approved_mean_txgnn": 0.9831,
+            "nonapproved_mean_txgnn": 0.9466,
+            "mann_whitney_p": "2.53×10⁻¹¹⁷",
+            "cohens_d": 0.497,
+            "summary": "Approved-drug loss occurs primarily before or during DTI-space coverage and vote-based filtering; once an approved drug enters the high-confidence candidate set, it is almost always retained in the final network.",
+        }
 
         return {
             "overview": overview,
@@ -1068,13 +1655,34 @@ def meta_research_summary() -> dict[str, Any]:
                 "algorithm_support_distribution": algo_distribution,
                 "vote_distribution": vote_distribution,
                 "support_pattern_distribution": support_pattern_distribution,
+                "dti_model_consistency": dti_model_consistency,
             },
             "target_disease_match": target_disease_match,
             "disease_distribution": {
                 "total_links": disease_total_links,
                 "top_diseases": disease_distribution,
             },
+            "drug_distribution": {
+                "total_rows": drug_total_rows,
+                "top_drugs": drug_distribution,
+            },
+            "target_distribution": {
+                "total_rows": drug_total_rows,
+                "top_targets": target_distribution,
+            },
+            "approved_validation": approved_validation,
+            "pipeline_shrinkage": pipeline_shrinkage,
+            "support_tier_overview": support_tier_overview,
+            "high_consensus_cases": high_consensus_cases,
+            "disease_results": disease_result_rows,
+            "disease_spotlights": disease_spotlights,
+            "drug_spotlights": drug_spotlights,
+            "target_spotlights": target_spotlights,
+            "top_consensus_leaderboard": top_consensus_leaderboard,
+            "approved_drug_deep_results": approved_drug_deep_results,
+            "top_approved_leaderboard": top_approved_leaderboard,
             "representative_drugs": representative_rows,
+            "representative_cases": representative_cases,
             "result_tables": result_tables,
         }
     finally:
@@ -1404,6 +2012,267 @@ def list_prediction_results(
             [*params, page_size, offset],
         ).fetchall()
         return {"total": total, "page": page, "page_size": page_size, "items": enrich_with_seven_models(to_dicts(rows))}
+    finally:
+        conn.close()
+
+
+@app.get("/api/analysis/online")
+def online_analysis(
+    focus_id: str = Query(..., min_length=1),
+    min_algo_pass: int = Query(default=1, ge=1, le=3),
+    min_votes: int = Query(default=0, ge=0, le=7),
+    txgnn_pass: str | None = Query(default=None),
+    enr_pass: str | None = Query(default=None),
+    rwr_pass: str | None = Query(default=None),
+    limit: int = Query(default=12, ge=5, le=50),
+) -> dict[str, Any]:
+    conn = get_conn()
+    try:
+        focus = focus_id.strip()
+        focus_row = conn.execute(
+            "SELECT id, node_type, COALESCE(display_name, label, id) AS display_name FROM network_nodes WHERE id = ?",
+            [focus],
+        ).fetchone()
+        if not focus_row:
+            raise HTTPException(status_code=404, detail=f"Released atlas node not found: {focus}")
+
+        focus_type = focus_row["node_type"]
+        focus_label = focus_row["display_name"]
+        where_sql, params = build_online_analysis_where(
+            focus=focus,
+            focus_type=focus_type,
+            min_algo_pass=min_algo_pass,
+            min_votes=min_votes,
+            txgnn_pass=txgnn_pass,
+            enr_pass=enr_pass,
+            rwr_pass=rwr_pass,
+        )
+        total_rows = conn.execute(
+            f"SELECT COUNT(*) AS n FROM src_highconfidence_expand_vote4_top50_tx07 h WHERE {where_sql}",
+            params,
+        ).fetchone()["n"]
+
+        summary_row = conn.execute(
+            f"""
+            SELECT
+                COUNT(*) AS total_rows,
+                COUNT(DISTINCT h.Drug_ID) AS drugs,
+                COUNT(DISTINCT h.Target_ID) AS targets,
+                COUNT(DISTINCT h.Ensemble_Disease_Name) AS diseases,
+                MAX(CAST(COALESCE(h.n_algo_pass, 0) AS INTEGER)) AS max_algo_pass,
+                MAX(CAST(COALESCE(h.Total_Votes_Optional7, 0) AS INTEGER)) AS max_votes,
+                AVG(CAST(COALESCE(h.TXGNN_score, 0) AS REAL)) AS avg_txgnn_score,
+                MIN(CAST(COALESCE(h.ENR_FDR, 999999) AS REAL)) AS best_enr_fdr
+            FROM src_highconfidence_expand_vote4_top50_tx07 h
+            WHERE {where_sql}
+            """,
+            params,
+        ).fetchone()
+
+        method_distribution = to_dicts(
+            conn.execute(
+                f"""
+                SELECT
+                    CASE
+                        WHEN COALESCE(h.TXGNN_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(h.ENR_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(h.RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN + ENR + RWR'
+                        WHEN COALESCE(h.TXGNN_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(h.ENR_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN + ENR'
+                        WHEN COALESCE(h.TXGNN_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(h.RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN + RWR'
+                        WHEN COALESCE(h.ENR_pass, 0) IN (1, '1', 'True', 'true')
+                             AND COALESCE(h.RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'ENR + RWR'
+                        WHEN COALESCE(h.TXGNN_pass, 0) IN (1, '1', 'True', 'true') THEN 'TXGNN only'
+                        WHEN COALESCE(h.ENR_pass, 0) IN (1, '1', 'True', 'true') THEN 'ENR only'
+                        WHEN COALESCE(h.RWR_pass, 0) IN (1, '1', 'True', 'true') THEN 'RWR only'
+                        ELSE 'No method passed'
+                    END AS support_pattern_label,
+                    COUNT(*) AS count
+                FROM src_highconfidence_expand_vote4_top50_tx07 h
+                WHERE {where_sql}
+                GROUP BY support_pattern_label
+                ORDER BY count DESC, support_pattern_label
+                """,
+                params,
+            ).fetchall()
+        )
+        vote_distribution = to_dicts(
+            conn.execute(
+                f"""
+                SELECT CAST(COALESCE(h.Total_Votes_Optional7, 0) AS INTEGER) AS total_votes, COUNT(*) AS count
+                FROM src_highconfidence_expand_vote4_top50_tx07 h
+                WHERE {where_sql}
+                GROUP BY CAST(COALESCE(h.Total_Votes_Optional7, 0) AS INTEGER)
+                ORDER BY CAST(COALESCE(h.Total_Votes_Optional7, 0) AS INTEGER) DESC
+                """,
+                params,
+            ).fetchall()
+        )
+
+        top_rows = to_dicts(
+            conn.execute(
+                f"""
+                WITH filtered AS (
+                    SELECT
+                        h.*,
+                        ROW_NUMBER() OVER (
+                            ORDER BY
+                                CAST(COALESCE(h.n_algo_pass, 0) AS INTEGER) DESC,
+                                CAST(COALESCE(h.Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                                CAST(COALESCE(h.TXGNN_score, -1) AS REAL) DESC,
+                                CAST(COALESCE(h.ENR_FDR, 999999) AS REAL) ASC
+                        ) AS result_rank
+                    FROM src_highconfidence_expand_vote4_top50_tx07 h
+                    WHERE {where_sql}
+                )
+                SELECT
+                    f.result_rank,
+                    f.Drug_ID,
+                    COALESCE(nd.display_name, nd.label, f.Drug_Name) AS Drug_Label,
+                    f.Target_ID,
+                    COALESCE(nt.display_name, nt.label, f.target_name) AS Target_Label,
+                    ('DIS::' || f.Ensemble_Disease_Name) AS Disease_ID,
+                    COALESCE(nx.display_name, nx.label, f.Ensemble_Disease_Name) AS Disease_Label,
+                    COALESCE(f.gene_name, '-') AS gene_name,
+                    f.n_algo_pass,
+                    f.TXGNN_pass,
+                    f.ENR_pass,
+                    f.RWR_pass,
+                    f.TXGNN_score,
+                    f.ENR_FDR,
+                    f.Total_Votes_Optional7
+                FROM filtered f
+                LEFT JOIN network_nodes nd ON nd.id = f.Drug_ID
+                LEFT JOIN network_nodes nt ON nt.id = f.Target_ID
+                LEFT JOIN network_nodes nx ON nx.id = ('DIS::' || f.Ensemble_Disease_Name)
+                ORDER BY f.result_rank ASC
+                LIMIT ?
+                """,
+                [*params, limit],
+            ).fetchall()
+        )
+        top_rows = enrich_with_seven_models(top_rows)
+        for item in top_rows:
+            item["support_pattern"] = build_support_pattern_label(item)
+
+        return {
+            "focus_id": focus,
+            "focus_label": focus_label,
+            "focus_type": focus_type,
+            "filters": {
+                "min_algo_pass": min_algo_pass,
+                "min_votes": min_votes,
+                "txgnn_pass": txgnn_pass,
+                "enr_pass": enr_pass,
+                "rwr_pass": rwr_pass,
+                "limit": limit,
+            },
+            "summary": {
+                "total_rows": summary_row["total_rows"] or 0,
+                "drugs": summary_row["drugs"] or 0,
+                "targets": summary_row["targets"] or 0,
+                "diseases": summary_row["diseases"] or 0,
+                "max_algo_pass": summary_row["max_algo_pass"] or 0,
+                "max_votes": summary_row["max_votes"] or 0,
+                "avg_txgnn_score": round(summary_row["avg_txgnn_score"], 4) if summary_row["avg_txgnn_score"] is not None else None,
+                "best_enr_fdr": round(summary_row["best_enr_fdr"], 8) if summary_row["best_enr_fdr"] is not None else None,
+            },
+            "method_distribution": method_distribution,
+            "vote_distribution": vote_distribution,
+            "top_rows": top_rows,
+            "total_rows": total_rows,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/api/analysis/online/subgraph")
+def online_analysis_subgraph(
+    focus_id: str = Query(..., min_length=1),
+    min_algo_pass: int = Query(default=1, ge=1, le=3),
+    min_votes: int = Query(default=0, ge=0, le=7),
+    txgnn_pass: str | None = Query(default=None),
+    enr_pass: str | None = Query(default=None),
+    rwr_pass: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=5, le=80),
+) -> dict[str, Any]:
+    conn = get_conn()
+    try:
+        focus = focus_id.strip()
+        focus_row = conn.execute(
+            "SELECT id, node_type, COALESCE(display_name, label, id) AS display_name FROM network_nodes WHERE id = ?",
+            [focus],
+        ).fetchone()
+        if not focus_row:
+            raise HTTPException(status_code=404, detail=f"Released atlas node not found: {focus}")
+
+        where_sql, params = build_online_analysis_where(
+            focus=focus,
+            focus_type=focus_row["node_type"],
+            min_algo_pass=min_algo_pass,
+            min_votes=min_votes,
+            txgnn_pass=txgnn_pass,
+            enr_pass=enr_pass,
+            rwr_pass=rwr_pass,
+        )
+        rows = to_dicts(
+            conn.execute(
+                f"""
+                SELECT
+                    h.Drug_ID,
+                    h.Target_ID,
+                    ('DIS::' || h.Ensemble_Disease_Name) AS Disease_ID
+                FROM src_highconfidence_expand_vote4_top50_tx07 h
+                WHERE {where_sql}
+                ORDER BY
+                    CAST(COALESCE(h.n_algo_pass, 0) AS INTEGER) DESC,
+                    CAST(COALESCE(h.Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                    CAST(COALESCE(h.TXGNN_score, -1) AS REAL) DESC,
+                    CAST(COALESCE(h.ENR_FDR, 999999) AS REAL) ASC
+                LIMIT ?
+                """,
+                [*params, limit],
+            ).fetchall()
+        )
+        node_ids = {focus}
+        for row in rows:
+            node_ids.update([row["Drug_ID"], row["Target_ID"], row["Disease_ID"]])
+        node_ids = {node_id for node_id in node_ids if node_id}
+        if not node_ids:
+            return {"center_id": focus, "depth": 1, "mode": "online-analysis", "nodes": [], "edges": []}
+
+        placeholders = ",".join(["?"] * len(node_ids))
+        node_rows = to_dicts(
+            conn.execute(
+                f"""
+                SELECT id, label, node_type, display_name, source, modality_class
+                FROM network_nodes
+                WHERE id IN ({placeholders})
+                ORDER BY node_type, label
+                """,
+                list(node_ids),
+            ).fetchall()
+        )
+        edge_rows = to_dicts(
+            conn.execute(
+                f"""
+                SELECT *
+                FROM network_edges
+                WHERE source IN ({placeholders})
+                  AND target IN ({placeholders})
+                ORDER BY support_score DESC, weight DESC, source, target
+                """,
+                [*node_ids, *node_ids],
+            ).fetchall()
+        )
+        return {
+            "center_id": focus,
+            "depth": 1,
+            "mode": "online-analysis",
+            "nodes": node_rows,
+            "edges": edge_rows,
+        }
     finally:
         conn.close()
 
