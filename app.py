@@ -1022,8 +1022,25 @@ def meta_research_summary() -> dict[str, Any]:
         released_prediction_rows = to_dicts(
             conn.execute(
                 """
+                WITH ranked AS (
+                    SELECT
+                        Drug_ID,
+                        Target_ID,
+                        ROW_NUMBER() OVER (
+                            ORDER BY
+                                CAST(COALESCE(n_algo_pass, 0) AS INTEGER) DESC,
+                                CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                                CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
+                                CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC,
+                                Drug_ID,
+                                Target_ID,
+                                COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name)
+                        ) AS result_rank,
+                        Total_Votes_Optional7
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                )
                 SELECT Drug_ID, Target_ID, result_rank, Total_Votes_Optional7
-                FROM src_highconfidence_expand_vote4_top50_tx07
+                FROM ranked
                 """
             ).fetchall()
         )
