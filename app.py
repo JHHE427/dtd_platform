@@ -1215,27 +1215,35 @@ def meta_research_summary() -> dict[str, Any]:
         representative_cases = to_dicts(
             conn.execute(
                 """
-                SELECT
-                    Drug_ID AS drug_id,
-                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
-                    Target_ID AS target_id,
-                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
-                    COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
-                    COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
-                    COALESCE(gene_name, '-') AS gene_name,
-                    result_rank,
-                    n_algo_pass,
-                    Total_Votes_Optional7,
-                    TXGNN_score,
-                    ENR_FDR,
-                    support_pattern
-                FROM src_highconfidence_expand_vote4_top50_tx07
-                ORDER BY
-                    CAST(COALESCE(n_algo_pass, 0) AS INTEGER) DESC,
-                    CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
-                    CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
-                    CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC,
-                    CAST(COALESCE(result_rank, 999999) AS INTEGER) ASC
+                WITH ranked AS (
+                    SELECT
+                        Drug_ID AS drug_id,
+                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        Target_ID AS target_id,
+                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                        COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                        COALESCE(gene_name, '-') AS gene_name,
+                        ROW_NUMBER() OVER (
+                            ORDER BY
+                                CAST(COALESCE(n_algo_pass, 0) AS INTEGER) DESC,
+                                CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                                CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
+                                CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC,
+                                Drug_ID,
+                                Target_ID,
+                                COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name)
+                        ) AS result_rank,
+                        n_algo_pass,
+                        Total_Votes_Optional7,
+                        TXGNN_score,
+                        ENR_FDR,
+                        support_pattern
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                )
+                SELECT *
+                FROM ranked
+                ORDER BY result_rank ASC
                 LIMIT 12
                 """
             ).fetchall()
@@ -1244,28 +1252,36 @@ def meta_research_summary() -> dict[str, Any]:
         high_consensus_cases = to_dicts(
             conn.execute(
                 """
-                SELECT
-                    Drug_ID AS drug_id,
-                    COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
-                    Target_ID AS target_id,
-                    COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
-                    COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
-                    COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
-                    COALESCE(gene_name, '-') AS gene_name,
-                    result_rank,
-                    n_algo_pass,
-                    Total_Votes_Optional7,
-                    TXGNN_score,
-                    ENR_FDR,
-                    support_pattern
-                FROM src_highconfidence_expand_vote4_top50_tx07
-                WHERE CAST(COALESCE(n_algo_pass, 0) AS INTEGER) = 3
-                  AND CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) >= 4
-                ORDER BY
-                    CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
-                    CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
-                    CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC,
-                    CAST(COALESCE(result_rank, 999999) AS INTEGER) ASC
+                WITH ranked AS (
+                    SELECT
+                        Drug_ID AS drug_id,
+                        COALESCE(Drug_Name, Drug_Label, Drug_ID) AS drug_label,
+                        Target_ID AS target_id,
+                        COALESCE(Target_Name, Target_Label, Target_ID) AS target_label,
+                        COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name) AS disease_id,
+                        COALESCE(Disease_Label, Ensemble_Disease_Name) AS disease_label,
+                        COALESCE(gene_name, '-') AS gene_name,
+                        ROW_NUMBER() OVER (
+                            ORDER BY
+                                CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                                CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
+                                CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC,
+                                Drug_ID,
+                                Target_ID,
+                                COALESCE(Disease_ID, 'DIS::' || Ensemble_Disease_Name)
+                        ) AS result_rank,
+                        n_algo_pass,
+                        Total_Votes_Optional7,
+                        TXGNN_score,
+                        ENR_FDR,
+                        support_pattern
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    WHERE CAST(COALESCE(n_algo_pass, 0) AS INTEGER) = 3
+                      AND CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) >= 4
+                )
+                SELECT *
+                FROM ranked
+                ORDER BY result_rank ASC
                 LIMIT 12
                 """
             ).fetchall()
