@@ -601,7 +601,7 @@ export default function GraphCanvas({
         <span><i className="ring-mark" />Evidence Ring</span>
       </div>
       <div className="graph-hint">
-        Wheel zoom · drag canvas pan · click select · double click expand
+        Wheel zoom · drag canvas pan · select node · double click expand
         {sampled ? ` · ${densityMode} · displaying ${graphData.links.length}/${graph.edges.length} edges` : ` · ${densityMode}`}
       </div>
     </div>

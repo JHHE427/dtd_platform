@@ -1,11 +1,12 @@
 import React from "react";
 import { api, query } from "./api";
 import Header from "./components/Header";
-import HomePage from "./components/HomePage";
-import AnalysisPage from "./components/AnalysisPage";
-import DatabasePage from "./components/DatabasePage";
-import HelpPage from "./components/HelpPage";
 import ErrorBoundary from "./components/ErrorBoundary";
+
+const HomePage = React.lazy(() => import("./components/HomePage"));
+const AnalysisPage = React.lazy(() => import("./components/AnalysisPage"));
+const DatabasePage = React.lazy(() => import("./components/DatabasePage"));
+const HelpPage = React.lazy(() => import("./components/HelpPage"));
 
 function defaultNodesState() {
   return { total: 0, page: 1, page_size: 25, items: [] };
@@ -29,6 +30,20 @@ function getInitialAnalysisConfig() {
   };
 }
 
+function PageLoadingShell() {
+  return (
+    <section className="page-loading-shell" aria-live="polite" aria-busy="true">
+      <div className="page-loading-shell__hero" />
+      <div className="page-loading-shell__row">
+        <div className="page-loading-shell__card" />
+        <div className="page-loading-shell__card" />
+        <div className="page-loading-shell__card" />
+      </div>
+      <div className="page-loading-shell__panel" />
+    </section>
+  );
+}
+
 export default function App() {
   const init = React.useMemo(() => getInitialAnalysisConfig(), []);
   const reqSeq = React.useRef({ graph: 0, detail: 0, neighbors: 0 });
@@ -48,6 +63,16 @@ export default function App() {
   const [densityMode, setDensityMode] = React.useState("balanced");
   const [pathState, setPathState] = React.useState({ source_id: "", target_id: "", max_hops: 4 });
   const [compareState, setCompareState] = React.useState({ left_id: init.centerNode, right_id: "", data: null });
+  const [onlineAnalysisState, setOnlineAnalysisState] = React.useState({
+    focus_id: init.centerNode,
+    min_algo_pass: 2,
+    min_votes: 4,
+    txgnn_pass: "",
+    enr_pass: "",
+    rwr_pass: "",
+    limit: 12,
+  });
+  const [onlineAnalysisResult, setOnlineAnalysisResult] = React.useState(null);
   const [graphMode, setGraphMode] = React.useState(init.graphMode);
   const [graphControls, setGraphControls] = React.useState({
     depth: init.depth,
@@ -289,6 +314,47 @@ export default function App() {
     }
   }, [predictionFilters, predictionState.page_size, showToast]);
 
+  const loadOnlineAnalysis = React.useCallback(async (overrides = {}) => {
+    const next = { ...onlineAnalysisState, ...overrides };
+    const focusId = (next.focus_id || "").trim();
+    if (!focusId) {
+      showToast("warn", "A released atlas node identifier is required for online analysis");
+      return;
+    }
+    try {
+      const data = await api(`/api/analysis/online?${query(next)}`);
+      setOnlineAnalysisState(next);
+      setOnlineAnalysisResult(data);
+      showToast("ok", `Online analysis updated for ${data.focus_label || focusId}`);
+    } catch (e) {
+      showToast("warn", `Online analysis failed: ${e.message}`);
+    }
+  }, [onlineAnalysisState, showToast]);
+
+  const loadOnlineAnalysisSubgraph = React.useCallback(async (overrides = {}) => {
+    const next = { ...onlineAnalysisState, ...overrides };
+    const focusId = (next.focus_id || "").trim();
+    if (!focusId) {
+      showToast("warn", "A released atlas node identifier is required to load an online-analysis subgraph");
+      return;
+    }
+    try {
+      const data = await api(`/api/analysis/online/subgraph?${query(next)}`);
+      setGraph({
+        center_id: data.center_id,
+        depth: data.depth,
+        nodes: data.nodes || [],
+        edges: data.edges || [],
+      });
+      setCenterNode(data.center_id);
+      setGraphMeta(`mode=online-analysis · center=${data.center_id} · nodes=${data.nodes?.length || 0} · edges=${data.edges?.length || 0}`);
+      await loadDetail(data.center_id, { withNeighbors: true });
+      showToast("ok", "Online-analysis subgraph loaded");
+    } catch (e) {
+      showToast("warn", `Online-analysis subgraph failed: ${e.message}`);
+    }
+  }, [loadDetail, onlineAnalysisState, showToast]);
+
   const searchAndAnalyze = React.useCallback(async (keyword) => {
     const q = (keyword || "").trim();
     if (!q) return;
@@ -449,6 +515,73 @@ export default function App() {
     }
   }, [downloadCsv, predictionFilters, showToast]);
 
+  const exportConsensusResults = React.useCallback(() => {
+    const rows = researchSummary?.high_consensus_cases || [];
+    downloadCsv(
+      `dtd_high_consensus_${Date.now()}.csv`,
+      ["drug_label", "drug_id", "target_label", "target_id", "disease_label", "disease_id", "gene_name", "n_algo_pass", "Total_Votes_Optional7", "TXGNN_score", "ENR_FDR", "support_pattern"],
+      rows
+    );
+    showToast("ok", `Exported ${rows.length} high-consensus rows`);
+  }, [downloadCsv, researchSummary, showToast]);
+
+  const exportApprovedResults = React.useCallback(() => {
+    const rows = researchSummary?.approved_drug_deep_results || [];
+    downloadCsv(
+      `dtd_approved_drug_results_${Date.now()}.csv`,
+      ["drug_label", "drug_id", "row_count", "max_algo_pass", "max_votes", "top_txgnn_score", "best_enr_fdr"],
+      rows
+    );
+    showToast("ok", `Exported ${rows.length} approved-drug summary rows`);
+  }, [downloadCsv, researchSummary, showToast]);
+
+  const exportDiseaseResults = React.useCallback(() => {
+    const rows = researchSummary?.disease_results || [];
+    downloadCsv(
+      `dtd_disease_results_${Date.now()}.csv`,
+      ["disease_label", "disease_id", "row_count", "max_algo_pass", "max_votes", "top_txgnn_score", "best_enr_fdr"],
+      rows
+    );
+    showToast("ok", `Exported ${rows.length} disease result rows`);
+  }, [downloadCsv, researchSummary, showToast]);
+
+  const exportOnlineAnalysisResults = React.useCallback(() => {
+    const rows = onlineAnalysisResult?.top_rows || [];
+    downloadCsv(
+      `dtd_online_analysis_${Date.now()}.csv`,
+      [
+        "result_rank",
+        "Drug_Label",
+        "Drug_ID",
+        "Target_Label",
+        "Target_ID",
+        "Disease_Label",
+        "Disease_ID",
+        "gene_name",
+        "n_algo_pass",
+        "Total_Votes_Optional7",
+        "TXGNN_score",
+        "ENR_FDR",
+        "support_pattern",
+      ],
+      rows
+    );
+    showToast("ok", `Exported ${rows.length} online-analysis rows`);
+  }, [downloadCsv, onlineAnalysisResult, showToast]);
+
+  const loadOnlineAnalysisRowInGraph = React.useCallback(async (row) => {
+    if (!row) return;
+    const nextCenter = row.Disease_ID || row.Target_ID || row.Drug_ID;
+    if (!nextCenter) {
+      showToast("warn", "The selected online-analysis row does not have a released atlas node to open");
+      return;
+    }
+    setCenterNode(nextCenter);
+    await loadDetail(nextCenter, { withNeighbors: true });
+    await loadGraph(nextCenter);
+    showToast("ok", `Loaded ${row.Disease_Label || row.Target_Label || row.Drug_Label || nextCenter} in the network view`);
+  }, [loadDetail, loadGraph, showToast]);
+
   const exportSubgraph = React.useCallback(() => {
     if (!graph.edges?.length) return;
     const lines = ["source,target,edge_category,edge_type,weight,support_score,remark"];
@@ -558,6 +691,10 @@ export default function App() {
   }, [loadStats]); // intentionally single-run
 
   React.useEffect(() => {
+    setOnlineAnalysisState((prev) => ({ ...prev, focus_id: centerNode || prev.focus_id }));
+  }, [centerNode]);
+
+  React.useEffect(() => {
     if (!centerNode) return;
     loadGraph(centerNode);
   }, [graphMode]); // reload same center when switching core/full mode
@@ -580,189 +717,201 @@ export default function App() {
     <>
       <Header page={page} onPageChange={setPage} onQuickSearch={searchAndAnalyze} onSuggest={suggestQuick} />
       <main className="main-wrap">
-        {page === "home" && (
-          <HomePage
-            stats={stats}
-            researchSummary={researchSummary}
-            onAnalyze={searchAndAnalyze}
-            onOpenDatabase={async () => {
-              setPage("database");
-              await loadNodes(1);
-              await loadEdges(1);
-              await loadPredictionResults(1);
-            }}
-          />
-        )}
-        {page === "analysis" && (
-          <ErrorBoundary>
-          <AnalysisPage
-            graph={graph}
-            centerNode={centerNode}
-            graphMeta={graphMeta}
-            detail={detail}
-            neighborState={neighborState}
-            recentCenters={recentCenters}
-            graphMode={graphMode}
-            graphSearchText={graphSearchText}
-            pathState={pathState}
-            onGraphSearchTextChange={setGraphSearchText}
-            onCenterNodeChange={setCenterNode}
-            onGraphModeChange={setGraphMode}
-            onPathStateChange={(patch) => setPathState((prev) => ({ ...prev, ...patch }))}
-            compareState={compareState}
-            onCompareStateChange={(patch) => setCompareState((prev) => ({ ...prev, ...patch }))}
-            onRunDrugCompare={compareDrugs}
-            onLoadCompareSubgraph={loadCompareSubgraph}
-            onCompareJump={async (id) => {
-              setCenterNode(id);
-              await loadDetail(id, { withNeighbors: true });
-              await loadGraph(id);
-              showToast("ok", `Loaded ${id} from comparison panel`);
-            }}
-            onLoadGraph={async () => {
-              if (!centerNode?.trim()) {
-                showToast("warn", "A center node identifier is required to load the network view");
-                return;
-              }
-              if (!graphControls.categories.length || !graphControls.types.length) {
-                showToast("warn", "At least one edge category and one evidence type must remain selected");
-                return;
-              }
-              await loadGraph(centerNode);
-              showToast("ok", "Network view updated");
-            }}
-            onFindPath={findPath}
-            onCompareModes={compareModes}
-            onFitGraph={() => {
-              if (!graph?.nodes?.length) {
-                showToast("warn", "No released network view is currently available for fitting");
-                return;
-              }
-              setFitSignal((v) => v + 1);
-              showToast("ok", "View adjusted");
-            }}
-            onShareState={shareCurrentView}
-            onExpandFromSelected={async () => {
-              const selected = detail?.node?.id || selectedNodeId || centerNode;
-              if (!selected) {
-                showToast("warn", "Please select a node before expanding the current view");
-                return;
-              }
-              const nextDepth = Math.min(2, graphControls.depth + 1);
-              const nextLimit = graphControls.depth >= 2
-                ? Math.min(2000, Math.round(graphControls.limit * 1.5))
-                : graphControls.limit;
-              const next = { ...graphControls, depth: nextDepth, limit: nextLimit };
-              setGraphControls(next);
-              await loadGraph(selected, next);
-              showToast("ok", `Network view expanded from ${selected} (depth=${nextDepth}, limit=${nextLimit})`);
-            }}
-            onResetFilters={async () => {
-              const next = {
-                depth: 2,
-                limit: 800,
-                categories: ["Drug-Target", "Drug-Disease", "Target-Disease"],
-                types: ["Known", "Predicted", "Known+Predicted"]
-              };
-              setGraphMode("full");
-              setGraphControls(next);
-              await loadGraph(centerNode, next);
-              showToast("ok", "Network filters restored to default settings");
-            }}
-            onDenseGraph={async () => {
-              const next = {
-                depth: 2,
-                limit: 1200,
-                categories: ["Drug-Target", "Drug-Disease", "Target-Disease"],
-                types: ["Known", "Predicted", "Known+Predicted"]
-              };
-              setGraphMode("full");
-              setGraphControls(next);
-              await loadGraph(centerNode, next);
-              showToast("ok", "Expanded network view loaded");
-            }}
-            onAllNetwork={async () => {
-              const next = {
-                depth: 2,
-                limit: 2500,
-                categories: ["Drug-Target", "Drug-Disease", "Target-Disease"],
-                types: ["Known", "Predicted", "Known+Predicted"]
-              };
-              setGraphMode("full");
-              setGraphControls(next);
-              await loadGraph("__ALL__", next);
-              showToast("ok", "Full-network view loaded");
-            }}
-            onExportSubgraph={exportSubgraph}
-            onNodeClick={async (id) => {
-              await loadDetail(id, { withNeighbors: true });
-              setCenterNode(id);
-            }}
-            onNodeDoubleClick={async (id) => {
-              await loadDetail(id, { withNeighbors: true });
-              const nextDepth = Math.min(2, graphControls.depth + 1);
-              const nextLimit = graphControls.depth >= 2
-                ? Math.min(2000, Math.round(graphControls.limit * 1.35))
-                : graphControls.limit;
-              const next = { ...graphControls, depth: nextDepth, limit: nextLimit };
-              setGraphControls(next);
-              await loadGraph(id, next);
-              showToast("ok", `One-hop expansion loaded from ${id}`);
-            }}
-            onRecentCenterClick={async (id) => {
-              setCenterNode(id);
-              await loadDetail(id, { withNeighbors: true });
-              await loadGraph(id);
-            }}
-            onNeighborQueryChange={(patch) => setNeighborState((prev) => ({ ...prev, ...patch }))}
-            onNeighborSearch={() => loadNeighbors(selectedNodeId, { page: 1 })}
-            onNeighborPage={(delta) => loadNeighbors(selectedNodeId, { page: neighborState.page + delta })}
-            hoverState={hoverState}
-            onHoverNodeChange={setHoverState}
-            fitSignal={fitSignal}
-            graphLoading={graphLoading}
-            controls={graphControls}
-            onControlsChange={(patch) => setGraphControls((prev) => ({ ...prev, ...patch }))}
-            densityMode={densityMode}
-            onDensityModeChange={setDensityMode}
-          />
-          </ErrorBoundary>
-        )}
-        {page === "database" && (
-          <DatabasePage
-            nodesState={nodesState}
-            edgesState={edgesState}
-            predictionState={predictionState}
-            nodeFilters={nodeFilters}
-            edgeFilters={edgeFilters}
-            predictionFilters={predictionFilters}
-            onNodeFiltersChange={(patch) => setNodeFilters((prev) => ({ ...prev, ...patch }))}
-            onEdgeFiltersChange={(patch) => setEdgeFilters((prev) => ({ ...prev, ...patch }))}
-            onPredictionFiltersChange={(patch) => setPredictionFilters((prev) => ({ ...prev, ...patch }))}
-            onNodeSearch={() => loadNodes(1)}
-            onEdgeSearch={() => loadEdges(1)}
-            onPredictionSearch={() => loadPredictionResults(1)}
-            onNodePage={(delta) => loadNodes(nodesState.page + delta)}
-            onEdgePage={(delta) => loadEdges(edgesState.page + delta)}
-            onPredictionPage={(delta) => loadPredictionResults(predictionState.page + delta)}
-            onExportNodes={exportCurrentNodes}
-            onExportEdges={exportCurrentEdges}
-            onExportPredictions={exportPredictionResults}
-            researchSummary={researchSummary}
-            canNodePrev={nodesState.page > 1}
-            canNodeNext={nodesState.page * nodesState.page_size < nodesState.total}
-            canEdgePrev={edgesState.page > 1}
-            canEdgeNext={edgesState.page * edgesState.page_size < edgesState.total}
-            canPredictionPrev={predictionState.page > 1}
-            canPredictionNext={predictionState.page * predictionState.page_size < predictionState.total}
-            onJumpToNode={async (id) => {
-              setPage("analysis");
-              await loadDetail(id, { withNeighbors: true });
-              await loadGraph(id);
-            }}
-          />
-        )}
-        {page === "help" && <HelpPage />}
+        <React.Suspense fallback={<PageLoadingShell />}>
+          {page === "home" && (
+            <HomePage
+              stats={stats}
+              researchSummary={researchSummary}
+              onAnalyze={searchAndAnalyze}
+              onOpenDatabase={async () => {
+                setPage("database");
+                await loadNodes(1);
+                await loadEdges(1);
+                await loadPredictionResults(1);
+              }}
+            />
+          )}
+          {page === "analysis" && (
+            <ErrorBoundary>
+              <AnalysisPage
+                graph={graph}
+                centerNode={centerNode}
+                graphMeta={graphMeta}
+                detail={detail}
+                neighborState={neighborState}
+                recentCenters={recentCenters}
+                graphMode={graphMode}
+                graphSearchText={graphSearchText}
+                pathState={pathState}
+                onlineAnalysisState={onlineAnalysisState}
+                onlineAnalysisResult={onlineAnalysisResult}
+                onExportOnlineAnalysisResults={exportOnlineAnalysisResults}
+                onOpenOnlineAnalysisRow={loadOnlineAnalysisRowInGraph}
+                onLoadOnlineAnalysisSubgraph={(overrides) => loadOnlineAnalysisSubgraph(overrides)}
+                onGraphSearchTextChange={setGraphSearchText}
+                onCenterNodeChange={setCenterNode}
+                onGraphModeChange={setGraphMode}
+                onPathStateChange={(patch) => setPathState((prev) => ({ ...prev, ...patch }))}
+                onOnlineAnalysisStateChange={(patch) => setOnlineAnalysisState((prev) => ({ ...prev, ...patch }))}
+                onRunOnlineAnalysis={(overrides) => loadOnlineAnalysis(overrides)}
+                compareState={compareState}
+                onCompareStateChange={(patch) => setCompareState((prev) => ({ ...prev, ...patch }))}
+                onRunDrugCompare={compareDrugs}
+                onLoadCompareSubgraph={loadCompareSubgraph}
+                onCompareJump={async (id) => {
+                  setCenterNode(id);
+                  await loadDetail(id, { withNeighbors: true });
+                  await loadGraph(id);
+                  showToast("ok", `Loaded ${id} from comparison panel`);
+                }}
+                onLoadGraph={async () => {
+                  if (!centerNode?.trim()) {
+                    showToast("warn", "A center node identifier is required to load the network view");
+                    return;
+                  }
+                  if (!graphControls.categories.length || !graphControls.types.length) {
+                    showToast("warn", "At least one edge category and one evidence type must remain selected");
+                    return;
+                  }
+                  await loadGraph(centerNode);
+                  showToast("ok", "Network view updated");
+                }}
+                onFindPath={findPath}
+                onCompareModes={compareModes}
+                onFitGraph={() => {
+                  if (!graph?.nodes?.length) {
+                    showToast("warn", "No released network view is currently available for fitting");
+                    return;
+                  }
+                  setFitSignal((v) => v + 1);
+                  showToast("ok", "View adjusted");
+                }}
+                onShareState={shareCurrentView}
+                onExpandFromSelected={async () => {
+                  const selected = detail?.node?.id || selectedNodeId || centerNode;
+                  if (!selected) {
+                    showToast("warn", "Please select a node before expanding the current view");
+                    return;
+                  }
+                  const nextDepth = Math.min(2, graphControls.depth + 1);
+                  const nextLimit = graphControls.depth >= 2
+                    ? Math.min(2000, Math.round(graphControls.limit * 1.5))
+                    : graphControls.limit;
+                  const next = { ...graphControls, depth: nextDepth, limit: nextLimit };
+                  setGraphControls(next);
+                  await loadGraph(selected, next);
+                  showToast("ok", `Network view expanded from ${selected} (depth=${nextDepth}, limit=${nextLimit})`);
+                }}
+                onResetFilters={async () => {
+                  const next = {
+                    depth: 2,
+                    limit: 800,
+                    categories: ["Drug-Target", "Drug-Disease", "Target-Disease"],
+                    types: ["Known", "Predicted", "Known+Predicted"]
+                  };
+                  setGraphMode("full");
+                  setGraphControls(next);
+                  await loadGraph(centerNode, next);
+                  showToast("ok", "Network filters restored to default settings");
+                }}
+                onDenseGraph={async () => {
+                  const next = {
+                    depth: 2,
+                    limit: 1200,
+                    categories: ["Drug-Target", "Drug-Disease", "Target-Disease"],
+                    types: ["Known", "Predicted", "Known+Predicted"]
+                  };
+                  setGraphMode("full");
+                  setGraphControls(next);
+                  await loadGraph(centerNode, next);
+                  showToast("ok", "Expanded network view loaded");
+                }}
+                onAllNetwork={async () => {
+                  const next = {
+                    depth: 2,
+                    limit: 2500,
+                    categories: ["Drug-Target", "Drug-Disease", "Target-Disease"],
+                    types: ["Known", "Predicted", "Known+Predicted"]
+                  };
+                  setGraphMode("full");
+                  setGraphControls(next);
+                  await loadGraph("__ALL__", next);
+                  showToast("ok", "Full-network view loaded");
+                }}
+                onExportSubgraph={exportSubgraph}
+                onNodeClick={async (id) => {
+                  await loadDetail(id, { withNeighbors: true });
+                  setCenterNode(id);
+                }}
+                onNodeDoubleClick={async (id) => {
+                  await loadDetail(id, { withNeighbors: true });
+                  const nextDepth = Math.min(2, graphControls.depth + 1);
+                  const nextLimit = graphControls.depth >= 2
+                    ? Math.min(2000, Math.round(graphControls.limit * 1.35))
+                    : graphControls.limit;
+                  const next = { ...graphControls, depth: nextDepth, limit: nextLimit };
+                  setGraphControls(next);
+                  await loadGraph(id, next);
+                  showToast("ok", `One-hop expansion loaded from ${id}`);
+                }}
+                onRecentCenterClick={async (id) => {
+                  setCenterNode(id);
+                  await loadDetail(id, { withNeighbors: true });
+                  await loadGraph(id);
+                }}
+                onNeighborQueryChange={(patch) => setNeighborState((prev) => ({ ...prev, ...patch }))}
+                onNeighborSearch={() => loadNeighbors(selectedNodeId, { page: 1 })}
+                onNeighborPage={(delta) => loadNeighbors(selectedNodeId, { page: neighborState.page + delta })}
+                hoverState={hoverState}
+                onHoverNodeChange={setHoverState}
+                fitSignal={fitSignal}
+                graphLoading={graphLoading}
+                controls={graphControls}
+                onControlsChange={(patch) => setGraphControls((prev) => ({ ...prev, ...patch }))}
+                densityMode={densityMode}
+                onDensityModeChange={setDensityMode}
+              />
+            </ErrorBoundary>
+          )}
+          {page === "database" && (
+            <DatabasePage
+              nodesState={nodesState}
+              edgesState={edgesState}
+              predictionState={predictionState}
+              nodeFilters={nodeFilters}
+              edgeFilters={edgeFilters}
+              predictionFilters={predictionFilters}
+              onNodeFiltersChange={(patch) => setNodeFilters((prev) => ({ ...prev, ...patch }))}
+              onEdgeFiltersChange={(patch) => setEdgeFilters((prev) => ({ ...prev, ...patch }))}
+              onPredictionFiltersChange={(patch) => setPredictionFilters((prev) => ({ ...prev, ...patch }))}
+              onNodeSearch={() => loadNodes(1)}
+              onEdgeSearch={() => loadEdges(1)}
+              onPredictionSearch={() => loadPredictionResults(1)}
+              onNodePage={(delta) => loadNodes(nodesState.page + delta)}
+              onEdgePage={(delta) => loadEdges(edgesState.page + delta)}
+              onPredictionPage={(delta) => loadPredictionResults(predictionState.page + delta)}
+              onExportNodes={exportCurrentNodes}
+              onExportEdges={exportCurrentEdges}
+              onExportPredictions={exportPredictionResults}
+              onExportConsensusResults={exportConsensusResults}
+              onExportApprovedResults={exportApprovedResults}
+              onExportDiseaseResults={exportDiseaseResults}
+              researchSummary={researchSummary}
+              canNodePrev={nodesState.page > 1}
+              canNodeNext={nodesState.page * nodesState.page_size < nodesState.total}
+              canEdgePrev={edgesState.page > 1}
+              canEdgeNext={edgesState.page * edgesState.page_size < edgesState.total}
+              canPredictionPrev={predictionState.page > 1}
+              canPredictionNext={predictionState.page * predictionState.page_size < predictionState.total}
+              onJumpToNode={async (id) => {
+                setPage("analysis");
+                await loadDetail(id, { withNeighbors: true });
+                await loadGraph(id);
+              }}
+            />
+          )}
+          {page === "help" && <HelpPage />}
+        </React.Suspense>
       </main>
       {toast ? <div className={`toast ${toast.type}`}>{toast.text}</div> : null}
     </>

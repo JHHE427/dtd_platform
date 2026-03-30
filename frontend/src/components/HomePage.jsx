@@ -1,5 +1,46 @@
 import React from "react";
 
+const SEVEN_DTI_MODEL_META = [
+  { key: "graphdta", label: "GraphDTA" },
+  { key: "dtiam", label: "DTIAM" },
+  { key: "drugban", label: "DrugBAN" },
+  { key: "deeppurpose", label: "DeepPurpose" },
+  { key: "deepdtagen", label: "DeepDTAGen" },
+  { key: "moltrans", label: "MolTrans" },
+  { key: "conplex", label: "Conplex" },
+];
+
+function buildDtiHeatmap(modelCoverage, topPairs) {
+  const labels = SEVEN_DTI_MODEL_META.map((item) => item.label);
+  const coverageMap = Object.fromEntries((modelCoverage || []).map((item) => [item.model, Number(item.count || 0)]));
+  const pairMap = {};
+  (topPairs || []).forEach((item) => {
+    const parts = String(item.pair_label || "").split(" + ");
+    if (parts.length !== 2) return;
+    const [a, b] = parts;
+    pairMap[`${a}|${b}`] = Number(item.count || 0);
+    pairMap[`${b}|${a}`] = Number(item.count || 0);
+  });
+  const maxValue = Math.max(
+    1,
+    ...labels.map((label) => coverageMap[label] || 0),
+    ...(topPairs || []).map((item) => Number(item.count || 0))
+  );
+  const rows = labels.map((rowLabel) => ({
+    rowLabel,
+    cells: labels.map((colLabel) => {
+      const value = rowLabel === colLabel ? (coverageMap[rowLabel] || 0) : (pairMap[`${rowLabel}|${colLabel}`] || 0);
+      return {
+        rowLabel,
+        colLabel,
+        value,
+        intensity: Math.max(0.08, value / maxValue),
+      };
+    }),
+  }));
+  return { labels, rows };
+}
+
 export default function HomePage({ stats, researchSummary, onAnalyze, onOpenDatabase }) {
   const [keyword, setKeyword] = React.useState("");
   const nodeMap = React.useMemo(
@@ -17,10 +58,37 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   const targetDiseaseMatch = researchSummary?.target_disease_match || [];
   const diseaseDistribution = researchSummary?.disease_distribution?.top_diseases || [];
   const diseaseTotalLinks = researchSummary?.disease_distribution?.total_links || 0;
+  const drugDistribution = researchSummary?.drug_distribution?.top_drugs || [];
+  const targetDistribution = researchSummary?.target_distribution?.top_targets || [];
+  const predictionResultTotal = researchSummary?.drug_distribution?.total_rows || 0;
   const representativeDrugs = researchSummary?.representative_drugs || [];
+  const representativeCases = researchSummary?.representative_cases || [];
+  const approvedValidation = researchSummary?.approved_validation || null;
+  const pipelineShrinkage = researchSummary?.pipeline_shrinkage || null;
+  const supportTierOverview = researchSummary?.support_tier_overview || null;
+  const diseaseResults = researchSummary?.disease_results || [];
+  const diseaseSpotlights = researchSummary?.disease_spotlights || [];
+  const drugSpotlights = researchSummary?.drug_spotlights || [];
+  const targetSpotlights = researchSummary?.target_spotlights || [];
+  const highConsensusCases = researchSummary?.high_consensus_cases || [];
+  const topConsensusLeaderboard = researchSummary?.top_consensus_leaderboard || [];
+  const approvedDrugDeepResults = researchSummary?.approved_drug_deep_results || [];
+  const topApprovedLeaderboard = researchSummary?.top_approved_leaderboard || [];
   const algoDistribution = predictionSummary?.algorithm_support_distribution || [];
   const voteDistribution = predictionSummary?.vote_distribution || [];
   const supportPatternDistribution = predictionSummary?.support_pattern_distribution || [];
+  const dtiModelConsistency = predictionSummary?.dti_model_consistency || null;
+  const dtiModelCoverage = dtiModelConsistency?.model_coverage || [];
+  const dtiTopPairs = dtiModelConsistency?.top_pairs || [];
+  const dtiTopPatterns = dtiModelConsistency?.top_patterns || [];
+  const dtiHeatmap = React.useMemo(() => buildDtiHeatmap(dtiModelCoverage, dtiTopPairs), [dtiModelCoverage, dtiTopPairs]);
+  const topDiseaseShare = diseaseDistribution[0]?.share_pct ?? null;
+  const topDtiModel = dtiModelCoverage[0] || null;
+  const topDtiPair = dtiTopPairs[0] || null;
+  const topDtiPattern = dtiTopPatterns[0] || null;
+  const leadingApprovedCase = topApprovedLeaderboard[0] || approvedDrugDeepResults[0] || null;
+  const leadingConsensusCase = topConsensusLeaderboard[0] || highConsensusCases[0] || null;
+  const leadingDiseaseCase = diseaseSpotlights[0] || diseaseResults[0] || null;
   const supportPatternCards = React.useMemo(() => {
     const rows = supportPatternDistribution.reduce((acc, item) => {
       acc[item.support_pattern_label] = item.count;
@@ -82,15 +150,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       { label: "High 7-model support", value: (rows["6"] || 0) + (rows["7"] || 0), note: "Supported by six to seven DTI models." },
     ];
   }, [voteDistribution]);
-  const sevenDtiModels = [
-    "GraphDTA",
-    "DTIAM",
-    "DrugBAN",
-    "DeepPurpose",
-    "DeepDTAGen",
-    "MolTrans",
-    "Conplex",
-  ];
+  const sevenDtiModels = SEVEN_DTI_MODEL_META.map((item) => item.label);
   const methodMatrix = [
     {
       method: "TXGNN",
@@ -128,32 +188,89 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       note: "TXGNN, ENR, and RWR support counts are surfaced as formal evidence indicators."
     }
   ];
+  const keyFindings = [
+    {
+      title: "Pipeline retention",
+      value: pipelineShrinkage ? `${pipelineShrinkage.vote4_retained.toLocaleString()} retained` : "NA",
+      note: pipelineShrinkage ? `from ${pipelineShrinkage.raw_dti_pairs.toLocaleString()} raw DTI pairs into the vote-filtered layer.` : "Pipeline retention summary is unavailable.",
+    },
+    {
+      title: "Disease concentration",
+      value: topDiseaseShare != null ? `${topDiseaseShare}%` : "NA",
+      note: topDiseaseShare != null ? "Top disease share in the released prediction layer." : "Disease concentration summary is unavailable.",
+    },
+    {
+      title: "Approved-drug retention",
+      value: approvedValidation ? `${approvedValidation.retained_final}/${approvedValidation.entered_high_confidence}` : "NA",
+      note: approvedValidation ? `${approvedValidation.final_retention_pct}% of approved drugs entering the high-confidence set remain in the final network.` : "Approved-drug validation summary is unavailable.",
+    },
+    {
+      title: "Strongest DTI co-support",
+      value: topDtiPair?.pair_label || "NA",
+      note: topDtiPair ? `${topDtiPair.count} released rows (${topDtiPair.share_pct}%) are jointly supported by this model pair.` : "Seven-model co-support summary is unavailable.",
+    },
+  ];
+  const fixedCaseStudies = [
+    leadingApprovedCase ? {
+      key: "approved",
+      title: "Approved-drug case",
+      primaryLabel: leadingApprovedCase.drug_label,
+      primaryId: leadingApprovedCase.drug_id,
+      secondary: `${leadingApprovedCase.target_label || "-"} -> ${leadingApprovedCase.disease_label || "-"}`,
+      metrics: `${leadingApprovedCase.n_algo_pass || leadingApprovedCase.max_algo_pass || 0}/3 · ${leadingApprovedCase.Total_Votes_Optional7 || leadingApprovedCase.max_votes || 0}/7`,
+      score: leadingApprovedCase.TXGNN_score ?? leadingApprovedCase.top_txgnn_score ?? "-",
+      fdr: leadingApprovedCase.ENR_FDR ?? leadingApprovedCase.best_enr_fdr ?? "-",
+      conclusion: "An approved drug remains in the formal network after multi-method retention and DTI vote filtering.",
+    } : null,
+    leadingConsensusCase ? {
+      key: "consensus",
+      title: "Consensus case",
+      primaryLabel: leadingConsensusCase.drug_label,
+      primaryId: leadingConsensusCase.drug_id,
+      secondary: `${leadingConsensusCase.target_label || "-"} -> ${leadingConsensusCase.disease_label || "-"}`,
+      metrics: `${leadingConsensusCase.n_algo_pass || 0}/3 · ${leadingConsensusCase.Total_Votes_Optional7 || 0}/7`,
+      score: leadingConsensusCase.TXGNN_score ?? "-",
+      fdr: leadingConsensusCase.ENR_FDR ?? "-",
+      conclusion: "This released row is retained by the strongest joint support tier across released methods and the seven-model vote layer.",
+    } : null,
+    leadingDiseaseCase ? {
+      key: "disease",
+      title: "Disease-focused case",
+      primaryLabel: leadingDiseaseCase.disease_label,
+      primaryId: leadingDiseaseCase.disease_id,
+      secondary: `${leadingDiseaseCase.top_drug_label || "-"} / ${leadingDiseaseCase.top_target_label || "-"}`,
+      metrics: `${leadingDiseaseCase.max_algo_pass || 0}/3 · ${leadingDiseaseCase.max_votes || 0}/7`,
+      score: leadingDiseaseCase.top_txgnn_score ?? "-",
+      fdr: leadingDiseaseCase.best_enr_fdr ?? "-",
+      conclusion: "This disease-centered summary highlights the dominant retained drug-target context within the released atlas.",
+    } : null,
+  ].filter(Boolean);
   const featureCards = [
     {
-      title: "Known + Predicted",
-      body: "Integrated presentation of validated associations and model-supported relationships within a unified atlas."
+      title: "Released Evidence Layers",
+      body: "Curated known associations and retained prediction rows are organized into a unified release-facing evidence structure."
     },
     {
-      title: "Interactive Graph",
-      body: "Support for graph navigation, local expansion, node inspection, and subnetwork comparison in an interactive network view."
+      title: "Network Query and Analysis",
+      body: "The released atlas supports graph navigation, local expansion, node inspection, and subnetwork comparison within the network analysis view."
     },
     {
-      title: "Multi-Modal Detail",
-      body: "Unified display of chemical structures, SMILES, target sequences, ontology terms, summaries, and evidence context."
+      title: "Structured Record Annotations",
+      body: "Chemical structures, SMILES, target sequences, ontology terms, summaries, and evidence context are presented within structured atlas records."
     }
   ];
 
   return (
     <section className="page is-active home-page">
       <div className="hero">
-        <div className="hero-pill">Released Atlas</div>
+        <div className="hero-pill">Formal Release</div>
         <h1>
           Disease-Target-Drug
           <span>Interaction Atlas</span>
         </h1>
         <p>
-          Explore curated known associations, predicted relationships, and algorithm-supported
-          evidence within the integrated Drug-Target-Disease atlas.
+          Access curated known associations, retained prediction results, and algorithm-supported
+          evidence within the released Drug-Target-Disease atlas.
         </p>
         <div className="hero-search">
           <input
@@ -162,7 +279,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             onKeyDown={(e) => e.key === "Enter" && onAnalyze(keyword)}
             placeholder="Search by DrugBank ID, target ID, disease name, or alias..."
           />
-          <button onClick={() => onAnalyze(keyword)}>Open Atlas View</button>
+          <button onClick={() => onAnalyze(keyword)}>Access Network Analysis</button>
         </div>
         <div className="home-stats">
           <article className="stat-card">
@@ -201,36 +318,130 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           ))}
         </div>
 
-        <section className="home-panel-card home-panel-wide home-seven-model-card">
+        <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
-            <h3>Seven DTI Models</h3>
-            <div className="home-panel-subtitle">The released atlas integrates seven upstream DTI models in the optional vote layer before retention by TXGNN, ENR, and RWR.</div>
-          </div>
-          <div className="seven-model-chip-grid">
-            {sevenDtiModels.map((model) => (
-              <article className="seven-model-chip-card" key={model}>
-                <strong>{model}</strong>
-                <span>Included in DTI screening</span>
-              </article>
-            ))}
+            <h3>Release Result Inventory</h3>
+            <div className="home-panel-subtitle">A compact index of the result families included in the current release before browsing detailed tables and network views.</div>
           </div>
           <div className="result-summary-strip">
             <span className="result-summary-pill">
-              <strong>7 models</strong>
-              <em>Explicitly displayed in the atlas</em>
+              <strong>{pipelineShrinkage ? 5 : 0}</strong>
+              <em>Pipeline stages</em>
             </span>
             <span className="result-summary-pill">
-              <strong>{predictionSummary?.total_rows || 0}</strong>
-              <em>Rows linked to the DTI vote layer</em>
+              <strong>{diseaseSpotlights.length + drugSpotlights.length + targetSpotlights.length}</strong>
+              <em>Summary tables</em>
+            </span>
+            <span className="result-summary-pill">
+              <strong>{highConsensusCases.length + topConsensusLeaderboard.length}</strong>
+                <em>Consensus result rows</em>
+            </span>
+            <span className="result-summary-pill">
+              <strong>{approvedDrugDeepResults.length + topApprovedLeaderboard.length}</strong>
+              <em>Approved-drug rows</em>
+            </span>
+            <span className="result-summary-pill">
+              <strong>{resultTables.length}</strong>
+              <em>Formal result tables</em>
             </span>
           </div>
-          <div className="home-action-row">
-            <button className="quick-access-card is-inline-action" onClick={() => onOpenDatabase?.("predictions")}>
-              <strong>Open Prediction Result Table</strong>
-              <span>View the 7 DTI models for each released prediction record.</span>
-            </button>
-          </div>
         </section>
+
+        <div className="home-priority-grid">
+          <div className="home-priority-stack">
+            <section className="home-panel-card">
+              <div className="home-panel-head">
+                <h3>Key Findings</h3>
+                <div className="home-panel-subtitle">Release-level statements highlighting retention, disease concentration, approved-drug retention, and seven-model agreement.</div>
+              </div>
+              <div className="key-findings-grid">
+                {keyFindings.map((item) => (
+                  <article className="key-finding-card" key={item.title}>
+                    <div className="key-finding-title">{item.title}</div>
+                    <div className="key-finding-value">{item.value}</div>
+                    <div className="key-finding-note">{item.note}</div>
+                  </article>
+                ))}
+              </div>
+            </section>
+            <section className="home-panel-card">
+              <div className="home-panel-head">
+                <h3>Fixed Case Studies</h3>
+                <div className="home-panel-subtitle">Selected released records pinned for direct review in the formal atlas instead of relying only on free-form browsing.</div>
+              </div>
+              <div className="fixed-case-grid">
+                {fixedCaseStudies.length ? fixedCaseStudies.map((item) => (
+                  <article className="fixed-case-card" key={item.key}>
+                    <div className="fixed-case-tag">{item.title}</div>
+                    <button className="result-link-btn fixed-case-link" onClick={() => onAnalyze(item.primaryId)}>
+                      <span className="result-emphasis-label">{item.primaryLabel}</span>
+                    </button>
+                    <div className="fixed-case-secondary">{item.secondary}</div>
+                    <div className="fixed-case-conclusion">{item.conclusion}</div>
+                    <div className="fixed-case-metrics">
+                      <span className="result-emphasis-chip">{item.metrics}</span>
+                      <span className="result-emphasis-number">{item.score}</span>
+                      <span className="result-emphasis-chip is-soft">{item.fdr}</span>
+                    </div>
+                  </article>
+                )) : <div className="empty-state">No fixed case-study rows are available in the current release.</div>}
+              </div>
+            </section>
+          </div>
+
+          <section className="home-panel-card home-seven-model-card home-priority-seven">
+            <div className="home-panel-head">
+              <h3>Seven DTI Models</h3>
+              <div className="home-panel-subtitle">The released atlas integrates seven upstream DTI models in the optional vote layer before retention by TXGNN, ENR, and RWR.</div>
+            </div>
+            <div className="seven-model-section-note">
+              <span className="seven-model-note-badge">Unified atlas palette</span>
+              <span className="seven-model-note-text">The same model order and color encoding are preserved on the homepage, the analysis view, and the prediction result table.</span>
+            </div>
+            <div className="seven-model-chip-grid">
+              {SEVEN_DTI_MODEL_META.map((model) => (
+                <article className={`seven-model-chip-card model-${model.key}`} key={model.label}>
+                  <strong>{model.label}</strong>
+                  <span>Included in DTI screening</span>
+                </article>
+              ))}
+            </div>
+            <div className="result-summary-strip">
+              <span className="result-summary-pill">
+                <strong>7 models</strong>
+                <em>Explicitly displayed in the atlas</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{predictionSummary?.total_rows || 0}</strong>
+                <em>Rows linked to the DTI vote layer</em>
+              </span>
+              {topDtiModel ? (
+                <span className="result-summary-pill">
+                  <strong>{topDtiModel.model}</strong>
+                  <em>{topDtiModel.count} released rows</em>
+                </span>
+              ) : null}
+              {topDtiPair ? (
+                <span className="result-summary-pill">
+                  <strong>{topDtiPair.pair_label}</strong>
+                  <em>{topDtiPair.count} top co-support rows</em>
+                </span>
+              ) : null}
+              {topDtiPattern ? (
+                <span className="result-summary-pill">
+                  <strong>{topDtiPattern.pattern_label}</strong>
+                  <em>{topDtiPattern.count} top support pattern rows</em>
+                </span>
+              ) : null}
+            </div>
+            <div className="home-action-row">
+              <button className="quick-access-card is-inline-action" onClick={() => onOpenDatabase?.("predictions")}>
+                <strong>View Prediction Result Table</strong>
+                <span>View the 7 DTI models for each released prediction record.</span>
+              </button>
+            </div>
+          </section>
+        </div>
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
@@ -331,6 +542,168 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 )}
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <section className="home-panel-card home-panel-wide">
+          <div className="home-panel-head">
+            <h3>Seven-Model DTI Consistency</h3>
+            <div className="home-panel-subtitle">Coverage and co-support patterns across GraphDTA, DTIAM, DrugBAN, DeepPurpose, DeepDTAGen, MolTrans, and Conplex in the released prediction rows.</div>
+          </div>
+          <div className="seven-model-chip-grid dti-consistency-grid">
+            {dtiModelCoverage.length ? dtiModelCoverage.map((item) => {
+              const meta = SEVEN_DTI_MODEL_META.find((x) => x.label === item.model);
+              return (
+                <article className={`seven-model-chip-card model-${meta?.key || "graphdta"} dti-consistency-card`} key={item.model}>
+                  <strong>{item.model}</strong>
+                  <span>{item.count} released rows</span>
+                  <span>{item.share_pct}% of retained predictions</span>
+                  <span>avg score {item.avg_score ?? "-"}</span>
+                </article>
+              );
+            }) : null}
+          </div>
+          <div className="dti-heatmap-card">
+            <div className="dti-heatmap-head">
+              <strong>DTI co-support heatmap</strong>
+              <span>Diagonal cells show per-model coverage; off-diagonal cells show pairwise co-support counts.</span>
+            </div>
+            <div className="dti-heatmap-grid" style={{ gridTemplateColumns: `120px repeat(${dtiHeatmap.labels.length}, minmax(0, 1fr))` }}>
+              <div className="dti-heatmap-corner" />
+              {dtiHeatmap.labels.map((label) => (
+                <div className="dti-heatmap-axis" key={`col-${label}`}>{label}</div>
+              ))}
+              {dtiHeatmap.rows.map((row) => (
+                <React.Fragment key={row.rowLabel}>
+                  <div className="dti-heatmap-axis is-row">{row.rowLabel}</div>
+                  {row.cells.map((cell) => {
+                    const meta = SEVEN_DTI_MODEL_META.find((item) => item.label === cell.colLabel) || SEVEN_DTI_MODEL_META[0];
+                    return (
+                      <div
+                        key={`${cell.rowLabel}-${cell.colLabel}`}
+                        className={`dti-heatmap-cell model-${meta.key} ${cell.rowLabel === cell.colLabel ? "is-diagonal" : ""}`}
+                        style={{ opacity: cell.intensity }}
+                        title={`${cell.rowLabel} × ${cell.colLabel}: ${cell.value}`}
+                      >
+                        {cell.value}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+          <div className="home-result-two-col">
+            <div className="result-table-wrap">
+              <table className="result-table compact">
+                <thead>
+                  <tr>
+                    <th>Top DTI model pair</th>
+                    <th>Rows</th>
+                    <th>Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dtiTopPairs.length ? dtiTopPairs.map((row) => (
+                    <tr key={row.pair_label}>
+                      <td>{row.pair_label}</td>
+                      <td>{row.count}</td>
+                      <td>{row.share_pct}%</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={3}>No seven-model pair summary is available in the current release.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table compact">
+                <thead>
+                  <tr>
+                    <th>Top seven-model pattern</th>
+                    <th>Rows</th>
+                    <th>Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dtiTopPatterns.length ? dtiTopPatterns.map((row) => (
+                    <tr key={row.pattern_label}>
+                      <td>{row.pattern_label}</td>
+                      <td>{row.count}</td>
+                      <td>{row.share_pct}%</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={3}>No seven-model pattern summary is available in the current release.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section className="home-panel-card home-panel-wide">
+          <div className="home-panel-head">
+            <h3>Released-Method vs DTI-Model Consistency</h3>
+            <div className="home-panel-subtitle">A direct comparison between the released interpretation layer (TXGNN, ENR, RWR) and the upstream seven-model DTI support layer.</div>
+          </div>
+          <div className="home-result-two-col">
+            <div className="dti-heatmap-card">
+              <div className="dti-heatmap-head">
+                <strong>Released-method consistency</strong>
+                <span>The three released methods define the disease-level interpretation tier retained in the atlas.</span>
+              </div>
+              <div className="model-overview-strip">
+                <div className="model-overview-bar" aria-label="Released-method support distribution">
+                  {supportPatternLegend.map((item) => {
+                    const width = supportPatternTotal ? `${(item.value / supportPatternTotal) * 100}%` : "0%";
+                    return <span key={`compare-${item.key}`} className={`model-overview-segment ${item.colorClass}`} style={{ width }} />;
+                  })}
+                </div>
+                <div className="model-overview-legend">
+                  {supportPatternLegend.map((item) => (
+                    <div className="model-overview-legend-item" key={`compare-legend-${item.key}`}>
+                      <i className={`model-overview-dot ${item.colorClass}`} />
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="dti-heatmap-card">
+              <div className="dti-heatmap-head">
+                <strong>Seven-model DTI consistency</strong>
+                <span>The upstream DTI layer shows which of the seven models most frequently agree before atlas release filtering.</span>
+              </div>
+              <div className="dti-heatmap-grid" style={{ gridTemplateColumns: `120px repeat(${dtiHeatmap.labels.length}, minmax(0, 1fr))` }}>
+                <div className="dti-heatmap-corner" />
+                {dtiHeatmap.labels.map((label) => (
+                  <div className="dti-heatmap-axis" key={`compare-col-${label}`}>{label}</div>
+                ))}
+                {dtiHeatmap.rows.map((row) => (
+                  <React.Fragment key={`compare-${row.rowLabel}`}>
+                    <div className="dti-heatmap-axis is-row">{row.rowLabel}</div>
+                    {row.cells.map((cell) => {
+                      const meta = SEVEN_DTI_MODEL_META.find((item) => item.label === cell.colLabel) || SEVEN_DTI_MODEL_META[0];
+                      return (
+                        <div
+                          key={`compare-${cell.rowLabel}-${cell.colLabel}`}
+                          className={`dti-heatmap-cell model-${meta.key} ${cell.rowLabel === cell.colLabel ? "is-diagonal" : ""}`}
+                          style={{ opacity: cell.intensity }}
+                          title={`${cell.rowLabel} × ${cell.colLabel}: ${cell.value}`}
+                        >
+                          {cell.value}
+                        </div>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -489,8 +862,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
-            <h3>Direct Access to Result Tables</h3>
-            <div className="home-panel-subtitle">Direct entry points to released result tables, algorithm summary tables, and prediction records.</div>
+            <h3>Result Table Access</h3>
+            <div className="home-panel-subtitle">Direct entry points to released result tables, algorithm summaries, and retained prediction records.</div>
           </div>
           <div className="quick-access-grid">
             <button className="quick-access-card" onClick={() => onOpenDatabase?.("predictions")}>
@@ -503,7 +876,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </button>
             <button className="quick-access-card" onClick={() => onOpenDatabase?.("nodes")}>
               <strong>Node and Edge Tables</strong>
-              <span>Review unified node and edge tables before drilling down into network-level exploration.</span>
+              <span>Review released node and relationship tables before drilling down into network-level analysis.</span>
             </button>
           </div>
         </section>
@@ -589,7 +962,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </div>
               <div className="schema-note">
                 <strong>Release-facing result layer</strong>
-                <span>Formal tables are exposed through the atlas, database browser, and current-network result tables.</span>
+                <span>Formal tables are exposed through the atlas, database tables, and current-network result tables.</span>
               </div>
             </div>
           </div>
@@ -667,7 +1040,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Method-to-Result Matrix</h3>
-            <div className="home-panel-subtitle">Primary algorithm outputs surfaced in the database browser and released result tables.</div>
+            <div className="home-panel-subtitle">Primary algorithm outputs surfaced in the database tables and released result views.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table">
@@ -751,6 +1124,57 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <div className="home-research-grid">
           <section className="home-panel-card">
             <div className="home-panel-head">
+              <h3>Approved Drug Validation</h3>
+              <div className="home-panel-subtitle">External validation summary extracted from the formal report, showing coverage, retention, and score separation between approved and non-approved drugs.</div>
+            </div>
+            {approvedValidation ? (
+              <>
+                <div className="home-conclusion-grid model-result-grid">
+                  <article className="home-conclusion-card model-result-card">
+                    <div className="home-conclusion-title">Approved drugs</div>
+                    <div className="home-conclusion-value">{approvedValidation.approved_total}</div>
+                    <div className="home-conclusion-note">DrugBank approved entries referenced for external validation.</div>
+                  </article>
+                  <article className="home-conclusion-card model-result-card">
+                    <div className="home-conclusion-title">Entered DTI space</div>
+                    <div className="home-conclusion-value">{approvedValidation.entered_dti_space}</div>
+                    <div className="home-conclusion-note">{approvedValidation.dti_space_coverage_pct}% of approved drugs were represented in the upstream DTI model space.</div>
+                  </article>
+                  <article className="home-conclusion-card model-result-card">
+                    <div className="home-conclusion-title">Final retention</div>
+                    <div className="home-conclusion-value">{approvedValidation.retained_final}</div>
+                    <div className="home-conclusion-note">{approvedValidation.final_retention_pct}% of approved drugs were retained after entering the high-confidence candidate set.</div>
+                  </article>
+                </div>
+                <div className="result-table-wrap">
+                  <table className="result-table compact">
+                    <thead>
+                      <tr>
+                        <th>Validation metric</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>Approved drugs in DrugBank</td><td>{approvedValidation.approved_total}</td></tr>
+                      <tr><td>Entered DTI model space</td><td>{approvedValidation.entered_dti_space}</td></tr>
+                      <tr><td>Entered high-confidence candidate set</td><td>{approvedValidation.entered_high_confidence}</td></tr>
+                      <tr><td>Retained in final network</td><td>{approvedValidation.retained_final}</td></tr>
+                      <tr><td>Approved mean TXGNN score</td><td>{approvedValidation.approved_mean_txgnn}</td></tr>
+                      <tr><td>Non-approved mean TXGNN score</td><td>{approvedValidation.nonapproved_mean_txgnn}</td></tr>
+                      <tr><td>Mann-Whitney U p-value</td><td>{approvedValidation.mann_whitney_p}</td></tr>
+                      <tr><td>Cohen&apos;s d</td><td>{approvedValidation.cohens_d}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="prediction-support-pattern">{approvedValidation.summary}</div>
+              </>
+            ) : (
+              <div className="empty-state">No approved-drug validation summary is available in the current release.</div>
+            )}
+          </section>
+
+          <section className="home-panel-card">
+            <div className="home-panel-head">
               <h3>Disease Distribution Summary</h3>
               <div className="home-panel-subtitle">Top disease nodes ranked by retained Drug-Disease and Target-Disease connectivity in the released atlas.</div>
             </div>
@@ -794,8 +1218,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
 
           <section className="home-panel-card">
             <div className="home-panel-head">
-              <h3>Representative Clinical Drugs</h3>
-              <div className="home-panel-subtitle">Selected retained drugs highlighted in the report, shown with their leading disease association in the current high-confidence result table.</div>
+              <h3>Selected Clinical Drug Results</h3>
+              <div className="home-panel-subtitle">Retained clinical drugs highlighted in the report, shown with their leading disease association in the current high-confidence result table.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table">
@@ -829,6 +1253,542 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
           </section>
 
+        </div>
+
+        <div className="home-research-grid">
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Pipeline Shrinkage Summary</h3>
+              <div className="home-panel-subtitle">Scale reduction from raw DTI candidates to the released atlas network and retained prediction rows.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table compact">
+                <thead>
+                  <tr>
+                    <th>Stage</th>
+                    <th>Rows / Records</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pipelineShrinkage ? (
+                    <>
+                      <tr><td>Raw DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.raw_dti_pairs}</span></td></tr>
+                      <tr><td>Vote≥4 retained</td><td><span className="result-emphasis-number">{pipelineShrinkage.vote4_retained}</span></td></tr>
+                      <tr><td>Released prediction rows</td><td><span className="result-emphasis-number">{pipelineShrinkage.released_prediction_rows}</span></td></tr>
+                      <tr><td>Formal network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
+                      <tr><td>Formal network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
+                    </>
+                  ) : (
+                    <tr><td colSpan={2}>No pipeline shrinkage summary is available in the current release.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Support Tier Overview</h3>
+              <div className="home-panel-subtitle">Released-method tiers and seven-model vote tiers summarizing support strength across retained prediction rows.</div>
+            </div>
+            <div className="home-research-grid inner-result-grid">
+              <div className="result-table-wrap">
+                <table className="result-table compact">
+                  <thead>
+                    <tr>
+                      <th>Released support</th>
+                      <th>Rows</th>
+                      <th>Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(supportTierOverview?.released_support || []).length ? supportTierOverview.released_support.map((item) => (
+                      <tr key={item.tier}>
+                        <td>{item.tier}</td>
+                        <td><span className="result-emphasis-number">{item.count}</span></td>
+                        <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={3}>No released-support tier summary is available.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="result-table-wrap">
+                <table className="result-table compact">
+                  <thead>
+                    <tr>
+                      <th>7-model votes</th>
+                      <th>Rows</th>
+                      <th>Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(supportTierOverview?.seven_model_support || []).length ? supportTierOverview.seven_model_support.map((item) => (
+                      <tr key={item.tier}>
+                        <td>{item.tier}</td>
+                        <td><span className="result-emphasis-number">{item.count}</span></td>
+                        <td><span className="result-emphasis-chip is-soft">{item.share_pct}%</span></td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={3}>No seven-model support-tier summary is available.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {supportTierOverview ? (
+              <div className="result-summary-strip">
+                <span className="result-summary-pill">
+                  <strong>{supportTierOverview.high_consensus_rows}</strong>
+                  <em>High-consensus rows</em>
+                </span>
+              </div>
+            ) : null}
+          </section>
+        </div>
+
+        <div className="home-research-grid">
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Consensus Result Table</h3>
+              <div className="home-panel-subtitle">Released rows jointly retained by TXGNN, ENR, and RWR with strong support from the seven-model DTI layer.</div>
+            </div>
+            <div className="result-summary-strip">
+              <span className="result-summary-pill">
+                <strong>{highConsensusCases.length}</strong>
+                <em>High-consensus rows</em>
+              </span>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Drug</th>
+                    <th>Target</th>
+                    <th>Disease</th>
+                    <th>Support</th>
+                    <th>TXGNN score</th>
+                    <th>ENR FDR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {highConsensusCases.length ? highConsensusCases.map((item, idx) => (
+                    <tr key={`${item.drug_id}-${item.target_id}-${item.disease_id}-${idx}`}>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.drug_id)}>
+                          <span className="result-emphasis-label">{item.drug_label}</span>
+                        </button>
+                      </td>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.target_id)}>
+                          {item.target_label}
+                        </button>
+                      </td>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.disease_id)}>
+                          {item.disease_label}
+                        </button>
+                      </td>
+                      <td><span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.Total_Votes_Optional7}/7</span></td>
+                      <td><span className="result-emphasis-number">{item.TXGNN_score ?? "-"}</span></td>
+                      <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan={6}>No high-consensus results are available for the current release.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Disease Result Table</h3>
+              <div className="home-panel-subtitle">Disease-centered summaries ranked by released row count, strongest retained support, and peak seven-model vote support.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Disease</th>
+                    <th>Rows</th>
+                    <th>Max support</th>
+                    <th>Max votes</th>
+                    <th>Top TXGNN</th>
+                    <th>Best ENR FDR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diseaseResults.length ? diseaseResults.map((item) => (
+                    <tr key={item.disease_id}>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.disease_id)}>
+                          <span className="result-emphasis-label">{item.disease_label}</span>
+                        </button>
+                      </td>
+                      <td><span className="result-emphasis-number">{item.row_count}</span></td>
+                      <td><span className="result-emphasis-chip">{item.max_algo_pass}/3</span></td>
+                      <td><span className="result-emphasis-chip is-soft">{item.max_votes}/7</span></td>
+                      <td><span className="result-emphasis-number">{item.top_txgnn_score ?? "-"}</span></td>
+                      <td>{item.best_enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.best_enr_fdr}</span> : "-"}</td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan={6}>No disease-centered result table is available for the current release.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div className="home-research-grid">
+          <section className="home-panel-card home-panel-wide">
+            <div className="home-panel-head">
+              <h3>Disease Summary Table</h3>
+              <div className="home-panel-subtitle">Top diseases summarized with leading drugs, targets, and retained support peaks.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Disease</th>
+                    <th>Rows</th>
+                    <th>Top drug</th>
+                    <th>Top target</th>
+                    <th>Best support</th>
+                    <th>Best votes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diseaseSpotlights.length ? diseaseSpotlights.map((item) => (
+                    <tr key={item.disease_id}>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.disease_id)}>
+                          <span className="result-emphasis-label">{item.disease_label}</span>
+                        </button>
+                      </td>
+                      <td><span className="result-emphasis-number">{item.row_count}</span></td>
+                      <td>{item.top_drug_label || "-"}</td>
+                      <td>{item.top_target_label || "-"}</td>
+                      <td><span className="result-emphasis-chip">{item.max_algo_pass}/3</span></td>
+                      <td><span className="result-emphasis-chip is-soft">{item.max_votes}/7</span></td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan={6}>No disease summary rows are available in the current release.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div className="home-research-grid">
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Drug Summary Table</h3>
+              <div className="home-panel-subtitle">Top retained drugs with their leading disease, leading target, and strongest released support tier.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Drug</th>
+                    <th>Rows</th>
+                    <th>Top disease</th>
+                    <th>Top target</th>
+                    <th>Best support</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {drugSpotlights.length ? drugSpotlights.map((item) => (
+                    <tr key={item.drug_id}>
+                      <td><button className="result-link-btn" onClick={() => onAnalyze(item.drug_id)}><span className="result-emphasis-label">{item.drug_label}</span></button></td>
+                      <td><span className="result-emphasis-number">{item.row_count}</span></td>
+                      <td>{item.top_disease_label || "-"}</td>
+                      <td>{item.top_target_label || "-"}</td>
+                      <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
+                    </tr>
+                  )) : <tr><td colSpan={5}>No drug summary rows are available in the current release.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Target Summary Table</h3>
+              <div className="home-panel-subtitle">Top retained targets with their leading disease, leading drug, and strongest released support tier.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Target</th>
+                    <th>Rows</th>
+                    <th>Top disease</th>
+                    <th>Top drug</th>
+                    <th>Best support</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {targetSpotlights.length ? targetSpotlights.map((item) => (
+                    <tr key={item.target_id}>
+                      <td><button className="result-link-btn" onClick={() => onAnalyze(item.target_id)}><span className="result-emphasis-label">{item.target_label}</span></button></td>
+                      <td><span className="result-emphasis-number">{item.row_count}</span></td>
+                      <td>{item.top_disease_label || "-"}</td>
+                      <td>{item.top_drug_label || "-"}</td>
+                      <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
+                    </tr>
+                  )) : <tr><td colSpan={5}>No target summary rows are available in the current release.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div className="home-research-grid">
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Drug Result Distribution</h3>
+              <div className="home-panel-subtitle">Top retained drugs ranked by the number of released prediction rows in the current atlas release.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table compact">
+                <thead>
+                  <tr>
+                    <th>Drug</th>
+                    <th>Rows</th>
+                    <th>Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {drugDistribution.length ? drugDistribution.map((item) => (
+                    <tr key={item.drug_id}>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.drug_id)}>
+                          <span className="result-emphasis-label">{item.drug_label}</span>
+                        </button>
+                      </td>
+                      <td><span className="result-emphasis-number">{item.row_count}</span></td>
+                      <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={3}>No drug-level distribution is available in the current release.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Target Result Distribution</h3>
+              <div className="home-panel-subtitle">Top retained targets ranked by the number of released prediction rows in the current atlas release.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table compact">
+                <thead>
+                  <tr>
+                    <th>Target</th>
+                    <th>Rows</th>
+                    <th>Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {targetDistribution.length ? targetDistribution.map((item) => (
+                    <tr key={item.target_id}>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.target_id)}>
+                          <span className="result-emphasis-label">{item.target_label}</span>
+                        </button>
+                      </td>
+                      <td><span className="result-emphasis-number">{item.row_count}</span></td>
+                      <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={3}>No target-level distribution is available in the current release.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Approved Drug Result Table</h3>
+              <div className="home-panel-subtitle">Approved drugs ranked by retained row count, strongest released support, and best atlas-level evidence.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Approved drug</th>
+                    <th>Rows</th>
+                    <th>Max support</th>
+                    <th>Max votes</th>
+                    <th>Top TXGNN</th>
+                    <th>Best ENR FDR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {approvedDrugDeepResults.length ? approvedDrugDeepResults.map((item) => (
+                    <tr key={item.drug_id}>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.drug_id)}>
+                          <span className="result-emphasis-label">{item.drug_label}</span>
+                        </button>
+                      </td>
+                      <td><span className="result-emphasis-number">{item.row_count}</span></td>
+                      <td><span className="result-emphasis-chip">{item.max_algo_pass}/3</span></td>
+                      <td><span className="result-emphasis-chip is-soft">{item.max_votes}/7</span></td>
+                      <td><span className="result-emphasis-number">{item.top_txgnn_score ?? "-"}</span></td>
+                      <td>{item.best_enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.best_enr_fdr}</span> : "-"}</td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan={6}>No approved-drug result rows are available in the current release.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div className="home-research-grid">
+          <section className="home-panel-card home-panel-wide">
+            <div className="home-panel-head">
+              <h3>Consensus Priority Table</h3>
+              <div className="home-panel-subtitle">Top released rows ranked by joint support strength, seven-model votes, TXGNN score, and ENR significance.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Drug</th>
+                    <th>Target</th>
+                    <th>Disease</th>
+                    <th>Support</th>
+                    <th>TXGNN score</th>
+                    <th>ENR FDR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topConsensusLeaderboard.length ? topConsensusLeaderboard.map((item, idx) => (
+                    <tr key={`${item.drug_id}-${item.target_id}-${item.disease_id}-${idx}`}>
+                      <td><button className="result-link-btn" onClick={() => onAnalyze(item.drug_id)}><span className="result-emphasis-label">{item.drug_label}</span></button></td>
+                      <td><button className="result-link-btn" onClick={() => onAnalyze(item.target_id)}>{item.target_label}</button></td>
+                      <td><button className="result-link-btn" onClick={() => onAnalyze(item.disease_id)}>{item.disease_label}</button></td>
+                      <td><span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.Total_Votes_Optional7}/7</span></td>
+                      <td><span className="result-emphasis-number">{item.TXGNN_score ?? "-"}</span></td>
+                      <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
+                    </tr>
+                  )) : <tr><td colSpan={6}>No consensus priority rows are available in the current release.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div className="home-research-grid">
+          <section className="home-panel-card home-panel-wide">
+            <div className="home-panel-head">
+              <h3>Approved Drug Priority Table</h3>
+              <div className="home-panel-subtitle">Best supported released rows among approved drugs from the validation cohort.</div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Drug</th>
+                    <th>Target</th>
+                    <th>Disease</th>
+                    <th>Support</th>
+                    <th>TXGNN score</th>
+                    <th>ENR FDR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topApprovedLeaderboard.length ? topApprovedLeaderboard.map((item, idx) => (
+                    <tr key={`${item.drug_id}-${item.target_id}-${item.disease_id}-${idx}`}>
+                      <td><button className="result-link-btn" onClick={() => onAnalyze(item.drug_id)}><span className="result-emphasis-label">{item.drug_label}</span></button></td>
+                      <td><button className="result-link-btn" onClick={() => onAnalyze(item.target_id)}>{item.target_label}</button></td>
+                      <td><button className="result-link-btn" onClick={() => onAnalyze(item.disease_id)}>{item.disease_label}</button></td>
+                      <td><span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.Total_Votes_Optional7}/7</span></td>
+                      <td><span className="result-emphasis-number">{item.TXGNN_score ?? "-"}</span></td>
+                      <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
+                    </tr>
+                  )) : <tr><td colSpan={6}>No approved priority rows are available in the current release.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div className="home-research-grid">
+          <section className="home-panel-card home-panel-wide">
+            <div className="home-panel-head">
+              <h3>Selected Prediction Results</h3>
+              <div className="home-panel-subtitle">Released examples ranked by retained-method support, 7-model vote support, graph score, and enrichment evidence.</div>
+            </div>
+            <div className="result-summary-strip">
+              <span className="result-summary-pill">
+                <strong>{representativeCases.length}</strong>
+                <em>Selected released cases</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{predictionResultTotal}</strong>
+                <em>Total released prediction rows</em>
+              </span>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Drug</th>
+                    <th>Target</th>
+                    <th>Disease</th>
+                    <th>Gene</th>
+                    <th>Support</th>
+                    <th>TXGNN score</th>
+                    <th>ENR FDR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {representativeCases.length ? representativeCases.map((item, idx) => (
+                    <tr key={`${item.drug_id}-${item.target_id}-${item.disease_id}-${idx}`}>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.drug_id)}>
+                          <span className="result-emphasis-label">{item.drug_label}</span>
+                        </button>{" "}
+                        <span className="result-id-chip">{item.drug_id}</span>
+                      </td>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.target_id)}>
+                          {item.target_label}
+                        </button>
+                      </td>
+                      <td>
+                        <button className="result-link-btn" onClick={() => onAnalyze(item.disease_id)}>
+                          {item.disease_label}
+                        </button>
+                      </td>
+                      <td>{item.gene_name}</td>
+                      <td><span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.Total_Votes_Optional7}/7</span></td>
+                      <td><span className="result-emphasis-number">{item.TXGNN_score ?? "-"}</span></td>
+                      <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={7}>No representative prediction cases are available in the current release.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
 
         <div className="home-research-grid">

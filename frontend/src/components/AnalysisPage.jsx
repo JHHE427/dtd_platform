@@ -1,6 +1,43 @@
 import React from "react";
 import GraphCanvas from "./GraphCanvas";
 
+const SEVEN_DTI_MODEL_META = [
+  { key: "graphdta", label: "GraphDTA" },
+  { key: "dtiam", label: "DTIAM" },
+  { key: "drugban", label: "DrugBAN" },
+  { key: "deeppurpose", label: "DeepPurpose" },
+  { key: "deepdtagen", label: "DeepDTAGen" },
+  { key: "moltrans", label: "MolTrans" },
+  { key: "conplex", label: "Conplex" },
+];
+
+const ONLINE_ANALYSIS_PRESETS = [
+  {
+    key: "broad",
+    title: "Broad query",
+    note: "Retain most released rows for an initial analytical pass.",
+    patch: { min_algo_pass: 1, min_votes: 0, txgnn_pass: "", enr_pass: "", rwr_pass: "", limit: 20 },
+  },
+  {
+    key: "balanced",
+    title: "Balanced filter",
+    note: "Prioritize rows with multi-method support and moderate DTI vote support.",
+    patch: { min_algo_pass: 2, min_votes: 4, txgnn_pass: "", enr_pass: "", rwr_pass: "", limit: 12 },
+  },
+  {
+    key: "consensus",
+    title: "Consensus-only",
+    note: "Restrict to rows retained by all released methods and strong seven-model support.",
+    patch: { min_algo_pass: 3, min_votes: 4, txgnn_pass: "", enr_pass: "", rwr_pass: "", limit: 12 },
+  },
+  {
+    key: "txgnn",
+    title: "TXGNN-prioritized",
+    note: "Prioritize rows explicitly supported by TXGNN while preserving vote filtering.",
+    patch: { min_algo_pass: 1, min_votes: 3, txgnn_pass: "1", enr_pass: "", rwr_pass: "", limit: 12 },
+  },
+];
+
 function renderEdgeStats(items) {
   if (!items?.length) return <div className="item muted">No edge statistics are available for the current record.</div>;
   return items.map((x) => (
@@ -21,11 +58,18 @@ export default function AnalysisPage({
   graphMode,
   graphSearchText,
   pathState,
+  onlineAnalysisState,
+  onlineAnalysisResult,
+  onExportOnlineAnalysisResults,
+  onLoadOnlineAnalysisSubgraph,
+  onOpenOnlineAnalysisRow,
   compareState,
   onGraphSearchTextChange,
   onCenterNodeChange,
   onGraphModeChange,
   onPathStateChange,
+  onOnlineAnalysisStateChange,
+  onRunOnlineAnalysis,
   onCompareStateChange,
   onRunDrugCompare,
   onLoadCompareSubgraph,
@@ -75,7 +119,7 @@ export default function AnalysisPage({
   const mechanism = detail?.mechanism_snapshot || { top_links: [], evidence_sources: [], by_neighbor_type: {}, context_summary: [] };
   const algorithmEvidence = detail?.algorithm_evidence || { available: false, row_count: 0, methods: [], top_rows: [] };
   const comparison = compareState?.data || null;
-  const sevenDtiModels = ["GraphDTA", "DTIAM", "DrugBAN", "DeepPurpose", "DeepDTAGen", "MolTrans", "Conplex"];
+  const sevenDtiModels = SEVEN_DTI_MODEL_META.map((item) => item.label);
   const smiles = ann.smiles || "";
   const textDescription = ann.text_description || "";
   const sideEffectSummary = ann.side_effect_summary || "";
@@ -193,6 +237,10 @@ export default function AnalysisPage({
     );
   };
   const hoverMatchesDetail = Boolean(hoverState?.id && detail?.node?.id && hoverState.id === detail.node.id);
+  const onlineSummary = onlineAnalysisResult?.summary || null;
+  const onlineRows = onlineAnalysisResult?.top_rows || [];
+  const onlineMethodDistribution = onlineAnalysisResult?.method_distribution || [];
+  const onlineVoteDistribution = onlineAnalysisResult?.vote_distribution || [];
   const sevenModelOverview = React.useMemo(() => {
     const rows = algorithmEvidence?.top_rows || [];
     const counts = Object.fromEntries(sevenDtiModels.map((label) => [label, 0]));
@@ -209,6 +257,10 @@ export default function AnalysisPage({
       active: counts[label] > 0,
     }));
   }, [algorithmEvidence, sevenDtiModels]);
+  const activeSevenModelCount = sevenModelOverview.filter((item) => item.active).length;
+  const sevenModelTop = [...sevenModelOverview].sort((a, b) => b.count - a.count)[0] || null;
+  const sevenModelTopPair = algorithmEvidence?.top_dti_pairs?.[0] || null;
+  const sevenModelTopPattern = algorithmEvidence?.top_dti_patterns?.[0] || null;
 
   React.useEffect(() => {
     if (!structureModalOpen) return undefined;
@@ -235,7 +287,7 @@ export default function AnalysisPage({
       <div className="analysis-header">
         <div>
           <h2>Network Analysis</h2>
-          <div className="analysis-subtitle">Interactive exploration of Drug-Target-Disease relationships with evidence-aware annotation, filtering, comparison, and released result views.</div>
+          <div className="analysis-subtitle">Structured analysis of Drug-Target-Disease relationships with evidence-aware annotation, filtering, comparison, and released result views.</div>
         </div>
         <div className="toolbar">
           <select value={densityMode} onChange={(e) => onDensityModeChange(e.target.value)}>
@@ -271,6 +323,233 @@ export default function AnalysisPage({
         </div>
       </div>
 
+      <section className="card panel-pad online-analysis-panel">
+        <div className="card-head">
+          <h3>Online Analysis</h3>
+          <div className="muted">Run a query-specific analysis around a released Drug, Target, or Disease node with dynamic support thresholds. This generates a fresh result subset rather than only locating an existing record.</div>
+        </div>
+        <div className="online-analysis-banner">
+          <div>
+            <strong>Dynamic result generation</strong>
+            <span>Apply thresholds to the released atlas and produce a topic-specific result subset, support profile, and drill-down table.</span>
+          </div>
+          <span className="online-analysis-banner-tag">Released atlas only</span>
+        </div>
+        <div className="online-analysis-presets">
+          {ONLINE_ANALYSIS_PRESETS.map((preset) => (
+            <button
+              key={preset.key}
+              className={`online-analysis-preset ${onlineAnalysisState?.min_algo_pass === preset.patch.min_algo_pass && onlineAnalysisState?.min_votes === preset.patch.min_votes && (onlineAnalysisState?.txgnn_pass || "") === (preset.patch.txgnn_pass || "") ? "is-active" : ""}`}
+              onClick={() => onRunOnlineAnalysis({ focus_id: onlineAnalysisState?.focus_id || centerNode || "", ...preset.patch })}
+              type="button"
+            >
+              <strong>{preset.title}</strong>
+              <span>{preset.note}</span>
+            </button>
+          ))}
+        </div>
+        <div className="online-analysis-controls">
+          <label>
+            Focus Node ID
+            <input
+              value={onlineAnalysisState?.focus_id || ""}
+              onChange={(e) => onOnlineAnalysisStateChange({ focus_id: e.target.value })}
+              placeholder="DB... / BE... / DIS::..."
+            />
+          </label>
+          <label>
+            Min Released Support
+            <select
+              value={onlineAnalysisState?.min_algo_pass ?? 2}
+              onChange={(e) => onOnlineAnalysisStateChange({ min_algo_pass: Number(e.target.value) })}
+            >
+              <option value={1}>1/3</option>
+              <option value={2}>2/3</option>
+              <option value={3}>3/3</option>
+            </select>
+          </label>
+          <label>
+            Min 7-Model Votes
+            <select
+              value={onlineAnalysisState?.min_votes ?? 4}
+              onChange={(e) => onOnlineAnalysisStateChange({ min_votes: Number(e.target.value) })}
+            >
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((value) => (
+                <option value={value} key={value}>{value}/7</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            TXGNN
+            <select
+              value={onlineAnalysisState?.txgnn_pass || ""}
+              onChange={(e) => onOnlineAnalysisStateChange({ txgnn_pass: e.target.value })}
+            >
+              <option value="">Any</option>
+              <option value="1">Passed</option>
+              <option value="0">Not passed</option>
+            </select>
+          </label>
+          <label>
+            ENR
+            <select
+              value={onlineAnalysisState?.enr_pass || ""}
+              onChange={(e) => onOnlineAnalysisStateChange({ enr_pass: e.target.value })}
+            >
+              <option value="">Any</option>
+              <option value="1">Passed</option>
+              <option value="0">Not passed</option>
+            </select>
+          </label>
+          <label>
+            RWR
+            <select
+              value={onlineAnalysisState?.rwr_pass || ""}
+              onChange={(e) => onOnlineAnalysisStateChange({ rwr_pass: e.target.value })}
+            >
+              <option value="">Any</option>
+              <option value="1">Passed</option>
+              <option value="0">Not passed</option>
+            </select>
+          </label>
+          <label>
+            Max Rows
+            <select
+              value={onlineAnalysisState?.limit ?? 12}
+              onChange={(e) => onOnlineAnalysisStateChange({ limit: Number(e.target.value) })}
+            >
+              {[8, 12, 20, 30, 40].map((value) => (
+                <option value={value} key={value}>{value}</option>
+              ))}
+            </select>
+          </label>
+          <div className="online-analysis-actions">
+            <button className="btn-quiet" onClick={() => onOnlineAnalysisStateChange({ focus_id: centerNode || "" })}>Use Current Center</button>
+            <button
+              className="btn-quiet"
+              onClick={() => onRunOnlineAnalysis({
+                min_algo_pass: 3,
+                min_votes: 4,
+                txgnn_pass: "",
+                enr_pass: "",
+                rwr_pass: "",
+              })}
+            >
+              Consensus-only
+            </button>
+            <button className="primary" onClick={() => onRunOnlineAnalysis()}>Run Online Analysis</button>
+            <button className="btn-quiet" onClick={onExportOnlineAnalysisResults} disabled={!onlineRows.length}>Export Analysis Rows</button>
+            <button className="btn-quiet" onClick={() => onLoadOnlineAnalysisSubgraph()} disabled={!onlineRows.length}>Load Analysis Subgraph</button>
+          </div>
+        </div>
+        {onlineAnalysisResult ? (
+          <>
+            <div className="online-analysis-active-filters">
+              <span className="source-chip">focus {onlineAnalysisResult.focus_type}</span>
+              <span className="source-chip">released support ≥ {onlineAnalysisState?.min_algo_pass || 0}/3</span>
+              <span className="source-chip">7-model votes ≥ {onlineAnalysisState?.min_votes || 0}/7</span>
+              {onlineAnalysisState?.txgnn_pass ? <span className="source-chip">TXGNN passed</span> : null}
+              {onlineAnalysisState?.enr_pass ? <span className="source-chip">ENR passed</span> : null}
+              {onlineAnalysisState?.rwr_pass ? <span className="source-chip">RWR passed</span> : null}
+            </div>
+            <div className="online-analysis-summary">
+              <div className="kpi-card">
+                <div className="kpi-label">Focus</div>
+                <div className="kpi-value kpi-center">{onlineAnalysisResult.focus_label}</div>
+                <div className="item-meta">{onlineAnalysisResult.focus_type} · {onlineAnalysisResult.focus_id}</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">Released Rows</div>
+                <div className="kpi-value">{onlineSummary?.total_rows ?? 0}</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">Reach</div>
+                <div className="kpi-value kpi-split">{onlineSummary?.drugs ?? 0} / {onlineSummary?.targets ?? 0} / {onlineSummary?.diseases ?? 0}</div>
+                <div className="item-meta">drug / target / disease</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">Best Support</div>
+                <div className="kpi-value kpi-split">{onlineSummary?.max_algo_pass ?? 0}/3 · {onlineSummary?.max_votes ?? 0}/7</div>
+              </div>
+            </div>
+            <div className="online-analysis-grid">
+              <section className="card panel-pad">
+                <div className="card-head">
+                  <h3>Released Method Distribution</h3>
+                  <div className="muted">Support patterns after applying the current analysis thresholds.</div>
+                </div>
+                <div className="list compact">
+                  {onlineMethodDistribution.length ? onlineMethodDistribution.map((item) => (
+                    <div className="item" key={item.support_pattern_label}>
+                      <div className="item-title">{item.support_pattern_label}</div>
+                      <div className="item-meta">{item.count} rows</div>
+                    </div>
+                  )) : <div className="muted">No released rows satisfy the current thresholds.</div>}
+                </div>
+              </section>
+              <section className="card panel-pad">
+                <div className="card-head">
+                  <h3>7-Model Vote Distribution</h3>
+                  <div className="muted">Vote tiers among retained rows in the current analysis subset.</div>
+                </div>
+                <div className="list compact">
+                  {onlineVoteDistribution.length ? onlineVoteDistribution.map((item) => (
+                    <div className="item" key={item.total_votes}>
+                      <div className="item-title">{item.total_votes}/7 votes</div>
+                      <div className="item-meta">{item.count} rows</div>
+                    </div>
+                  )) : <div className="muted">No retained rows satisfy the current thresholds.</div>}
+                </div>
+              </section>
+            </div>
+            <section className="analysis-results-panel online-analysis-results">
+              <div className="card-head">
+                <h3>Online Analysis Results</h3>
+                <div className="muted">Top released prediction rows ranked within the current query-specific analysis subset.</div>
+              </div>
+              <div className="result-table-wrap analysis-result-wrap">
+                <table className="result-table edge-result-table analysis-result-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Drug</th>
+                      <th>Target</th>
+                      <th>Disease</th>
+                      <th>Support</th>
+                      <th>Votes</th>
+                      <th>TXGNN</th>
+                      <th>ENR FDR</th>
+                      <th>Open</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {onlineRows.length ? onlineRows.map((row) => (
+                      <tr key={`${row.pair_id}-${row.Disease_ID}`}>
+                        <td>{row.result_rank}</td>
+                        <td><button className="table-link-btn" onClick={() => onNodeClick(row.Drug_ID)}>{row.Drug_Label || row.Drug_ID}</button></td>
+                        <td><button className="table-link-btn" onClick={() => onNodeClick(row.Target_ID)}>{row.Target_Label || row.Target_ID}</button></td>
+                        <td><button className="table-link-btn" onClick={() => onNodeClick(row.Disease_ID)}>{row.Disease_Label || row.Disease_ID}</button></td>
+                        <td>{renderCoreSupportMeter(row.n_algo_pass)}</td>
+                        <td>{renderVoteMeter(row.Total_Votes_Optional7)}</td>
+                        <td>{row.TXGNN_score ?? "NA"}</td>
+                        <td>{row.ENR_FDR ?? "NA"}</td>
+                        <td><button className="btn-quiet compact-btn" onClick={() => onOpenOnlineAnalysisRow(row)}>View in Network</button></td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={9}>Run online analysis to generate a query-specific released result subset.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </>
+        ) : (
+          <div className="muted">Use the current center or enter any released Drug, Target, or Disease identifier to generate a query-specific analysis subset.</div>
+        )}
+      </section>
+
       {recentCenters?.length ? (
         <div className="recent-centers">
           <span className="muted">Recent centers:</span>
@@ -287,9 +566,37 @@ export default function AnalysisPage({
           <h3>Seven DTI Model Support</h3>
           <div className="muted">The optional DTI vote layer is composed of seven upstream DTI models. Active counts below summarize the current top prediction records for this network view.</div>
         </div>
+        <div className="result-summary-strip analysis-seven-model-summary">
+          <span className="result-summary-pill">
+            <strong>{activeSevenModelCount}/7</strong>
+            <em>Active models in current view</em>
+          </span>
+          {sevenModelTop ? (
+            <span className="result-summary-pill">
+              <strong>{sevenModelTop.label}</strong>
+              <em>{sevenModelTop.count} visible records</em>
+            </span>
+          ) : null}
+          {sevenModelTopPair ? (
+            <span className="result-summary-pill">
+              <strong>{sevenModelTopPair.pair_label}</strong>
+              <em>{sevenModelTopPair.count} top co-support rows</em>
+            </span>
+          ) : null}
+          {sevenModelTopPattern ? (
+            <span className="result-summary-pill">
+              <strong>{sevenModelTopPattern.pattern_label}</strong>
+              <em>{sevenModelTopPattern.count} top support pattern rows</em>
+            </span>
+          ) : null}
+        </div>
+        <div className="seven-model-section-note">
+          <span className="seven-model-note-badge">Shared atlas encoding</span>
+          <span className="seven-model-note-text">Model colors and ordering match the homepage overview and the database result table for quicker cross-page interpretation.</span>
+        </div>
         <div className="analysis-seven-model-grid">
           {sevenModelOverview.map((item) => (
-            <article className={`analysis-seven-model-card ${item.active ? "is-on" : "is-off"}`} key={item.label}>
+            <article className={`analysis-seven-model-card model-${SEVEN_DTI_MODEL_META.find((x) => x.label === item.label)?.key || "graphdta"} ${item.active ? "is-on" : "is-off"}`} key={item.label}>
               <strong>{item.label}</strong>
               <span>{item.active ? `${item.count} visible records` : "No visible record"}</span>
             </article>
@@ -727,12 +1034,12 @@ export default function AnalysisPage({
                           <span className={`algo-chip ${String(row.RWR_pass) === "1" ? "is-on" : "is-off"}`}>RWR</span>
                         </div>
                         <div className="algo-chip-row compact">
-                          {["GraphDTA","DTIAM","DrugBAN","DeepPurpose","DeepDTAGen","MolTrans","Conplex"].map((label) => (
+                          {SEVEN_DTI_MODEL_META.map((item) => (
                             <span
-                              className={`algo-chip ${(row.seven_model_supporting_models || []).includes(label) || row.seven_model_scores?.[label] != null ? "is-on" : "is-off"}`}
-                              key={label}
+                              className={`algo-chip model-${item.key} ${(row.seven_model_supporting_models || []).includes(item.label) || row.seven_model_scores?.[item.label] != null ? "is-on" : "is-off"}`}
+                              key={item.label}
                             >
-                              {label}
+                              {item.label}
                             </span>
                           ))}
                         </div>
@@ -748,6 +1055,19 @@ export default function AnalysisPage({
                         </div>
                         <div className="mechanism-link-meta">TXGNN score={row.TXGNN_score ?? "-"} · ENR FDR={row.ENR_FDR ?? "-"}</div>
                         <div className="mechanism-link-meta">{((row.seven_model_supporting_models || []).join(", ")) || "no explicit per-model list"}</div>
+                        <div className="algo-evidence-grid compact seven-model-score-grid">
+                          {SEVEN_DTI_MODEL_META.map((item) => {
+                            const score = row.seven_model_scores?.[item.label];
+                            const supported = (row.seven_model_supporting_models || []).includes(item.label);
+                            return (
+                              <div className={`algo-evidence-card model-${item.key} ${score != null || supported ? "is-on" : "is-off"}`} key={item.label}>
+                                <div className="algo-evidence-head"><span>{item.label}</span><strong>{score != null ? "Scored" : "NA"}</strong></div>
+                                <div className="algo-evidence-meta">Raw DTI model output</div>
+                                <div className="algo-evidence-value">{score != null ? score : "-"}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     ))}
                   </div>
