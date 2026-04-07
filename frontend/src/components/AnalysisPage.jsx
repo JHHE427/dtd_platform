@@ -118,6 +118,9 @@ export default function AnalysisPage({
   const profile = detail?.multimodal_profile || { modalities: [], available_modalities: 0, total_modalities: 0, coverage_ratio: 0 };
   const mechanism = detail?.mechanism_snapshot || { top_links: [], evidence_sources: [], by_neighbor_type: {}, context_summary: [] };
   const algorithmEvidence = detail?.algorithm_evidence || { available: false, row_count: 0, methods: [], top_rows: [] };
+  const ttdEvidence = detail?.ttd_evidence || { available: false, row_count: 0, top_rows: [] };
+  const ncrnaEvidence = detail?.ncrna_evidence || { available: false, row_count: 0, top_rows: [] };
+  const ncrnaLinkedResults = detail?.ncrna_linked_results || { available: false, row_count: 0, top_rows: [] };
   const comparison = compareState?.data || null;
   const sevenDtiModels = SEVEN_DTI_MODEL_META.map((item) => item.label);
   const smiles = ann.smiles || "";
@@ -204,6 +207,7 @@ export default function AnalysisPage({
   const drugCount = nodeTypeMap.Drug || 0;
   const targetCount = nodeTypeMap.Target || 0;
   const diseaseCount = nodeTypeMap.Disease || 0;
+  const ncrnaCount = nodeTypeMap.ncRNA || 0;
   const coveragePct = Math.round((profile.coverage_ratio || 0) * 100);
   const algoRowLabel = (row) => {
     if (!row) return "-";
@@ -286,8 +290,8 @@ export default function AnalysisPage({
     <section className="page is-active analysis-page">
       <div className="analysis-header">
         <div>
-          <h2>Network Analysis</h2>
-          <div className="analysis-subtitle">Structured analysis of Drug-Target-Disease relationships with evidence-aware annotation, filtering, comparison, and released result views.</div>
+          <h2>Disease Network Analysis</h2>
+          <div className="analysis-subtitle">Structured analysis of the released disease-centered drug, target, disease, and ncRNA network with evidence-aware annotation, filtering, comparison, and query-specific result views.</div>
         </div>
         <div className="toolbar">
           <select value={densityMode} onChange={(e) => onDensityModeChange(e.target.value)}>
@@ -297,7 +301,7 @@ export default function AnalysisPage({
           </select>
           <button className="btn-quiet" onClick={onResetFilters}>Reset Filters</button>
           <button className="btn-quiet" onClick={onDenseGraph}>Expanded Network</button>
-          <button className="btn-quiet" onClick={onAllNetwork}>Load Full Atlas</button>
+          <button className="btn-quiet" onClick={onAllNetwork}>Load Full Disease Network</button>
           <button className="btn-quiet" onClick={onCompareModes}>Comparison View</button>
           <button className="btn-quiet" onClick={onShareState}>Copy Share Link</button>
           <button className="primary" onClick={onExportSubgraph}>Export Current View</button>
@@ -314,8 +318,8 @@ export default function AnalysisPage({
           <div className="kpi-value">{graphEdgeCount}</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Drug / Target / Disease</div>
-          <div className="kpi-value kpi-split">{drugCount} / {targetCount} / {diseaseCount}</div>
+          <div className="kpi-label">Drug / Target / Disease / ncRNA</div>
+          <div className="kpi-value kpi-split">{drugCount} / {targetCount} / {diseaseCount} / {ncrnaCount}</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Current Center</div>
@@ -326,14 +330,14 @@ export default function AnalysisPage({
       <section className="card panel-pad online-analysis-panel">
         <div className="card-head">
           <h3>Online Analysis</h3>
-          <div className="muted">Run a query-specific analysis around a released Drug, Target, or Disease node with dynamic support thresholds. This generates a fresh result subset rather than only locating an existing record.</div>
+          <div className="muted">Run a query-specific analysis around a released Drug, Target, Disease, or ncRNA node with dynamic support thresholds. For ncRNA centers, released rows are resolved through curated ncRNA-linked drugs and then filtered through the same support logic.</div>
         </div>
         <div className="online-analysis-banner">
           <div>
             <strong>Dynamic result generation</strong>
-            <span>Apply thresholds to the released atlas and produce a topic-specific result subset, support profile, and drill-down table.</span>
+            <span>Apply thresholds to the released disease network atlas and produce a query-specific result subset, support profile, and drill-down table.</span>
           </div>
-          <span className="online-analysis-banner-tag">Released atlas only</span>
+          <span className="online-analysis-banner-tag">Released disease network only</span>
         </div>
         <div className="online-analysis-presets">
           {ONLINE_ANALYSIS_PRESETS.map((preset) => (
@@ -354,8 +358,20 @@ export default function AnalysisPage({
             <input
               value={onlineAnalysisState?.focus_id || ""}
               onChange={(e) => onOnlineAnalysisStateChange({ focus_id: e.target.value })}
-              placeholder="DB... / BE... / DIS::..."
+              placeholder="DB... / BE... / DIS::... / MIRNA::..."
             />
+          </label>
+          <label>
+            ncRNA Type
+            <select
+              value={onlineAnalysisState?.ncrna_type || ""}
+              onChange={(e) => onOnlineAnalysisStateChange({ ncrna_type: e.target.value })}
+            >
+              <option value="">Any / not ncRNA-specific</option>
+              <option value="miRNA">miRNA</option>
+              <option value="lncRNA">lncRNA</option>
+              <option value="circRNA">circRNA</option>
+            </select>
           </label>
           <label>
             Min Released Support
@@ -448,6 +464,7 @@ export default function AnalysisPage({
               <span className="source-chip">focus {onlineAnalysisResult.focus_type}</span>
               <span className="source-chip">released support ≥ {onlineAnalysisState?.min_algo_pass || 0}/3</span>
               <span className="source-chip">7-model votes ≥ {onlineAnalysisState?.min_votes || 0}/7</span>
+              {onlineAnalysisState?.ncrna_type ? <span className="source-chip">ncRNA type {onlineAnalysisState.ncrna_type}</span> : null}
               {onlineAnalysisState?.txgnn_pass ? <span className="source-chip">TXGNN passed</span> : null}
               {onlineAnalysisState?.enr_pass ? <span className="source-chip">ENR passed</span> : null}
               {onlineAnalysisState?.rwr_pass ? <span className="source-chip">RWR passed</span> : null}
@@ -546,7 +563,7 @@ export default function AnalysisPage({
             </section>
           </>
         ) : (
-          <div className="muted">Use the current center or enter any released Drug, Target, or Disease identifier to generate a query-specific analysis subset.</div>
+          <div className="muted">Use the current center or enter any released Drug, Target, Disease, or ncRNA identifier to generate a query-specific analysis subset.</div>
         )}
       </section>
 
@@ -591,7 +608,7 @@ export default function AnalysisPage({
           ) : null}
         </div>
         <div className="seven-model-section-note">
-          <span className="seven-model-note-badge">Shared atlas encoding</span>
+          <span className="seven-model-note-badge">Shared network palette</span>
           <span className="seven-model-note-text">Model colors and ordering match the homepage overview and the database result table for quicker cross-page interpretation.</span>
         </div>
         <div className="analysis-seven-model-grid">
@@ -607,8 +624,8 @@ export default function AnalysisPage({
       <div className="analysis-layout">
         <section className="card graph-panel">
           <div className="card-head">
-            <h3>Drug-Target-Disease Network</h3>
-            <div className="muted">Released atlas view · {graphMeta}</div>
+            <h3>Disease-Centered Interaction Network</h3>
+            <div className="muted">Released disease network view · {graphMeta}</div>
           </div>
           <div className="control-grid">
             <label>
@@ -696,7 +713,7 @@ export default function AnalysisPage({
           <div className="filter-row">
             <div className="filter-group">
               <div className="filter-title">Edge Category</div>
-              {["Drug-Target", "Drug-Disease", "Target-Disease"].map((value) => (
+              {["Drug-Target", "Drug-Disease", "Target-Disease", "ncRNA-Drug"].map((value) => (
                 <label key={value}>
                   <input
                     type="checkbox"
@@ -727,13 +744,20 @@ export default function AnalysisPage({
             </div>
           </div>
 
-          <div className="legend">
-            <span><i className="dot drug" />Drug</span>
-            <span><i className="dot target" />Target</span>
-            <span><i className="dot disease" />Disease</span>
-            <span><i className="line known" />Known</span>
-            <span><i className="line predicted" />Predicted</span>
-            <span><i className="line kp" />Known+Predicted</span>
+          <div className="legend legend-network">
+            <div className="legend-network-head">
+              <strong>Disease-centered network legend</strong>
+              <span>Disease nodes are emphasized as the central interpretation layer, with drug, target, and ncRNA relations distributed around them.</span>
+            </div>
+            <div className="legend-network-grid">
+              <span className="legend-network-item is-disease-core"><i className="dot disease" />Disease core</span>
+              <span className="legend-network-item"><i className="dot drug" />Drug layer</span>
+              <span className="legend-network-item"><i className="dot target" />Target layer</span>
+              <span className="legend-network-item"><i className="dot ncrna" />ncRNA layer</span>
+              <span className="legend-network-item"><i className="line known" />Known evidence</span>
+              <span className="legend-network-item"><i className="line predicted" />Predicted evidence</span>
+              <span className="legend-network-item"><i className="line kp" />Known + predicted overlap</span>
+            </div>
           </div>
 
           <div className="graph-wrap">
@@ -940,6 +964,30 @@ export default function AnalysisPage({
                       )}
                     </div>
                   ) : null}
+                  {detail.node.node_type === "ncRNA" ? (
+                    <div className="annot-box">
+                      <div className="annot-title">ncRNA Class</div>
+                      <div className="annot-text">{ann.ontology_terms || "ncRNA"}</div>
+                      <div className="annot-title annot-subtitle">Release Layer</div>
+                      <div className="annot-text">Known ncRNA-drug evidence retained as a formal known-only release module.</div>
+                      {ncrnaEvidence.available ? (
+                        <>
+                          <div className="annot-title annot-subtitle">Curated Summary</div>
+                          <div className="annot-text">
+                            {ncrnaEvidence.row_count} curated rows across {ncrnaEvidence.unique_counterparts} linked drugs.
+                          </div>
+                          <div className="source-chip-wrap">
+                            {[
+                              ncrnaEvidence.top_relation_category ? `Top relation: ${ncrnaEvidence.top_relation_category}` : "",
+                              ncrnaEvidence.top_fda_label ? `Top FDA label: ${ncrnaEvidence.top_fda_label}` : "",
+                            ].filter(Boolean).map((item) => <span className="source-chip" key={item}>{item}</span>)}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="item-meta">No curated ncRNA-drug evidence is linked to the current record.</div>
+                      )}
+                    </div>
+                  ) : null}
                 </>
               ) : (
                 <div className="muted">Select a node in the network or results list to view its details.</div>
@@ -976,6 +1024,121 @@ export default function AnalysisPage({
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="card panel-pad rise-in delay-1">
+            <h3>Known ncRNA-Drug Evidence</h3>
+            {ncrnaEvidence.available ? (
+              <>
+                <div className="support-meter-row">
+                  <div className="support-meter-card">
+                    <span>Curated rows</span>
+                    <strong>{ncrnaEvidence.row_count}</strong>
+                  </div>
+                  <div className="support-meter-card">
+                    <span>Linked {ncrnaEvidence.counterpart_type}</span>
+                    <strong>{ncrnaEvidence.unique_counterparts}</strong>
+                  </div>
+                  <div className="support-meter-card">
+                    <span>Top relation</span>
+                    <strong>{ncrnaEvidence.top_relation_category || "NA"}</strong>
+                  </div>
+                </div>
+                <div className="mechanism-section">
+                  <div className="mechanism-links">
+                    {ncrnaEvidence.top_rows.map((row) => (
+                      <div className="mechanism-link-card" key={`${row.counterpart_id}-${row.evidence_rows}`}>
+                        <div className="mechanism-link-head">
+                          <strong>{row.counterpart_label}</strong>
+                          <em>{row.counterpart_type}</em>
+                        </div>
+                        <div className="mechanism-link-meta">{row.relation_categories}</div>
+                        <div className="mechanism-link-meta">rows={row.evidence_rows} · pmids={row.unique_pmids} · FDA={row.fda_status}</div>
+                        <div className="mechanism-link-meta">{row.phenotypes}</div>
+                        {row.counterpart_id ? (
+                          <button className="btn-quiet fixed-case-link" type="button" onClick={() => onNodeClick(row.counterpart_id)}>
+                            View in Network
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="empty-state">No curated ncRNA-drug evidence is linked to the current record.</div>
+            )}
+          </section>
+
+          <section className="card panel-pad rise-in delay-1">
+            <h3>ncRNA-Linked Released Results</h3>
+            {ncrnaLinkedResults.available ? (
+              <>
+                <div className="support-meter-row">
+                  <div className="support-meter-card">
+                    <span>Released rows</span>
+                    <strong>{ncrnaLinkedResults.row_count}</strong>
+                  </div>
+                  <div className="support-meter-card">
+                    <span>Consensus rows</span>
+                    <strong>{ncrnaLinkedResults.consensus_row_count || 0}</strong>
+                  </div>
+                  <div className="support-meter-card">
+                    <span>Linked ncRNAs</span>
+                    <strong>{ncrnaLinkedResults.linked_ncrna_count || 0}</strong>
+                  </div>
+                  <div className="support-meter-card">
+                    <span>Top relation</span>
+                    <strong>{ncrnaLinkedResults.top_relation_category || "NA"}</strong>
+                  </div>
+                </div>
+                <div className="algo-evidence-summary">
+                  <span className="source-chip">shared drugs {ncrnaLinkedResults.linked_drug_count || 0}</span>
+                  <span className="source-chip">approved-labelled links {ncrnaLinkedResults.approved_link_count || 0}</span>
+                  {ncrnaLinkedResults.top_fda_label ? <span className="source-chip">top FDA label {ncrnaLinkedResults.top_fda_label}</span> : null}
+                </div>
+                <div className="mechanism-section">
+                  <div className="annot-title">Top Linked Released Rows</div>
+                  <div className="mechanism-links">
+                    {(ncrnaLinkedResults.top_rows || []).map((row, idx) => (
+                      <div className="mechanism-link-card" key={`${row.drug_id}-${row.target_id}-${row.disease_id}-${idx}`}>
+                        <div className="mechanism-link-head">
+                            <span>{`${row.drug_label} -> ${row.target_label} -> ${row.disease_label}`}</span>
+                            {row.top_ncrna_id ? (
+                              <button className="table-link-btn" type="button" onClick={() => onNodeClick(row.top_ncrna_id)}>
+                                {row.top_ncrna_name || row.top_ncrna_id}
+                              </button>
+                            ) : <em>{row.top_ncrna_name || "ncRNA label unavailable"}</em>}
+                          </div>
+                        <div className="mechanism-link-meta">{row.support_pattern || "Support pattern unavailable"}</div>
+                        <div className="mechanism-link-meta">linked ncRNAs={row.linked_ncrna_count || 0} · relation={row.top_relation_category || "NA"}</div>
+                        <div className="support-meter-row">
+                          <div className="support-meter-card">
+                            <span>Released method support</span>
+                            {renderCoreSupportMeter(row.n_algo_pass)}
+                          </div>
+                          <div className="support-meter-card">
+                            <span>7-model vote support</span>
+                            {renderVoteMeter(row.seven_model_votes)}
+                          </div>
+                        </div>
+                        <div className="quality-row">
+                          <span className="quality-pill quality-medium">TXGNN {row.txgnn_score ?? "-"}</span>
+                          <span className="quality-pill quality-high">ENR FDR {row.enr_fdr ?? "-"}</span>
+                        </div>
+                        {row.drug_id ? (
+                          <button className="btn-quiet fixed-case-link" type="button" onClick={() => onNodeClick(row.drug_id)}>
+                            View in Network
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="empty-state">No released-result overlap is currently available between the selected record and the curated ncRNA-drug layer.</div>
+            )}
           </section>
 
           <section className="card panel-pad rise-in delay-1">
@@ -1075,6 +1238,77 @@ export default function AnalysisPage({
               </>
             ) : (
               <div className="empty-state">No prediction-model summary is available for the current record.</div>
+            )}
+          </section>
+
+          <section className="card panel-pad rise-in delay-1">
+            <h3>TTD Therapeutic Target Support</h3>
+            {ttdEvidence.available ? (
+              <>
+                <div className="support-meter-row">
+                  <div className="support-meter-card">
+                    <span>TTD-linked released rows</span>
+                    <strong>{ttdEvidence.row_count}</strong>
+                  </div>
+                  <div className="support-meter-card">
+                    <span>Consensus rows</span>
+                    <strong>{ttdEvidence.consensus_row_count || 0}</strong>
+                  </div>
+                  <div className="support-meter-card">
+                    <span>Approved rows</span>
+                    <strong>{ttdEvidence.approved_row_count || 0}</strong>
+                  </div>
+                  <div className="support-meter-card">
+                    <span>Linked partners</span>
+                    <strong>{ttdEvidence.linked_partner_count || 0}</strong>
+                  </div>
+                </div>
+                <div className="algo-evidence-summary">
+                  {(ttdEvidence.support_types || []).slice(0, 3).map((item) => (
+                    <span className="source-chip" key={item.label}>{item.label} {item.count}</span>
+                  ))}
+                  {(ttdEvidence.top_moas || []).slice(0, 2).map((item) => (
+                    <span className="source-chip" key={item.label}>MOA {item.label} ({item.count})</span>
+                  ))}
+                </div>
+                <div className="mechanism-section">
+                  <div className="annot-title">Top TTD-Supported Released Rows</div>
+                  <div className="mechanism-links">
+                    {(ttdEvidence.top_rows || []).map((row, idx) => (
+                      <div className="mechanism-link-card" key={`${row.drug_id}-${row.target_id}-${row.disease_id}-${idx}`}>
+                        <div className="mechanism-link-head">
+                          <span>{`${row.drug_label} -> ${row.target_label} -> ${row.disease_label}`}</span>
+                          <em>{row.ttd_support_label || "TTD-supported"}</em>
+                        </div>
+                        <div className="mechanism-link-meta">
+                          MOA={row.ttd_moa || "-"} · disease status={row.ttd_dd_status || "-"} · target status={row.ttd_td_status || "-"}
+                        </div>
+                        <div className="support-meter-row">
+                          <div className="support-meter-card">
+                            <span>Released method support</span>
+                            {renderCoreSupportMeter(row.n_algo_pass)}
+                          </div>
+                          <div className="support-meter-card">
+                            <span>7-model vote support</span>
+                            {renderVoteMeter(row.Total_Votes_Optional7)}
+                          </div>
+                        </div>
+                        <div className="quality-row">
+                          <span className="quality-pill quality-medium">TXGNN {row.TXGNN_score ?? "-"}</span>
+                          <span className="quality-pill quality-high">ENR FDR {row.ENR_FDR ?? "-"}</span>
+                        </div>
+                        {row.target_id ? (
+                          <button className="btn-quiet fixed-case-link" type="button" onClick={() => onNodeClick(row.target_id)}>
+                            View in Network
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="empty-state">No TTD therapeutic-target support is currently linked to the selected record.</div>
             )}
           </section>
 
@@ -1186,6 +1420,7 @@ export default function AnalysisPage({
                 <option value="Drug-Target">Drug-Target</option>
                 <option value="Drug-Disease">Drug-Disease</option>
                 <option value="Target-Disease">Target-Disease</option>
+                <option value="ncRNA-Drug">ncRNA-Drug</option>
               </select>
               <select
                 value={neighborState.order_by}

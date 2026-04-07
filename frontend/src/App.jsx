@@ -25,7 +25,7 @@ function getInitialAnalysisConfig() {
     graphMode: mode === "core" ? "core" : "full",
     depth: Number.isFinite(depth) && depth >= 1 && depth <= 2 ? depth : 2,
     limit: Number.isFinite(limit) && limit >= 50 && limit <= 2000 ? limit : 800,
-    categories: categories ? categories.split(",").filter(Boolean) : ["Drug-Target", "Drug-Disease", "Target-Disease"],
+    categories: categories ? categories.split(",").filter(Boolean) : ["Drug-Target", "Drug-Disease", "Target-Disease", "ncRNA-Drug"],
     types: types ? types.split(",").filter(Boolean) : ["Known", "Predicted", "Known+Predicted"],
   };
 }
@@ -49,6 +49,7 @@ export default function App() {
   const reqSeq = React.useRef({ graph: 0, detail: 0, neighbors: 0 });
   const graphReqKeyRef = React.useRef("");
   const [page, setPage] = React.useState("home");
+  const [databaseSection, setDatabaseSection] = React.useState("");
   const [stats, setStats] = React.useState({ node_by_type: [], edge_by_type: [] });
   const [researchSummary, setResearchSummary] = React.useState(null);
   const [centerNode, setCenterNode] = React.useState(init.centerNode);
@@ -67,6 +68,7 @@ export default function App() {
     focus_id: init.centerNode,
     min_algo_pass: 2,
     min_votes: 4,
+    ncrna_type: "",
     txgnn_pass: "",
     enr_pass: "",
     rwr_pass: "",
@@ -90,9 +92,13 @@ export default function App() {
     enr_pass: "",
     rwr_pass: "",
   });
+  const [ncrnaEvidenceFilters, setNcrnaEvidenceFilters] = React.useState({ q: "", ncrna_type: "", relation_category: "", fda: "" });
+  const [ncrnaEdgeFilters, setNcrnaEdgeFilters] = React.useState({ q: "", ncrna_type: "", relation_category: "", fda: "" });
   const [nodesState, setNodesState] = React.useState(defaultNodesState());
   const [edgesState, setEdgesState] = React.useState(defaultNodesState());
   const [predictionState, setPredictionState] = React.useState(defaultNodesState());
+  const [ncrnaEvidenceState, setNcrnaEvidenceState] = React.useState(defaultNodesState());
+  const [ncrnaEdgeState, setNcrnaEdgeState] = React.useState(defaultNodesState());
   const [selectedNodeId, setSelectedNodeId] = React.useState(init.centerNode);
   const [neighborState, setNeighborState] = React.useState({
     q: "",
@@ -313,6 +319,34 @@ export default function App() {
       showToast("warn", `Load prediction results failed: ${e.message}`);
     }
   }, [predictionFilters, predictionState.page_size, showToast]);
+
+  const loadNcrnaEvidence = React.useCallback(async (nextPage = 1) => {
+    try {
+      const params = query({
+        ...ncrnaEvidenceFilters,
+        page: Math.max(1, nextPage),
+        page_size: ncrnaEvidenceState.page_size,
+      });
+      const data = await api(`/api/results/ncrna/evidence?${params}`);
+      setNcrnaEvidenceState(data);
+    } catch (e) {
+      showToast("warn", `Load ncRNA evidence failed: ${e.message}`);
+    }
+  }, [ncrnaEvidenceFilters, ncrnaEvidenceState.page_size, showToast]);
+
+  const loadNcrnaEdges = React.useCallback(async (nextPage = 1) => {
+    try {
+      const params = query({
+        ...ncrnaEdgeFilters,
+        page: Math.max(1, nextPage),
+        page_size: ncrnaEdgeState.page_size,
+      });
+      const data = await api(`/api/results/ncrna/edges?${params}`);
+      setNcrnaEdgeState(data);
+    } catch (e) {
+      showToast("warn", `Load ncRNA-drug relationships failed: ${e.message}`);
+    }
+  }, [ncrnaEdgeFilters, ncrnaEdgeState.page_size, showToast]);
 
   const loadOnlineAnalysis = React.useCallback(async (overrides = {}) => {
     const next = { ...onlineAnalysisState, ...overrides };
@@ -686,6 +720,8 @@ export default function App() {
     loadNodes(1);
     loadEdges(1);
     loadPredictionResults(1);
+    loadNcrnaEvidence(1);
+    loadNcrnaEdges(1);
     loadGraph(centerNode);
     loadDetail(centerNode, { withNeighbors: true });
   }, [loadStats]); // intentionally single-run
@@ -723,11 +759,14 @@ export default function App() {
               stats={stats}
               researchSummary={researchSummary}
               onAnalyze={searchAndAnalyze}
-              onOpenDatabase={async () => {
+              onOpenDatabase={async (section = "") => {
+                setDatabaseSection(section);
                 setPage("database");
                 await loadNodes(1);
                 await loadEdges(1);
                 await loadPredictionResults(1);
+                await loadNcrnaEvidence(1);
+                await loadNcrnaEdges(1);
               }}
             />
           )}
@@ -806,7 +845,7 @@ export default function App() {
                   const next = {
                     depth: 2,
                     limit: 800,
-                    categories: ["Drug-Target", "Drug-Disease", "Target-Disease"],
+                    categories: ["Drug-Target", "Drug-Disease", "Target-Disease", "ncRNA-Drug"],
                     types: ["Known", "Predicted", "Known+Predicted"]
                   };
                   setGraphMode("full");
@@ -818,7 +857,7 @@ export default function App() {
                   const next = {
                     depth: 2,
                     limit: 1200,
-                    categories: ["Drug-Target", "Drug-Disease", "Target-Disease"],
+                    categories: ["Drug-Target", "Drug-Disease", "Target-Disease", "ncRNA-Drug"],
                     types: ["Known", "Predicted", "Known+Predicted"]
                   };
                   setGraphMode("full");
@@ -830,7 +869,7 @@ export default function App() {
                   const next = {
                     depth: 2,
                     limit: 2500,
-                    categories: ["Drug-Target", "Drug-Disease", "Target-Disease"],
+                    categories: ["Drug-Target", "Drug-Disease", "Target-Disease", "ncRNA-Drug"],
                     types: ["Known", "Predicted", "Known+Predicted"]
                   };
                   setGraphMode("full");
@@ -875,21 +914,32 @@ export default function App() {
           )}
           {page === "database" && (
             <DatabasePage
+              activeSection={databaseSection}
               nodesState={nodesState}
               edgesState={edgesState}
               predictionState={predictionState}
+              ncrnaEvidenceState={ncrnaEvidenceState}
+              ncrnaEdgeState={ncrnaEdgeState}
               nodeFilters={nodeFilters}
               edgeFilters={edgeFilters}
               predictionFilters={predictionFilters}
+              ncrnaEvidenceFilters={ncrnaEvidenceFilters}
+              ncrnaEdgeFilters={ncrnaEdgeFilters}
               onNodeFiltersChange={(patch) => setNodeFilters((prev) => ({ ...prev, ...patch }))}
               onEdgeFiltersChange={(patch) => setEdgeFilters((prev) => ({ ...prev, ...patch }))}
               onPredictionFiltersChange={(patch) => setPredictionFilters((prev) => ({ ...prev, ...patch }))}
+              onNcrnaEvidenceFiltersChange={(patch) => setNcrnaEvidenceFilters((prev) => ({ ...prev, ...patch }))}
+              onNcrnaEdgeFiltersChange={(patch) => setNcrnaEdgeFilters((prev) => ({ ...prev, ...patch }))}
               onNodeSearch={() => loadNodes(1)}
               onEdgeSearch={() => loadEdges(1)}
               onPredictionSearch={() => loadPredictionResults(1)}
+              onNcrnaEvidenceSearch={() => loadNcrnaEvidence(1)}
+              onNcrnaEdgeSearch={() => loadNcrnaEdges(1)}
               onNodePage={(delta) => loadNodes(nodesState.page + delta)}
               onEdgePage={(delta) => loadEdges(edgesState.page + delta)}
               onPredictionPage={(delta) => loadPredictionResults(predictionState.page + delta)}
+              onNcrnaEvidencePage={(delta) => loadNcrnaEvidence(ncrnaEvidenceState.page + delta)}
+              onNcrnaEdgePage={(delta) => loadNcrnaEdges(ncrnaEdgeState.page + delta)}
               onExportNodes={exportCurrentNodes}
               onExportEdges={exportCurrentEdges}
               onExportPredictions={exportPredictionResults}
@@ -903,6 +953,10 @@ export default function App() {
               canEdgeNext={edgesState.page * edgesState.page_size < edgesState.total}
               canPredictionPrev={predictionState.page > 1}
               canPredictionNext={predictionState.page * predictionState.page_size < predictionState.total}
+              canNcrnaEvidencePrev={ncrnaEvidenceState.page > 1}
+              canNcrnaEvidenceNext={ncrnaEvidenceState.page * ncrnaEvidenceState.page_size < ncrnaEvidenceState.total}
+              canNcrnaEdgePrev={ncrnaEdgeState.page > 1}
+              canNcrnaEdgeNext={ncrnaEdgeState.page * ncrnaEdgeState.page_size < ncrnaEdgeState.total}
               onJumpToNode={async (id) => {
                 setPage("analysis");
                 await loadDetail(id, { withNeighbors: true });
