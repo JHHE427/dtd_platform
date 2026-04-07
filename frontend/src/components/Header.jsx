@@ -60,29 +60,28 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
         <button className="brand" onClick={() => onPageChange("home")}>
           <span className="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 64 64" className="brand-logo" role="img">
-              <circle cx="32" cy="32" r="25" fill="none" stroke="#93c5fd" strokeWidth="2.2" />
-              <path
-                d="M19 43 L32 21 L45 43 Z"
-                fill="none"
-                stroke="#cbd5e1"
-                strokeWidth="2.2"
-                strokeLinejoin="round"
-              />
-              <circle cx="32" cy="21" r="5.4" fill="#3b82f6" />
-              <circle cx="19" cy="43" r="5.4" fill="#f59e0b" />
-              <circle cx="45" cy="43" r="5.4" fill="#ef4444" />
-              <circle cx="50.5" cy="16.5" r="3.2" fill="#14b8a6" />
-              <path
-                d="M47.2 18.8 Q40 27 34.5 33.5"
-                fill="none"
-                stroke="#14b8a6"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
+              <defs>
+                <linearGradient id="dna-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#60a5fa" />
+                  <stop offset="100%" stopColor="#14b8a6" />
+                </linearGradient>
+              </defs>
+              <circle cx="32" cy="32" r="24" fill="none" stroke="url(#dna-ring)" strokeWidth="2.4" />
+              <path d="M17 39 Q25 28 32 32 T47 25" fill="none" stroke="#93c5fd" strokeWidth="2.2" strokeLinecap="round" />
+              <path d="M19 47 Q31 29 45 45" fill="none" stroke="#cbd5e1" strokeWidth="2.2" strokeLinecap="round" />
+              <path d="M18 23 Q28 18 39 17 T50 23" fill="none" stroke="#14b8a6" strokeWidth="1.9" strokeLinecap="round" opacity="0.95" />
+              <circle cx="32" cy="32" r="7.2" fill="#ef4444" />
+              <circle cx="32" cy="32" r="11.4" fill="none" stroke="rgba(239,68,68,0.28)" strokeWidth="2.4" />
+              <circle cx="18.5" cy="39.5" r="4.8" fill="#2563eb" />
+              <circle cx="46" cy="25.5" r="4.6" fill="#14b8a6" />
+              <circle cx="45.5" cy="45.5" r="4.9" fill="#f59e0b" />
+              <circle cx="22" cy="20.5" r="3.6" fill="#6366f1" />
             </svg>
           </span>
           <span className="brand-text">
-            DTD<span>Atlas</span>
+            <strong>Disease Network</strong>
+            <span>Atlas</span>
+            <em>Drug · Target · ncRNA</em>
           </span>
         </button>
 
@@ -110,7 +109,7 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
                 onQuickSearch(keyword);
               }
             }}
-            placeholder="Search a drug, target, disease, or registered alias..."
+            placeholder="Search a drug, target, disease, ncRNA, or registered alias..."
           />
           <button onClick={() => onQuickSearch(keyword)}>Go</button>
           {open && suggestions.length > 0 ? (

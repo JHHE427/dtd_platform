@@ -5,6 +5,7 @@ function nodeColor(type) {
   if (type === "Disease") return "#ef4444";
   if (type === "Target") return "#f59e0b";
   if (type === "Drug") return "#3b82f6";
+  if (type === "ncRNA") return "#14b8a6";
   return "#94a3b8";
 }
 
@@ -35,6 +36,8 @@ function labelAnchors(node, radius) {
       ? ["right", "top-right", "bottom-right", "top", "bottom"]
       : node.node_type === "Target"
         ? ["top-right", "right", "top", "bottom-right", "bottom"]
+        : node.node_type === "ncRNA"
+          ? ["bottom-left", "left", "bottom", "top-left", "top"]
         : ["left", "top-left", "bottom-left", "top", "bottom"];
   const rotate = Math.floor(seed * bias.length);
   const ordered = [...bias.slice(rotate), ...bias.slice(0, rotate)];
@@ -181,6 +184,8 @@ export default function GraphCanvas({
           ? 1.65
           : l.edge_category === "Target-Disease"
             ? 1.52
+            : l.edge_category === "ncRNA-Drug"
+              ? 1.46
             : 1.16;
       const curve = (curveSeed - 0.5) * 0.62 * categoryBoost;
       const supportScore = Number.isFinite(Number(l.support_score)) ? Number(l.support_score) : 0;
@@ -235,6 +240,7 @@ export default function GraphCanvas({
     fgRef.current.d3Force("link").distance((l) => {
       if (l.edge_category === "Drug-Target") return l.edge_type === "Known+Predicted" ? 62 : 88;
       if (l.edge_category === "Drug-Disease" || l.edge_category === "Target-Disease") return 120;
+      if (l.edge_category === "ncRNA-Drug") return 112;
       return 96;
     });
     fgRef.current.d3Force("charge").strength(-220);
@@ -272,7 +278,7 @@ export default function GraphCanvas({
         graphData={graphData}
         width={size.w}
         height={size.h}
-        backgroundColor="#f8fafc"
+        backgroundColor="rgba(0,0,0,0)"
         nodeRelSize={3}
         cooldownTime={2200}
         cooldownTicks={220}
@@ -291,9 +297,9 @@ export default function GraphCanvas({
           const isSelected = node.id === selectedId;
           const isHit = needle ? `${node.display_name || node.label} ${node.id}`.toLowerCase().includes(needle) : false;
           const inFocus = !focusNeighbors || focusNeighbors.has(node.id);
-          const diseaseBoost = node.node_type === "Disease" ? 1.08 : 1;
+          const typeBoost = node.node_type === "Disease" ? 1.08 : node.node_type === "ncRNA" ? 1.05 : 1;
           const centerBoost = node.id === centerId ? 1.18 : 1;
-          const r = Math.max(3, (2 + Math.sqrt(node.importance || 1) * 1.8) * diseaseBoost * centerBoost);
+          const r = Math.max(3, (2 + Math.sqrt(node.importance || 1) * 1.8) * typeBoost * centerBoost);
           const ev = nodeEvidence.get(node.id) || { Known: 0, Predicted: 0, "Known+Predicted": 0 };
           const evTotal = ev.Known + ev.Predicted + ev["Known+Predicted"];
           const baseNodeColor = nodeColor(node.node_type);
@@ -320,6 +326,13 @@ export default function GraphCanvas({
             ctx.beginPath();
             ctx.arc(node.x, node.y, r + 4.8, 0, 2 * Math.PI);
             ctx.strokeStyle = "rgba(239, 68, 68, 0.18)";
+            ctx.lineWidth = 2.1;
+            ctx.stroke();
+          }
+          if (node.node_type === "ncRNA") {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, r + 4.6, 0, 2 * Math.PI);
+            ctx.strokeStyle = "rgba(20, 184, 166, 0.22)";
             ctx.lineWidth = 2.1;
             ctx.stroke();
           }
@@ -592,9 +605,11 @@ export default function GraphCanvas({
         }}
       />
       <div className="graph-legend-inline">
+        <div className="graph-legend-inline__title">Disease-centered network</div>
         <span><i className="dot drug" />Drug</span>
         <span><i className="dot target" />Target</span>
-        <span><i className="dot disease" />Disease</span>
+        <span className="is-disease-core"><i className="dot disease" />Disease core</span>
+        <span><i className="dot ncrna" />ncRNA</span>
         <span><i className="line known" />Known</span>
         <span><i className="line predicted" />Predicted</span>
         <span><i className="line kp" />Known+Predicted</span>
