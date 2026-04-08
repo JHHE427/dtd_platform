@@ -91,6 +91,7 @@ export default function DatabasePage({
   const [selectedPrediction, setSelectedPrediction] = React.useState(null);
   const [predictionSort, setPredictionSort] = React.useState({ key: "result_rank", direction: "asc" });
   const [selectedTargetDetail, setSelectedTargetDetail] = React.useState(null);
+  const [selectedDiseaseDetail, setSelectedDiseaseDetail] = React.useState(null);
   const nodeTypeCounts = nodesState.items.reduce((acc, n) => {
     const key = n.node_type || "Other";
     acc[key] = (acc[key] || 0) + 1;
@@ -182,6 +183,9 @@ export default function DatabasePage({
   const targetCentricModule = researchSummary?.target_centric_module || null;
   const targetCentricOverview = targetCentricModule?.overview || null;
   const targetCentricRows = targetCentricModule?.rows || [];
+  const diseaseCentricModule = researchSummary?.disease_centric_module || null;
+  const diseaseCentricOverview = diseaseCentricModule?.overview || null;
+  const diseaseCentricRows = diseaseCentricModule?.rows || [];
   const ncrnaLinkedResults = researchSummary?.ncrna_linked_results || null;
   const ncrnaLinkedOverview = ncrnaLinkedResults?.overview || null;
   const ncrnaLinkedDrugs = ncrnaLinkedResults?.top_linked_drugs || [];
@@ -210,10 +214,17 @@ export default function DatabasePage({
     ),
     [ttdSupportedApprovedRows]
   );
+  const diseaseCentricMap = React.useMemo(
+    () => Object.fromEntries(diseaseCentricRows.map((item) => [item.disease_id, item])),
+    [diseaseCentricRows]
+  );
   const representativeDrugs = researchSummary?.representative_drugs || [];
   const representativeCases = researchSummary?.representative_cases || [];
   const approvedValidation = researchSummary?.approved_validation || null;
   const pipelineShrinkage = researchSummary?.pipeline_shrinkage || null;
+  const releasedDtiAudit = researchSummary?.released_dti_audit || null;
+  const releasedDtiTtdSummary = researchSummary?.released_dti_ttd_summary || null;
+  const releasedDiseaseSummary = researchSummary?.released_disease_summary || null;
   const supportTierOverview = researchSummary?.support_tier_overview || null;
   const diseaseResults = researchSummary?.disease_results || [];
   const diseaseSpotlights = researchSummary?.disease_spotlights || [];
@@ -298,6 +309,19 @@ export default function DatabasePage({
       return targetCentricRows[0];
     });
   }, [targetCentricRows]);
+
+  React.useEffect(() => {
+    if (!diseaseCentricRows.length) {
+      setSelectedDiseaseDetail(null);
+      return;
+    }
+    setSelectedDiseaseDetail((prev) => {
+      if (prev?.disease_id && diseaseCentricRows.some((item) => item.disease_id === prev.disease_id)) {
+        return diseaseCentricRows.find((item) => item.disease_id === prev.disease_id) || diseaseCentricRows[0];
+      }
+      return diseaseCentricRows[0];
+    });
+  }, [diseaseCentricRows]);
   const sortIcon = (key) => {
     if (predictionSort.key !== key) return "↕";
     return predictionSort.direction === "asc" ? "↑" : "↓";
@@ -644,7 +668,7 @@ export default function DatabasePage({
         </div>
         {ncrnaOverview ? (
           <div className="db-research-grid db-stack-gap" ref={ncrnaSectionRef}>
-            <div className="dti-heatmap-card">
+            <div className="dti-heatmap-card target-module-card">
               <div className="dti-heatmap-head">
                 <strong>ncRNA-Drug Result Tables</strong>
                 <span>The known ncRNA-drug layer is released as a curated evidence module and kept separate from the prediction workflow. The tables below provide direct access to ncRNA-centered and drug-centered summaries.</span>
@@ -668,7 +692,7 @@ export default function DatabasePage({
         ) : null}
         {ncrnaOverview ? (
           <div className="db-research-grid db-stack-gap">
-            <div className="result-table-wrap">
+            <div className="result-table-wrap target-module-table">
               <table className="result-table compact">
                 <thead>
                   <tr>
@@ -1109,12 +1133,12 @@ export default function DatabasePage({
               </table>
             </div>
             {selectedTargetDetail ? (
-              <div className="dti-heatmap-card">
+              <div className="dti-heatmap-card target-detail-card">
                 <div className="dti-heatmap-head">
                   <strong>Selected Target Detail</strong>
                   <span>A structured target-centric detail card for the currently selected therapeutic target, combining released-network reach with disease, drug, and TTD/MOA context.</span>
                 </div>
-                <div className="result-summary-strip">
+                <div className="result-summary-strip target-detail-summary">
                   <span className="result-summary-pill">
                     <strong>{selectedTargetDetail.target_label}</strong>
                     <em>{selectedTargetDetail.target_id}</em>
@@ -1132,20 +1156,20 @@ export default function DatabasePage({
                     <em>Leading MOA</em>
                   </span>
                 </div>
-                <div className="comparison-grid">
-                  <div className="comparison-card">
+                <div className="comparison-grid target-detail-grid">
+                  <div className="comparison-card target-detail-panel">
                     <div className="annot-title">Top Disease Context</div>
                     <div className="item-meta">{selectedTargetDetail.top_disease_label || "No dominant disease available."}</div>
                   </div>
-                  <div className="comparison-card">
+                  <div className="comparison-card target-detail-panel">
                     <div className="annot-title">Top Drug Context</div>
                     <div className="item-meta">{selectedTargetDetail.top_drug_label || "No dominant drug available."}</div>
                   </div>
-                  <div className="comparison-card">
+                  <div className="comparison-card target-detail-panel">
                     <div className="annot-title">TTD Support</div>
                     <div className="item-meta">{selectedTargetDetail.top_ttd_support || "No TTD support label available."}</div>
                   </div>
-                  <div className="comparison-card">
+                  <div className="comparison-card target-detail-panel">
                     <div className="annot-title">Best Released Support</div>
                     <div className="item-meta">{selectedTargetDetail.max_algo_pass || 0}/3 released support and {selectedTargetDetail.max_votes || 0}/7 seven-model vote support</div>
                     <div className="comparison-actions">
@@ -1153,7 +1177,7 @@ export default function DatabasePage({
                     </div>
                   </div>
                 </div>
-                <div className="result-table-wrap">
+                <div className="result-table-wrap target-detail-table">
                   <table className="result-table compact">
                     <thead>
                       <tr>
@@ -1433,7 +1457,7 @@ export default function DatabasePage({
                 {pipelineShrinkage ? (
                   <>
                     <tr><td>Raw DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.raw_dti_pairs}</span></td></tr>
-                    <tr><td>Vote≥4 retained</td><td><span className="result-emphasis-number">{pipelineShrinkage.vote4_retained}</span></td></tr>
+                    <tr><td>Release-filtered DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained}</span></td></tr>
                     <tr><td>Released prediction rows</td><td><span className="result-emphasis-number">{pipelineShrinkage.released_prediction_rows}</span></td></tr>
                     <tr><td>Formal network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
                     <tr><td>Formal network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
@@ -1444,6 +1468,172 @@ export default function DatabasePage({
               </tbody>
             </table>
           </div>
+          {releasedDtiAudit?.release_filtered_pairs ? (
+            <div className="result-summary-strip">
+              <span className="result-summary-pill">
+                <strong>{releasedDtiAudit.release_filtered_pairs.toLocaleString()}</strong>
+                <em>Release-filtered DTI pairs</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{releasedDtiAudit.released_prediction_rows.toLocaleString()}</strong>
+                <em>Released prediction rows</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{releasedDtiAudit.curated_overlap_rows.toLocaleString()}</strong>
+                <em>Curated overlap rows</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{releasedDtiAudit.additional_released_pairs.toLocaleString()}</strong>
+                <em>Additional released pairs</em>
+              </span>
+            </div>
+          ) : null}
+          {releasedDtiAudit?.coverage_note ? (
+            <div className="network-caption">{releasedDtiAudit.coverage_note}</div>
+          ) : null}
+          {releasedDtiTtdSummary?.release_filtered_pairs ? (
+            <>
+              <div className="result-summary-strip">
+                <span className="result-summary-pill">
+                  <strong>{releasedDtiTtdSummary.ttd_supported_pairs.toLocaleString()}</strong>
+                  <em>TTD-supported released pairs</em>
+                </span>
+                <span className="result-summary-pill">
+                  <strong>{releasedDtiTtdSummary.ttd_supported_pair_pct}%</strong>
+                  <em>Pair-level TTD support</em>
+                </span>
+                <span className="result-summary-pill">
+                  <strong>{releasedDtiTtdSummary.top_pair_moa || "NA"}</strong>
+                  <em>Leading MOA</em>
+                </span>
+                <span className="result-summary-pill">
+                  <strong>{releasedDtiTtdSummary.ttd_supported_released_rows.toLocaleString()}</strong>
+                  <em>TTD-supported released rows</em>
+                </span>
+              </div>
+              <div className="home-research-grid inner-result-grid">
+                <div className="result-table-wrap">
+                  <table className="result-table compact">
+                    <thead>
+                      <tr>
+                        <th>TTD-supported drug</th>
+                        <th>Pairs</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(releasedDtiTtdSummary.top_supported_pair_drugs || []).length ? releasedDtiTtdSummary.top_supported_pair_drugs.slice(0, 8).map((item) => (
+                        <tr key={item.Drug_ID}>
+                          <td><button className="result-link-btn" onClick={() => onJumpToNode(item.Drug_ID)}><span className="result-emphasis-label">{item.Drug_Name}</span></button></td>
+                          <td><span className="result-emphasis-number">{item.pair_count}</span></td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={2}>No direct TTD-supported pair summary is available.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="result-table-wrap">
+                  <table className="result-table compact">
+                    <thead>
+                      <tr>
+                        <th>TTD-supported target</th>
+                        <th>Pairs</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(releasedDtiTtdSummary.top_supported_pair_targets || []).length ? releasedDtiTtdSummary.top_supported_pair_targets.slice(0, 8).map((item) => (
+                        <tr key={item.Target_ID}>
+                          <td><button className="result-link-btn" onClick={() => onJumpToNode(item.Target_ID)}><span className="result-emphasis-label">{item.gene_name || item.Target_ID}</span></button></td>
+                          <td><span className="result-emphasis-number">{item.pair_count}</span></td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={2}>No target-level TTD support is available for the current released pair layer.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="network-caption">{releasedDtiTtdSummary.coverage_note}</div>
+            </>
+          ) : null}
+          {releasedDiseaseSummary?.released_rows ? (
+            <>
+              <div className="result-summary-strip">
+                <span className="result-summary-pill">
+                  <strong>{releasedDiseaseSummary.released_rows.toLocaleString()}</strong>
+                  <em>Released disease-linked rows</em>
+                </span>
+                <span className="result-summary-pill">
+                  <strong>{releasedDiseaseSummary.released_pairs.toLocaleString()}</strong>
+                  <em>Released disease-linked pairs</em>
+                </span>
+                <span className="result-summary-pill">
+                  <strong>{releasedDiseaseSummary.released_unique_targets.toLocaleString()}</strong>
+                  <em>Targets represented</em>
+                </span>
+                <span className="result-summary-pill">
+                  <strong>{releasedDiseaseSummary.top_support_pattern || "NA"}</strong>
+                  <em>Leading inferred support pattern</em>
+                </span>
+              </div>
+              <div className="home-research-grid inner-result-grid">
+                <div className="result-table-wrap">
+                  <table className="result-table compact">
+                    <thead>
+                      <tr>
+                        <th>Released disease-linked row</th>
+                        <th>Target</th>
+                        <th>Disease</th>
+                        <th>Support</th>
+                        <th>TXGNN score</th>
+                        <th>ENR FDR</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(releasedDiseaseSummary.top_rows || []).length ? releasedDiseaseSummary.top_rows.map((item) => (
+                        <tr key={`${item.drug_id}-${item.target_id}-${item.disease_id}`}>
+                          <td><button className="result-link-btn" onClick={() => onJumpToNode(item.drug_id)}><span className="result-emphasis-label">{item.drug_label}</span></button></td>
+                          <td><button className="result-link-btn" onClick={() => onJumpToNode(item.target_id)}>{item.target_label}</button></td>
+                          <td><button className="result-link-btn" onClick={() => onJumpToNode(item.disease_id)}>{item.disease_label}</button></td>
+                          <td><span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.Total_Votes_Optional7}/7</span></td>
+                          <td><span className="result-emphasis-number">{item.TXGNN_score ?? "-"}</span></td>
+                          <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={6}>No released disease-linked rows are available.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="result-table-wrap">
+                  <table className="result-table compact">
+                    <thead>
+                      <tr>
+                        <th>Released target</th>
+                        <th>Rows</th>
+                        <th>Top disease</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(releasedDiseaseSummary.top_targets || []).length ? releasedDiseaseSummary.top_targets.slice(0, 8).map((item, idx) => {
+                        const topDisease = (releasedDiseaseSummary.top_rows || []).find((row) => row.target_id === item.target_id)?.disease_label || "-";
+                        return (
+                          <tr key={`${item.target_id}-${idx}`}>
+                            <td><button className="result-link-btn" onClick={() => onJumpToNode(item.target_id)}><span className="result-emphasis-label">{item.gene_name || item.target_label}</span></button></td>
+                            <td><span className="result-emphasis-number">{item.row_count}</span></td>
+                            <td>{topDisease}</td>
+                          </tr>
+                        );
+                      }) : (
+                        <tr><td colSpan={3}>No target summary is available for the current released layer.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="network-caption">{releasedDiseaseSummary.coverage_note}</div>
+            </>
+          ) : null}
           <div className="result-table-wrap">
             <table className="result-table compact">
               <thead>
@@ -1505,9 +1695,20 @@ export default function DatabasePage({
               <tbody>
                 {diseaseSpotlights.length ? diseaseSpotlights.map((item) => {
                   const linked = ncrnaLinkedDrugMap[item.top_drug_id];
+                  const detail = diseaseCentricMap[item.disease_id];
                   return (
                   <tr key={item.disease_id}>
-                    <td><button className="result-link-btn" onClick={() => onJumpToNode(item.disease_id)}><span className="result-emphasis-label">{item.disease_label}</span></button></td>
+                    <td><button className="result-link-btn" onClick={() => setSelectedDiseaseDetail(detail || {
+                      disease_id: item.disease_id,
+                      disease_label: item.disease_label,
+                      released_rows: item.row_count,
+                      top_drug_id: item.top_drug_id,
+                      top_drug_label: item.top_drug_label,
+                      top_target_label: item.top_target_label,
+                      max_algo_pass: item.max_algo_pass,
+                      max_votes: item.max_votes,
+                      top_linked_rows: [],
+                    })}><span className="result-emphasis-label">{item.disease_label}</span></button></td>
                     <td><span className="result-emphasis-number">{item.row_count}</span></td>
                     <td>{item.top_drug_label || "-"}</td>
                     <td>{item.top_target_label || "-"}</td>
@@ -1521,6 +1722,133 @@ export default function DatabasePage({
             </table>
           </div>
         </div>
+        {diseaseCentricOverview ? (
+          <div className="db-research-grid db-stack-gap">
+            <div className="dti-heatmap-card">
+              <div className="dti-heatmap-head">
+                <strong>Disease Context Module</strong>
+                <span>Disease-centered object browsing aligned with the released disease network: each row captures the dominant drug, target, ncRNA-linked context, and TTD-supported target context around the same disease node.</span>
+              </div>
+              <div className="result-summary-strip">
+                <span className="result-summary-pill">
+                  <strong>{diseaseCentricOverview.selected_disease_count}</strong>
+                  <em>Selected diseases</em>
+                </span>
+                <span className="result-summary-pill">
+                  <strong>{diseaseCentricOverview.ncrna_context_count}</strong>
+                  <em>With ncRNA context</em>
+                </span>
+                <span className="result-summary-pill">
+                  <strong>{diseaseCentricOverview.ttd_context_count}</strong>
+                  <em>With TTD context</em>
+                </span>
+                <span className="result-summary-pill">
+                  <strong>{diseaseCentricOverview.leading_drug || "NA"}</strong>
+                  <em>Leading drug context</em>
+                </span>
+              </div>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Disease</th>
+                    <th>Released rows</th>
+                    <th>Top drug</th>
+                    <th>Top target</th>
+                    <th>ncRNA context</th>
+                    <th>TTD context</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diseaseCentricRows.length ? diseaseCentricRows.map((row) => (
+                    <tr key={row.disease_id}>
+                      <td><button className="result-link-btn" onClick={() => setSelectedDiseaseDetail(row)}><span className="result-emphasis-label">{row.disease_label}</span></button></td>
+                      <td><span className="result-emphasis-number">{row.released_rows}</span></td>
+                      <td>{row.top_drug_label || "-"}</td>
+                      <td>{row.top_target_label || "-"}</td>
+                      <td>{row.ncrna_summary ? <span className="result-emphasis-chip is-soft">{row.ncrna_summary}</span> : "-"}</td>
+                      <td>{row.ttd_summary ? <span className="result-emphasis-chip is-soft">{row.ttd_summary}</span> : "-"}</td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan={6}>No disease-centric rows are available in the current release.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {selectedDiseaseDetail ? (
+              <div className="dti-heatmap-card target-detail-card">
+                <div className="dti-heatmap-head">
+                  <strong>Selected Disease Detail</strong>
+                  <span>A structured disease-centric detail card for the currently selected disease node, combining released-network reach with drug, target, ncRNA, and TTD context.</span>
+                </div>
+                <div className="result-summary-strip target-detail-summary">
+                  <span className="result-summary-pill">
+                    <strong>{selectedDiseaseDetail.disease_label}</strong>
+                    <em>{selectedDiseaseDetail.disease_id}</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{selectedDiseaseDetail.released_rows}</strong>
+                    <em>Released rows</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{selectedDiseaseDetail.max_algo_pass || 0}/3</strong>
+                    <em>Best released support</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{selectedDiseaseDetail.max_votes || 0}/7</strong>
+                    <em>Best vote support</em>
+                  </span>
+                </div>
+                <div className="comparison-grid target-detail-grid">
+                  <div className="comparison-card target-detail-panel">
+                    <div className="annot-title">Top Drug Context</div>
+                    <div className="item-meta">{selectedDiseaseDetail.drug_summary || selectedDiseaseDetail.top_drug_label || "No dominant drug available."}</div>
+                  </div>
+                  <div className="comparison-card target-detail-panel">
+                    <div className="annot-title">Top Target Context</div>
+                    <div className="item-meta">{selectedDiseaseDetail.target_summary || selectedDiseaseDetail.top_target_label || "No dominant target available."}</div>
+                  </div>
+                  <div className="comparison-card target-detail-panel">
+                    <div className="annot-title">Top ncRNA-Linked Drug Context</div>
+                    <div className="item-meta">{selectedDiseaseDetail.ncrna_summary || "No ncRNA-linked context available."}</div>
+                  </div>
+                  <div className="comparison-card target-detail-panel">
+                    <div className="annot-title">TTD-Supported Target Context</div>
+                    <div className="item-meta">{selectedDiseaseDetail.ttd_summary || "No TTD-supported context available."}</div>
+                    <div className="comparison-actions">
+                      <button className="primary" onClick={() => onJumpToNode(selectedDiseaseDetail.disease_id)}>View in Network</button>
+                    </div>
+                  </div>
+                </div>
+                <div className="result-table-wrap target-detail-table">
+                  <table className="result-table compact">
+                    <thead>
+                      <tr>
+                        <th>Linked released row</th>
+                        <th>Target</th>
+                        <th>Support</th>
+                        <th>Pattern</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selectedDiseaseDetail.top_linked_rows || []).length ? selectedDiseaseDetail.top_linked_rows.map((row, idx) => (
+                        <tr key={`${row.drug_id}-${row.target_id}-${idx}`}>
+                          <td>{row.drug_id ? <button className="result-link-btn" onClick={() => onJumpToNode(row.drug_id)}>{row.drug_label}</button> : (row.drug_label || "-")}</td>
+                          <td>{row.target_id ? <button className="result-link-btn" onClick={() => onJumpToNode(row.target_id)}>{row.target_label}</button> : (row.target_label || "-")}</td>
+                          <td><span className="result-emphasis-chip">{row.n_algo_pass || 0}/3 · {row.Total_Votes_Optional7 || 0}/7</span></td>
+                          <td>{row.support_pattern || "-"}</td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={4}>No linked released rows are available for the selected disease.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="db-research-grid db-stack-gap">
           <div className="dti-heatmap-card">
             <div className="dti-heatmap-head">
@@ -1991,6 +2319,7 @@ export default function DatabasePage({
                   <th>Drug summary</th>
                   <th>Rows</th>
                   <th>Top disease</th>
+                  <th>Cross-associated diseases</th>
                   <th>Top target</th>
                   <th>ncRNA-supported</th>
                   <th>Best support</th>
@@ -2004,11 +2333,12 @@ export default function DatabasePage({
                     <td><button className="result-link-btn" onClick={() => onJumpToNode(item.drug_id)}><span className="result-emphasis-label">{item.drug_label}</span></button></td>
                     <td><span className="result-emphasis-number">{item.row_count}</span></td>
                     <td>{item.top_disease_label || "-"}</td>
+                    <td><span className="result-muted-multiline">{item.disease_summary || item.top_disease_label || "-"}</span></td>
                     <td>{item.top_target_label || "-"}</td>
                     <td>{linked ? <span className="result-emphasis-chip is-soft">{linked.top_ncrna_name || "linked"} · {linked.linked_ncrna_count || 0}</span> : "-"}</td>
                     <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
                   </tr>
-                )}) : <tr><td colSpan={6}>No drug summary rows are available in the current release.</td></tr>}
+                )}) : <tr><td colSpan={7}>No drug summary rows are available in the current release.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -2019,6 +2349,7 @@ export default function DatabasePage({
                   <th>Target summary</th>
                   <th>Rows</th>
                   <th>Top disease</th>
+                  <th>Cross-associated diseases</th>
                   <th>Top drug</th>
                   <th>Best support</th>
                 </tr>
@@ -2029,10 +2360,11 @@ export default function DatabasePage({
                     <td><button className="result-link-btn" onClick={() => onJumpToNode(item.target_id)}><span className="result-emphasis-label">{item.target_label}</span></button></td>
                     <td><span className="result-emphasis-number">{item.row_count}</span></td>
                     <td>{item.top_disease_label || "-"}</td>
+                    <td><span className="result-muted-multiline">{item.disease_summary || item.top_disease_label || "-"}</span></td>
                     <td>{item.top_drug_label || "-"}</td>
                     <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
                   </tr>
-                )) : <tr><td colSpan={5}>No target summary rows are available in the current release.</td></tr>}
+                )) : <tr><td colSpan={6}>No target summary rows are available in the current release.</td></tr>}
               </tbody>
             </table>
           </div>

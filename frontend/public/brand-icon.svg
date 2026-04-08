@@ -1,0 +1,27 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="28" y1="24" x2="228" y2="232" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FBFF"/>
+      <stop offset="1" stop-color="#DCEBFF"/>
+    </linearGradient>
+    <linearGradient id="net" x1="58" y1="52" x2="204" y2="208" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#14B8A6"/>
+    </linearGradient>
+    <radialGradient id="disease" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 128) rotate(90) scale(44)">
+      <stop stop-color="#F87171"/>
+      <stop offset="1" stop-color="#DC2626"/>
+    </radialGradient>
+  </defs>
+  <rect x="18" y="18" width="220" height="220" rx="56" fill="url(#bg)"/>
+  <rect x="18" y="18" width="220" height="220" rx="56" stroke="#C7DCF8" stroke-width="4"/>
+  <path d="M82 78L128 128L176 86M80 176L128 128L180 176M66 126H128M128 128H196" stroke="url(#net)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <circle cx="128" cy="128" r="34" fill="url(#disease)"/>
+  <circle cx="128" cy="128" r="48" stroke="#FCA5A5" stroke-opacity="0.5" stroke-width="6"/>
+  <circle cx="82" cy="78" r="16" fill="#3B82F6"/>
+  <circle cx="176" cy="86" r="16" fill="#60A5FA"/>
+  <circle cx="80" cy="176" r="16" fill="#14B8A6"/>
+  <circle cx="180" cy="176" r="16" fill="#2DD4BF"/>
+  <circle cx="66" cy="126" r="13" fill="#93C5FD"/>
+  <circle cx="196" cy="128" r="13" fill="#99F6E4"/>
+</svg>
