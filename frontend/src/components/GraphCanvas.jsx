@@ -136,13 +136,13 @@ function initialNodePosition(node, centerId, layoutMode) {
 function labelBudget(scale, densityMode) {
   const base =
     densityMode === "dense"
-      ? { focus: 12, pinned: 22, important: 48, normal: 22 }
+      ? { focus: 10, pinned: 16, important: 34, normal: 12 }
       : densityMode === "sparse"
         ? { focus: 14, pinned: 28, important: 64, normal: 34 }
-        : { focus: 12, pinned: 24, important: 56, normal: 28 };
-  if (scale >= 2.4) return { focus: 999, pinned: 120, important: 160, normal: 120 };
-  if (scale >= 1.9) return { focus: 999, pinned: base.pinned + 16, important: base.important + 36, normal: base.normal + 24 };
-  if (scale >= 1.4) return { focus: 999, pinned: base.pinned + 8, important: base.important + 14, normal: base.normal + 8 };
+        : { focus: 12, pinned: 20, important: 44, normal: 20 };
+  if (scale >= 2.4) return { focus: 999, pinned: 96, important: 132, normal: 88 };
+  if (scale >= 1.9) return { focus: 999, pinned: base.pinned + 12, important: base.important + 24, normal: base.normal + 16 };
+  if (scale >= 1.4) return { focus: 999, pinned: base.pinned + 6, important: base.important + 10, normal: base.normal + 6 };
   return { focus: 999, pinned: base.pinned, important: base.important, normal: base.normal };
 }
 
@@ -262,10 +262,10 @@ export default function GraphCanvas({
     let keepLinks = allLinks;
 
     const densityCfg = {
-      sparse: { triggerEdges: 1200, triggerNodes: 900, topNodes: 650, topEdges: 1200 },
-      balanced: { triggerEdges: 2600, triggerNodes: 1600, topNodes: 1200, topEdges: 2500 },
-      dense: { triggerEdges: 5200, triggerNodes: 2800, topNodes: 2200, topEdges: 5000 }
-    }[densityMode] || { triggerEdges: 2600, triggerNodes: 1600, topNodes: 1200, topEdges: 2500 };
+      sparse: { triggerEdges: 900, triggerNodes: 700, topNodes: 520, topEdges: 900 },
+      balanced: { triggerEdges: 1800, triggerNodes: 1200, topNodes: 900, topEdges: 1700 },
+      dense: { triggerEdges: 3200, triggerNodes: 1800, topNodes: 1350, topEdges: 2400 }
+    }[densityMode] || { triggerEdges: 1800, triggerNodes: 1200, topNodes: 900, topEdges: 1700 };
 
     // For very dense graphs, render a readable high-information subgraph.
     if (allLinks.length > densityCfg.triggerEdges || allNodes.length > densityCfg.triggerNodes) {
@@ -349,6 +349,8 @@ export default function GraphCanvas({
     return m;
   }, [graphData]);
   const nodeById = React.useMemo(() => new Map(graphData.nodes.map((n) => [n.id, n])), [graphData.nodes]);
+  const performanceMode = graphData.nodes.length > 1000 || graphData.links.length > 1800;
+  const ultraDenseMode = graphData.nodes.length > 1300 || graphData.links.length > 2400;
 
   const focusId = hoverId || selectedId;
   const focusNeighbors = React.useMemo(() => (focusId ? neighborMap.get(focusId) || new Set([focusId]) : null), [focusId, neighborMap]);
@@ -370,15 +372,15 @@ export default function GraphCanvas({
   React.useEffect(() => {
     if (!fgRef.current) return;
     const densityForces = {
-      sparse: { charge: -280, collision: 1.28, xStrength: 0.026, yStrength: 0.026 },
-      balanced: { charge: -330, collision: 1.38, xStrength: 0.03, yStrength: 0.03 },
-      dense: { charge: -390, collision: 1.52, xStrength: 0.034, yStrength: 0.034 }
-    }[densityMode] || { charge: -330, collision: 1.38, xStrength: 0.03, yStrength: 0.03 };
+      sparse: { charge: -240, collision: 1.16, xStrength: 0.022, yStrength: 0.022 },
+      balanced: { charge: -290, collision: 1.24, xStrength: 0.026, yStrength: 0.026 },
+      dense: { charge: -330, collision: 1.32, xStrength: 0.028, yStrength: 0.028 }
+    }[densityMode] || { charge: -290, collision: 1.24, xStrength: 0.026, yStrength: 0.026 };
     const layoutForces = {
-      organic: { center: 0.024, drift: 1, collision: 1, radial: 1, fitMs: 520, settleMs: 820 },
-      clustered: { center: 0.018, drift: 1.34, collision: 1.15, radial: 0.88, fitMs: 560, settleMs: 860 },
-      constellation: { center: 0.012, drift: 1.62, collision: 1.24, radial: 0.72, fitMs: 620, settleMs: 920 }
-    }[layoutMode] || { center: 0.024, drift: 1, collision: 1, radial: 1, fitMs: 520, settleMs: 820 };
+      organic: { center: 0.02, drift: 1, collision: 1, radial: 1, fitMs: 420, settleMs: 560 },
+      clustered: { center: 0.016, drift: 1.22, collision: 1.1, radial: 0.9, fitMs: 460, settleMs: 620 },
+      constellation: { center: 0.011, drift: 1.46, collision: 1.18, radial: 0.76, fitMs: 520, settleMs: 700 }
+    }[layoutMode] || { center: 0.02, drift: 1, collision: 1, radial: 1, fitMs: 420, settleMs: 560 };
     fgRef.current.d3Force("link").distance((l) => {
       const base =
         l.edge_category === "Drug-Target"
@@ -402,7 +404,7 @@ export default function GraphCanvas({
       forceCollide((node) => {
         const importance = Math.max(1, Number(node.importance) || 1);
         return 6 + Math.sqrt(importance) * densityForces.collision * layoutForces.collision + (node.node_type === "Disease" ? 3.4 : 1.8);
-      }).iterations(2)
+      }).iterations(performanceMode ? 1 : 2)
     );
     fgRef.current.d3Force(
       "type-x",
@@ -452,10 +454,10 @@ export default function GraphCanvas({
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
         nodeRelSize={3}
-        cooldownTime={2200}
-        cooldownTicks={220}
-        d3AlphaDecay={0.035}
-        d3VelocityDecay={0.32}
+        cooldownTime={950}
+        cooldownTicks={90}
+        d3AlphaDecay={0.06}
+        d3VelocityDecay={0.38}
         linkCurvature={(l) => l.curve || 0}
         linkDirectionalArrowLength={0}
         nodeVal={(n) => Math.max(3, 2 + Math.sqrt(n.importance || 1) * 1.8)}
@@ -483,9 +485,31 @@ export default function GraphCanvas({
           const pedestalAlpha = isHover || isSelected ? 0.18 : node.id === centerId ? 0.13 : 0.08;
           const rimAlpha = isHover || isSelected ? 0.34 : node.id === centerId ? 0.28 : 0.18;
           const innerGlowAlpha = isHover || isSelected ? 0.24 : 0.12;
+          const simplifiedNode =
+            performanceMode &&
+            !isHover &&
+            !isSelected &&
+            node.id !== centerId &&
+            !isHit &&
+            (!focusId || focusRole === "ambient");
 
           ctx.save();
           ctx.globalAlpha = focusRole === "self" ? 1 : focusRole === "neighbor" ? 0.94 : focusId ? 0.14 : 1;
+          if (simplifiedNode) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, Math.max(2.4, r * 0.92), 0, 2 * Math.PI);
+            ctx.fillStyle = baseNodeColor;
+            ctx.fill();
+            if (node.node_type === "Disease") {
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, Math.max(3.2, r + 1.4), 0, 2 * Math.PI);
+              ctx.strokeStyle = "rgba(255,255,255,0.28)";
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+            ctx.restore();
+            return;
+          }
           ctx.beginPath();
           ctx.ellipse(node.x, node.y + r * 1.02, r * 1.75, Math.max(2.4, r * 0.62), 0, 0, 2 * Math.PI);
           ctx.fillStyle = `rgba(15, 23, 42, ${pedestalAlpha})`;
@@ -766,8 +790,21 @@ export default function GraphCanvas({
           const sheenColor = rgbaFromHex(mixColor(color, 0.68), directlyTouchesFocus ? 0.3 : inFocus ? 0.16 : 0.05);
           const cx = (s.x + t.x) / 2 + (t.y - s.y) * (l.curve || 0);
           const cy = (s.y + t.y) / 2 + (s.x - t.x) * (l.curve || 0);
+          const simplifiedLink = performanceMode && !directlyTouchesFocus && !neighborBand;
           ctx.save();
           ctx.globalAlpha = alpha;
+          if (simplifiedLink) {
+            ctx.beginPath();
+            ctx.moveTo(s.x, s.y);
+            ctx.quadraticCurveTo(cx, cy, t.x, t.y);
+            ctx.strokeStyle = rgbaFromHex(categoryTint, inFocus ? 0.1 : 0.035);
+            ctx.lineWidth = Math.max(0.3, lw * 0.72);
+            if (l.edge_type === "Predicted") ctx.setLineDash([3, 3]);
+            if (l.edge_type === "Known+Predicted") ctx.setLineDash([6, 3]);
+            ctx.stroke();
+            ctx.restore();
+            return;
+          }
           ctx.beginPath();
           ctx.moveTo(s.x, s.y);
           ctx.quadraticCurveTo(cx, cy, t.x, t.y);
@@ -804,13 +841,15 @@ export default function GraphCanvas({
           ctx.restore();
         }}
         linkDirectionalParticles={(l) => {
-          if (!focusNeighbors) return 0;
+          if (!focusNeighbors || performanceMode || ultraDenseMode) return 0;
           const s = linkNodeId(l.source);
           const t = linkNodeId(l.target);
-          return focusNeighbors.has(s) && focusNeighbors.has(t) && (hoverId || selectedId) ? 2 : 0;
+          if (!(hoverId || selectedId)) return 0;
+          if (s !== focusId && t !== focusId) return 0;
+          return focusNeighbors.has(s) && focusNeighbors.has(t) ? 1 : 0;
         }}
-        linkDirectionalParticleWidth={1.6}
-        linkDirectionalParticleSpeed={0.0052}
+        linkDirectionalParticleWidth={1.15}
+        linkDirectionalParticleSpeed={0.0032}
         onNodeHover={(n) => {
           setHoverId(n?.id || "");
           if (!n) return onNodeHover?.(null);

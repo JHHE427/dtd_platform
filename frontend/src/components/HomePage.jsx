@@ -41,8 +41,31 @@ function buildDtiHeatmap(modelCoverage, topPairs) {
   return { labels, rows };
 }
 
+function HomeTableToggle({ collapsed, onToggle, label = "Detailed tables" }) {
+  return (
+    <div className="home-table-toggle-row">
+      <button type="button" className="home-table-toggle" onClick={onToggle} aria-expanded={!collapsed}>
+        <strong>{collapsed ? "Show" : "Hide"} {label}</strong>
+        <span>{collapsed ? "Expand the detailed section tables" : "Collapse the detailed section tables"}</span>
+      </button>
+    </div>
+  );
+}
+
 export default function HomePage({ stats, researchSummary, onAnalyze, onOpenDatabase }) {
   const [keyword, setKeyword] = React.useState("");
+  const [collapsedTables, setCollapsedTables] = React.useState({
+    diseaseContextEvidence: true,
+    diseaseLinkedContext: true,
+    ttdValidation: true,
+    ttdSupported: true,
+    targetModule: true,
+    diseaseModule: true,
+    modelOverview: true,
+  });
+  const toggleTableSection = React.useCallback((key) => {
+    setCollapsedTables((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
   const nodeMap = React.useMemo(
     () => Object.fromEntries((stats?.node_by_type || []).map((x) => [x.node_type, x.count])),
     [stats]
@@ -557,12 +580,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         {ncrnaOverview ? (
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
-              <h3>Known ncRNA-Drug Evidence</h3>
-              <div className="home-panel-subtitle">Curated human ncRNA-drug records are retained as a formal known-only module alongside the released disease network atlas results. This layer is reported independently from the prediction workflow.</div>
+              <h3>Disease-Context Evidence Layer</h3>
+              <div className="home-panel-subtitle">Curated human ncRNA-drug evidence is retained as a disease-context knowledge layer alongside the released disease network. The focus remains on how known associations reinforce disease-linked interpretation.</div>
             </div>
             <div className="layer-legend-strip">
               <span className="layer-legend-pill is-known-only">
-                <strong>Known-only ncRNA layer</strong>
+                <strong>Disease-context input</strong>
                 <em>Curated ncRNA-drug evidence</em>
               </span>
               <span className="layer-legend-pill is-release-layer">
@@ -614,6 +637,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <em>Approved-labeled evidence rows</em>
               </span>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.diseaseContextEvidence}
+              onToggle={() => toggleTableSection("diseaseContextEvidence")}
+              label="disease-context evidence tables"
+            />
+            {!collapsedTables.diseaseContextEvidence ? (
+            <>
             <div className="home-result-two-col">
               <div className="result-table-wrap">
                 <table className="result-table">
@@ -710,14 +740,16 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 </table>
               </div>
             </div>
+            </>
+            ) : null}
           </section>
         ) : null}
 
         {ncrnaLinkedOverview ? (
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
-              <h3>ncRNA-Linked Released Results</h3>
-              <div className="home-panel-subtitle">Released prediction rows are cross-linked to curated ncRNA-drug evidence through shared drugs, so the ncRNA layer remains connected to consensus, approved, and disease-centered result tables.</div>
+              <h3>Disease-Linked Released Context</h3>
+              <div className="home-panel-subtitle">Released prediction rows are linked back to curated disease-context evidence through shared drugs, so disease-centered interpretation remains connected to consensus, approved, and known-association layers.</div>
             </div>
             <div className="layer-legend-strip">
               <span className="layer-legend-pill is-known-only">
@@ -776,6 +808,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <em>Leading curated ncRNA relation</em>
               </span>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.diseaseLinkedContext}
+              onToggle={() => toggleTableSection("diseaseLinkedContext")}
+              label="disease-linked overlap tables"
+            />
+            {!collapsedTables.diseaseLinkedContext ? (
             <div className="home-result-two-col">
               <div className="result-table-wrap">
                 <table className="result-table">
@@ -834,6 +872,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 </table>
               </div>
             </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -900,6 +939,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <em>Leading TTD target class</em>
               </span>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.ttdValidation}
+              onToggle={() => toggleTableSection("ttdValidation")}
+              label="TTD validation tables"
+            />
+            {!collapsedTables.ttdValidation ? (
+            <>
             <div className="home-result-two-col">
               <div className="result-table-wrap">
                 <table className="result-table">
@@ -998,6 +1044,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 </table>
               </div>
             </div>
+            </>
+            ) : null}
           </section>
         ) : null}
         {ttdSupportedOverview ? (
@@ -1024,6 +1072,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <em>Leading MOA in supported rows</em>
               </span>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.ttdSupported}
+              onToggle={() => toggleTableSection("ttdSupported")}
+              label="TTD-supported result tables"
+            />
+            {!collapsedTables.ttdSupported ? (
             <div className="home-result-two-col">
               <div className="result-table-wrap">
                 <table className="result-table">
@@ -1082,6 +1136,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 </table>
               </div>
             </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -1109,6 +1164,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <em>Leading MOA</em>
               </span>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.targetModule}
+              onToggle={() => toggleTableSection("targetModule")}
+              label="therapeutic target tables"
+            />
+            {!collapsedTables.targetModule ? (
             <div className="result-table-wrap">
               <table className="result-table">
                 <thead>
@@ -1137,6 +1198,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 </tbody>
               </table>
             </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -1164,6 +1226,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <em>Leading drug context</em>
               </span>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.diseaseModule}
+              onToggle={() => toggleTableSection("diseaseModule")}
+              label="disease context tables"
+            />
+            {!collapsedTables.diseaseModule ? (
             <div className="result-table-wrap">
               <table className="result-table">
                 <thead>
@@ -1192,6 +1260,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 </tbody>
               </table>
             </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -1235,6 +1304,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </article>
             ))}
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.modelOverview}
+            onToggle={() => toggleTableSection("modelOverview")}
+            label="model-stratified tables"
+          />
+          {!collapsedTables.modelOverview ? (
           <div className="result-table-wrap">
             <table className="result-table compact">
               <thead>
@@ -1257,6 +1332,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </tbody>
             </table>
           </div>
+          ) : null}
         </section>
 
         <section className="home-panel-card home-panel-wide">
@@ -1615,7 +1691,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Result Table Access</h3>
-            <div className="home-panel-subtitle">Direct entry points to released result tables, algorithm summaries, retained prediction records, and the curated ncRNA evidence module.</div>
+            <div className="home-panel-subtitle">Direct entry points to released result tables, algorithm summaries, retained prediction records, and the disease-context evidence module.</div>
           </div>
           {ncrnaOverview ? (
             <div className="layer-legend-strip">
@@ -1624,12 +1700,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <em>Released disease-network result tables</em>
               </span>
               <span className="layer-legend-pill is-known-only">
-                <strong>ncRNA result access</strong>
-                <em>Known-only curated ncRNA-drug tables</em>
+                <strong>Disease context access</strong>
+                <em>Curated disease-linked evidence tables</em>
               </span>
               <span className="layer-legend-pill is-cross-layer">
                 <strong>Shared table workflow</strong>
-                <em>Compare released rows and ncRNA evidence from the same database entry area</em>
+                <em>Compare released rows and disease-context evidence from the same database entry area</em>
               </span>
             </div>
           ) : null}
@@ -1640,8 +1716,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </button>
             {ncrnaOverview ? (
               <button className="quick-access-card quick-access-card--ncrna" onClick={() => onOpenDatabase?.("ncrna")}>
-                <strong>ncRNA-Drug Result Tables</strong>
-                <span>Open the curated human-known ncRNA-drug summaries, evidence distributions, and relationship tables in the database view.</span>
+                <strong>Disease-Context Evidence Tables</strong>
+                <span>Open the curated evidence summaries, disease-context distributions, and cross-layer relationship tables in the database view.</span>
               </button>
             ) : null}
             <button className="quick-access-card" onClick={() => onOpenDatabase?.("algorithms")}>

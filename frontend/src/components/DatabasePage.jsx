@@ -670,12 +670,12 @@ export default function DatabasePage({
           <div className="db-research-grid db-stack-gap" ref={ncrnaSectionRef}>
             <div className="dti-heatmap-card target-module-card">
               <div className="dti-heatmap-head">
-                <strong>ncRNA-Drug Result Tables</strong>
-                <span>The known ncRNA-drug layer is released as a curated evidence module and kept separate from the prediction workflow. The tables below provide direct access to ncRNA-centered and drug-centered summaries.</span>
+                <strong>Disease-Context Evidence Tables</strong>
+                <span>The curated ncRNA-drug layer is retained as a disease-context evidence module alongside the prediction workflow. The tables below focus on how that evidence supports disease-centered interpretation.</span>
               </div>
               <div className="layer-legend-strip">
                 <span className="layer-legend-pill is-known-only">
-                  <strong>Known-only ncRNA layer</strong>
+                  <strong>Known disease-context layer</strong>
                   <em>Curated ncRNA-drug rows</em>
                 </span>
                 <span className="layer-legend-pill is-release-layer">
@@ -1209,13 +1209,13 @@ export default function DatabasePage({
           <div className="db-research-grid db-stack-gap">
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
-                <strong>ncRNA-Linked Released Results</strong>
-                <span>These summary tables capture where the formal released prediction layer and the curated ncRNA-drug evidence layer intersect through shared drugs.</span>
+                <strong>Disease-Linked Released Context</strong>
+                <span>These summary tables capture where the formal released prediction layer and the curated disease-context evidence layer intersect through shared drugs.</span>
               </div>
               <div className="layer-legend-strip">
                 <span className="layer-legend-pill is-known-only">
                   <strong>Known evidence input</strong>
-                  <em>Curated ncRNA-drug rows</em>
+                  <em>Curated disease-context rows</em>
                 </span>
                 <span className="layer-legend-pill is-cross-layer">
                   <strong>Linking rule</strong>
