@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 STRUCTURE_DIR = STATIC_DIR / "structures"
 BRAND_ICON = STATIC_DIR / "brand-icon.svg"
-DEFAULT_DB_PATH = "/Users/jhhe/Documents/dtdplat/dtd_network.sqlite"
+DEFAULT_DB_PATH = "/Users/jhhe/Documents/Playground/dtd_vote2_formal_build/dtd_network_vote2_formal.sqlite"
 DB_PATH = Path(os.environ.get("DTD_DB_PATH", DEFAULT_DB_PATH)).expanduser()
 DEFAULT_ORIGINS = "http://127.0.0.1:8787,http://localhost:8787"
 DEFAULT_SEVEN_MODEL_FILENAME = "Candidates_withNames_andDisease_TXGNN.csv"
@@ -33,6 +33,12 @@ DEFAULT_NCRNA_EVIDENCE_FILENAME = "known_ncrna_drug_evidence_hs.csv"
 DEFAULT_NCRNA_EDGES_FILENAME = "known_ncrna_drug_edges_hs.csv"
 DEFAULT_TTD_SUMMARY_FILENAME = "ttd_summary.json"
 DEFAULT_TTD_OVERLAP_FILENAME = "ttd_released_overlap.csv"
+DEFAULT_RELEASED_DTI_AUDIT_FILENAME = "released_dti_audit_summary.json"
+LEGACY_RELEASED_DTI_AUDIT_FILENAMES = ("vote_ge_2_release_summary.json",)
+DEFAULT_RELEASED_DTI_TTD_FILENAME = "released_dti_ttd_summary.json"
+LEGACY_RELEASED_DTI_TTD_FILENAMES = ("vote_ge_2_ttd_summary.json",)
+DEFAULT_RELEASED_DISEASE_SUMMARY_FILENAME = "released_disease_summary.json"
+LEGACY_RELEASED_DISEASE_SUMMARY_FILENAMES = ("vote_ge_2_proxy_summary.json",)
 SEVEN_MODEL_FIELDS = [
     ("graphdta_score", "GraphDTA"),
     ("dtiam_score", "DTIAM"),
@@ -340,6 +346,165 @@ def load_ttd_summary() -> dict[str, Any]:
         "moa_distribution": moa_distribution,
         "top_supported_drugs": summary.get("top_supported_drugs") or [],
         "top_supported_targets": summary.get("top_supported_targets") or [],
+    }
+
+
+def resolve_released_dti_audit_file() -> Path | None:
+    explicit_file = os.environ.get("DTD_RELEASED_DTI_AUDIT_FILE") or os.environ.get("DTD_EXPANDED_DTI_AUDIT_FILE")
+    explicit_dir = os.environ.get("DTD_RELEASED_DTI_AUDIT_DIR") or os.environ.get("DTD_EXPANDED_DTI_AUDIT_DIR")
+    candidates = []
+    if explicit_file:
+        candidates.append(Path(explicit_file).expanduser())
+    if explicit_dir:
+        base_dir = Path(explicit_dir).expanduser()
+        candidates.append(base_dir / DEFAULT_RELEASED_DTI_AUDIT_FILENAME)
+        candidates.extend(base_dir / name for name in LEGACY_RELEASED_DTI_AUDIT_FILENAMES)
+    for filename in (DEFAULT_RELEASED_DTI_AUDIT_FILENAME, *LEGACY_RELEASED_DTI_AUDIT_FILENAMES):
+        candidates.extend(
+            [
+                BASE_DIR.parent / "dti_vote_ge_2_output" / filename,
+                BASE_DIR / "dti_vote_ge_2_output" / filename,
+                BASE_DIR / "data" / "dti_vote_ge_2_output" / filename,
+            ]
+        )
+    for path in candidates:
+        if path.exists():
+            return path
+    return None
+
+
+@lru_cache(maxsize=1)
+def load_released_dti_audit() -> dict[str, Any]:
+    audit_file = resolve_released_dti_audit_file()
+    if not audit_file:
+        return {}
+    with audit_file.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    return {
+        "release_filtered_pairs": int(data.get("release_filtered_pairs") or data.get("vote_ge_2_pairs") or 0),
+        "vote_distribution": data.get("vote_distribution") or {},
+        "unique_drugs": int(data.get("unique_drugs") or 0),
+        "unique_targets": int(data.get("unique_targets") or 0),
+        "merged_overlap_rows": int(data.get("merged_overlap_rows") or 0),
+        "merged_overlap_pairs": int(data.get("merged_overlap_pairs") or 0),
+        "merged_overlap_diseases": int(data.get("merged_overlap_diseases") or 0),
+        "released_prediction_rows": int(data.get("released_prediction_rows") or data.get("predicted_release_ready_rows") or 0),
+        "curated_overlap_rows": int(data.get("curated_overlap_rows") or data.get("known_overlap_rows") or 0),
+        "reference_release_rows": int(data.get("reference_release_rows") or data.get("old_release_rows") or 0),
+        "reference_release_pairs": int(data.get("reference_release_pairs") or data.get("old_release_pairs") or 0),
+        "additional_released_pairs": int(data.get("additional_released_pairs") or data.get("new_pairs_not_in_merged") or 0),
+        "coverage_note": (
+            "The current formal release uses the broadened DTI intake together with curated drug-disease and target-disease alignment "
+            "to define the released disease-linked network now used across the atlas."
+        ),
+    }
+
+
+def resolve_released_dti_ttd_file() -> Path | None:
+    explicit_file = os.environ.get("DTD_RELEASED_DTI_TTD_FILE") or os.environ.get("DTD_EXPANDED_DTI_TTD_FILE")
+    explicit_dir = os.environ.get("DTD_RELEASED_DTI_TTD_DIR") or os.environ.get("DTD_EXPANDED_DTI_TTD_DIR")
+    candidates = []
+    if explicit_file:
+        candidates.append(Path(explicit_file).expanduser())
+    if explicit_dir:
+        base_dir = Path(explicit_dir).expanduser()
+        candidates.append(base_dir / DEFAULT_RELEASED_DTI_TTD_FILENAME)
+        candidates.extend(base_dir / name for name in LEGACY_RELEASED_DTI_TTD_FILENAMES)
+    for filename in (DEFAULT_RELEASED_DTI_TTD_FILENAME, *LEGACY_RELEASED_DTI_TTD_FILENAMES):
+        candidates.extend(
+            [
+                BASE_DIR.parent / "dti_vote_ge_2_output" / filename,
+                BASE_DIR / "dti_vote_ge_2_output" / filename,
+                BASE_DIR / "data" / "dti_vote_ge_2_output" / filename,
+            ]
+        )
+    for path in candidates:
+        if path.exists():
+            return path
+    return None
+
+
+@lru_cache(maxsize=1)
+def load_released_dti_ttd_summary() -> dict[str, Any]:
+    summary_file = resolve_released_dti_ttd_file()
+    if not summary_file:
+        return {}
+    with summary_file.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    return {
+        "release_filtered_pairs": int(data.get("release_filtered_pairs") or data.get("vote_ge_2_pairs") or 0),
+        "release_filtered_unique_drugs": int(data.get("release_filtered_unique_drugs") or data.get("vote_ge_2_unique_drugs") or 0),
+        "release_filtered_unique_targets": int(data.get("release_filtered_unique_targets") or data.get("vote_ge_2_unique_targets") or 0),
+        "ttd_supported_pairs": int(data.get("ttd_supported_pairs") or 0),
+        "ttd_supported_pair_pct": float(data.get("ttd_supported_pair_pct") or 0.0),
+        "top_pair_moa": data.get("top_pair_moa"),
+        "pair_moa_distribution": data.get("pair_moa_distribution") or {},
+        "released_rows": int(data.get("released_rows") or data.get("release_ready_rows") or 0),
+        "ttd_supported_released_rows": int(data.get("ttd_supported_released_rows") or data.get("ttd_supported_release_ready_rows") or 0),
+        "ttd_drug_disease_supported_rows": int(data.get("ttd_drug_disease_supported_rows") or 0),
+        "ttd_target_disease_supported_rows": int(data.get("ttd_target_disease_supported_rows") or 0),
+        "ttd_drug_target_supported_rows": int(data.get("ttd_drug_target_supported_rows") or 0),
+        "ttd_supported_consensus_rows": int(data.get("ttd_supported_consensus_rows") or 0),
+        "top_supported_pair_drugs": data.get("top_supported_pair_drugs") or [],
+        "top_supported_pair_targets": data.get("top_supported_pair_targets") or [],
+        "top_supported_release_drugs": data.get("top_supported_release_drugs") or [],
+        "coverage_note": (
+            "TTD support is reported for the current formal release through pair-level target-drug support, disease-linked overlap, "
+            "and target-centric mode-of-action annotation."
+        ),
+    }
+
+
+def resolve_released_disease_summary_file() -> Path | None:
+    explicit_file = os.environ.get("DTD_RELEASED_DISEASE_SUMMARY_FILE")
+    explicit_dir = os.environ.get("DTD_RELEASED_DISEASE_SUMMARY_DIR")
+    candidates = []
+    if explicit_file:
+        candidates.append(Path(explicit_file).expanduser())
+    if explicit_dir:
+        base_dir = Path(explicit_dir).expanduser()
+        candidates.append(base_dir / DEFAULT_RELEASED_DISEASE_SUMMARY_FILENAME)
+        candidates.extend(base_dir / name for name in LEGACY_RELEASED_DISEASE_SUMMARY_FILENAMES)
+    for filename in (DEFAULT_RELEASED_DISEASE_SUMMARY_FILENAME, *LEGACY_RELEASED_DISEASE_SUMMARY_FILENAMES):
+        candidates.extend(
+            [
+                BASE_DIR.parent / "dti_vote_ge_2_output" / filename,
+                BASE_DIR / "dti_vote_ge_2_output" / filename,
+                BASE_DIR / "data" / "dti_vote_ge_2_output" / filename,
+            ]
+        )
+    for path in candidates:
+        if path.exists():
+            return path
+    return None
+
+
+@lru_cache(maxsize=1)
+def load_released_disease_summary() -> dict[str, Any]:
+    summary_file = resolve_released_disease_summary_file()
+    if not summary_file:
+        return {}
+    with summary_file.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    return {
+        "released_rows": int(data.get("released_rows") or data.get("proxy_rows") or 0),
+        "released_pairs": int(data.get("released_pairs") or data.get("proxy_pairs") or 0),
+        "released_unique_drugs": int(data.get("released_unique_drugs") or data.get("proxy_unique_drugs") or 0),
+        "released_unique_targets": int(data.get("released_unique_targets") or data.get("proxy_unique_targets") or 0),
+        "released_unique_diseases": int(data.get("released_unique_diseases") or data.get("proxy_unique_diseases") or 0),
+        "top_vote": int(data.get("top_vote") or 0),
+        "top_support_pattern": data.get("top_support_pattern"),
+        "vote_distribution": data.get("vote_distribution") or {},
+        "algo_distribution": data.get("algo_distribution") or {},
+        "top_rows": data.get("top_rows") or [],
+        "top_drugs": data.get("top_drugs") or [],
+        "top_targets": data.get("top_targets") or [],
+        "top_diseases": data.get("top_diseases") or [],
+        "coverage_note": (
+            "Released disease-linked rows are retained when the broadened DTI intake is supported by curated disease context "
+            "and carried into the current formal release."
+        ),
+        "source_note": data.get("source_note") or "Curated disease-linked release layer",
     }
 
 
@@ -821,9 +986,9 @@ def get_node_annotation(conn: sqlite3.Connection, node_id: str, node_type: str) 
         row = conn.execute(
             """
             SELECT
-                node_id, node_type, smiles, target_sequence, uniprot_accession, annotation_source, updated_at,
+                node_id, node_type, smiles, molecular_formula, target_sequence, uniprot_accession, annotation_source, updated_at,
                 text_description, side_effect_summary, ontology_terms, synonyms_json,
-                target_summary, disease_summary, modality_sources_json
+                target_summary, disease_summary, drug_summary, ncrna_summary, ttd_summary, modality_sources_json
             FROM node_annotations
             WHERE node_id = ?
             """,
@@ -833,7 +998,7 @@ def get_node_annotation(conn: sqlite3.Connection, node_id: str, node_type: str) 
         try:
             row = conn.execute(
                 """
-                SELECT node_id, node_type, smiles, target_sequence, uniprot_accession, annotation_source, updated_at
+                SELECT node_id, node_type, smiles, molecular_formula, target_sequence, uniprot_accession, annotation_source, updated_at
                 FROM node_annotations
                 WHERE node_id = ?
                 """,
@@ -846,6 +1011,7 @@ def get_node_annotation(conn: sqlite3.Connection, node_id: str, node_type: str) 
         "node_id": node_id,
         "node_type": node_type,
         "smiles": None,
+        "molecular_formula": None,
         "structure_image_url": None,
         "target_sequence": None,
         "uniprot_accession": None,
@@ -856,6 +1022,9 @@ def get_node_annotation(conn: sqlite3.Connection, node_id: str, node_type: str) 
         "synonyms_json": None,
         "target_summary": None,
         "disease_summary": None,
+        "drug_summary": None,
+        "ncrna_summary": None,
+        "ttd_summary": None,
         "modality_sources_json": None,
     }
     if row:
@@ -941,6 +1110,12 @@ def build_multimodal_profile(
                 "detail": "Canonical chemical string" if annotation.get("smiles") else "Not available yet",
             },
             {
+                "key": "formula",
+                "label": "Formula",
+                "available": bool(annotation.get("molecular_formula")),
+                "detail": annotation.get("molecular_formula") or "Not available yet",
+            },
+            {
                 "key": "structure",
                 "label": "Structure",
                 "available": bool(annotation.get("structure_image_url")),
@@ -963,6 +1138,12 @@ def build_multimodal_profile(
                 "label": "ncRNA Links",
                 "available": counts_by_category.get("ncRNA-Drug", 0) > 0,
                 "detail": f'{counts_by_category.get("ncRNA-Drug", 0)} linked ncRNAs',
+            },
+            {
+                "key": "ncrna_disease_links",
+                "label": "ncRNA-Disease Context",
+                "available": counts_by_category.get("ncRNA-Disease", 0) > 0,
+                "detail": f'{counts_by_category.get("ncRNA-Disease", 0)} linked ncRNA-disease edges',
             },
             {
                 "key": "predictions",
@@ -1010,6 +1191,12 @@ def build_multimodal_profile(
                 "detail": f'{counts_by_category.get("Target-Disease", 0)} linked diseases',
             },
             {
+                "key": "ncrna_links",
+                "label": "ncRNA Links",
+                "available": counts_by_category.get("ncRNA-Target", 0) > 0,
+                "detail": f'{counts_by_category.get("ncRNA-Target", 0)} linked ncRNAs',
+            },
+            {
                 "key": "predictions",
                 "label": "Predicted Evidence",
                 "available": counts_by_type.get("Predicted", 0) + counts_by_type.get("Known+Predicted", 0) > 0,
@@ -1023,6 +1210,18 @@ def build_multimodal_profile(
                 "label": "Drug Links",
                 "available": counts_by_category.get("ncRNA-Drug", 0) > 0,
                 "detail": f'{counts_by_category.get("ncRNA-Drug", 0)} linked drugs',
+            },
+            {
+                "key": "target_links",
+                "label": "Target Links",
+                "available": counts_by_category.get("ncRNA-Target", 0) > 0,
+                "detail": f'{counts_by_category.get("ncRNA-Target", 0)} linked targets',
+            },
+            {
+                "key": "disease_links",
+                "label": "Disease Links",
+                "available": counts_by_category.get("ncRNA-Disease", 0) > 0,
+                "detail": f'{counts_by_category.get("ncRNA-Disease", 0)} linked diseases',
             },
             {
                 "key": "known",
@@ -1056,6 +1255,12 @@ def build_multimodal_profile(
                 "label": "Target Mechanisms",
                 "available": counts_by_category.get("Target-Disease", 0) > 0,
                 "detail": f'{counts_by_category.get("Target-Disease", 0)} linked targets',
+            },
+            {
+                "key": "ncrna_links",
+                "label": "ncRNA Context",
+                "available": counts_by_category.get("ncRNA-Disease", 0) > 0,
+                "detail": f'{counts_by_category.get("ncRNA-Disease", 0)} linked ncRNAs',
             },
             {
                 "key": "known",
@@ -1161,6 +1366,80 @@ def build_mechanism_snapshot(
         "category_counts": category_counts,
         "type_counts": type_counts,
         "context_summary": context_summary,
+    }
+
+
+def build_related_context(conn: sqlite3.Connection, node: dict[str, Any]) -> dict[str, Any]:
+    node_id = node["id"]
+    node_type = node["node_type"]
+    if node_type not in {"Drug", "Target", "Disease"}:
+        return {"available": False, "primary": [], "secondary": []}
+
+    if node_type == "Drug":
+        primary_type = "Disease"
+        secondary_type = "Target"
+        primary_label = "Cross-associated diseases"
+        secondary_label = "Linked targets"
+    elif node_type == "Target":
+        primary_type = "Disease"
+        secondary_type = "Drug"
+        primary_label = "Cross-associated diseases"
+        secondary_label = "Linked drugs"
+    else:
+        primary_type = "Target"
+        secondary_type = "Drug"
+        primary_label = "Linked targets"
+        secondary_label = "Linked drugs"
+
+    def fetch_grouped(neighbor_type: str, limit: int) -> list[dict[str, Any]]:
+        rows = conn.execute(
+            """
+            SELECT
+                n.id AS neighbor_id,
+                n.label AS neighbor_label,
+                n.node_type AS neighbor_type,
+                COUNT(*) AS link_count,
+                MAX(e.weight) AS max_weight,
+                MAX(COALESCE(e.support_score, -1)) AS max_support_score,
+                GROUP_CONCAT(DISTINCT e.edge_category) AS edge_categories,
+                GROUP_CONCAT(DISTINCT e.edge_type) AS edge_types
+            FROM network_edges e
+            JOIN network_nodes n
+              ON n.id = CASE WHEN e.source = ? THEN e.target ELSE e.source END
+            WHERE (e.source = ? OR e.target = ?)
+              AND n.node_type = ?
+            GROUP BY n.id, n.label, n.node_type
+            ORDER BY
+              COUNT(*) DESC,
+              MAX(e.weight) DESC,
+              MAX(COALESCE(e.support_score, -1)) DESC,
+              n.label ASC
+            LIMIT ?
+            """,
+            [node_id, node_id, node_id, neighbor_type, limit],
+        ).fetchall()
+        return [
+            {
+                "neighbor_id": row["neighbor_id"],
+                "neighbor_label": row["neighbor_label"],
+                "neighbor_type": row["neighbor_type"],
+                "link_count": int(row["link_count"] or 0),
+                "max_weight": int(row["max_weight"] or 0),
+                "max_support_score": None if row["max_support_score"] is None or float(row["max_support_score"]) < 0 else float(row["max_support_score"]),
+                "edge_categories": [item for item in str(row["edge_categories"] or "").split(",") if item],
+                "edge_types": [item for item in str(row["edge_types"] or "").split(",") if item],
+            }
+            for row in rows
+        ]
+
+    primary_rows = fetch_grouped(primary_type, 10)
+    secondary_rows = fetch_grouped(secondary_type, 8)
+    return {
+        "available": bool(primary_rows or secondary_rows),
+        "primary_label": primary_label,
+        "secondary_label": secondary_label,
+        "primary": primary_rows,
+        "secondary": secondary_rows,
     }
 
 
@@ -1729,14 +2008,17 @@ def meta_research_summary() -> dict[str, Any]:
         else:
             src_drug_label_expr = "Drug_ID"
 
-        if "Target_Name" in src_prediction_cols and "Target_Label" in src_prediction_cols:
-            src_target_label_expr = "COALESCE(Target_Name, Target_Label, Target_ID)"
-        elif "Target_Name" in src_prediction_cols:
-            src_target_label_expr = "COALESCE(Target_Name, Target_ID)"
-        elif "Target_Label" in src_prediction_cols:
-            src_target_label_expr = "COALESCE(Target_Label, Target_ID)"
-        else:
-            src_target_label_expr = "Target_ID"
+        target_name_candidates: list[str] = []
+        if "target_name" in src_prediction_cols:
+            target_name_candidates.append("target_name")
+        if "Target_Name" in src_prediction_cols:
+            target_name_candidates.append("Target_Name")
+        if "Target_Label" in src_prediction_cols:
+            target_name_candidates.append("Target_Label")
+        if "gene_name" in src_prediction_cols:
+            target_name_candidates.append("gene_name")
+        target_name_candidates.append("Target_ID")
+        src_target_label_expr = f"COALESCE({', '.join(target_name_candidates)})"
 
         src_gene_name_expr = "COALESCE(gene_name, '-')" if "gene_name" in src_prediction_cols else "'-'"
         src_support_pattern_expr = (
@@ -1779,6 +2061,7 @@ def meta_research_summary() -> dict[str, Any]:
                 COUNT(DISTINCT Drug_ID) AS drugs,
                 COUNT(DISTINCT Target_ID) AS targets,
                 COUNT(DISTINCT Ensemble_Disease_Name) AS diseases,
+                COUNT(DISTINCT pair_id) AS pairs,
                 SUM(CASE WHEN TXGNN_pass IN (1, '1', 'True', 'true') THEN 1 ELSE 0 END) AS txgnn_pass,
                 SUM(CASE WHEN ENR_pass IN (1, '1', 'True', 'true') THEN 1 ELSE 0 END) AS enr_pass,
                 SUM(CASE WHEN RWR_pass IN (1, '1', 'True', 'true') THEN 1 ELSE 0 END) AS rwr_pass
@@ -2291,6 +2574,7 @@ def meta_research_summary() -> dict[str, Any]:
                     ds.row_count,
                     td.disease_label AS top_disease_label,
                     tt.target_label AS top_target_label,
+                    COALESCE(ann.disease_summary, td.disease_label) AS disease_summary,
                     dm.max_algo_pass,
                     dm.max_votes,
                     dm.top_txgnn_score,
@@ -2299,6 +2583,7 @@ def meta_research_summary() -> dict[str, Any]:
                 LEFT JOIN top_disease td ON td.drug_id = ds.drug_id AND td.rn = 1
                 LEFT JOIN top_target tt ON tt.drug_id = ds.drug_id AND tt.rn = 1
                 LEFT JOIN drug_metrics dm ON dm.drug_id = ds.drug_id
+                LEFT JOIN node_annotations ann ON ann.node_id = ds.drug_id
                 ORDER BY ds.row_count DESC, ds.drug_label
                 """
             ).fetchall()
@@ -2361,6 +2646,7 @@ def meta_research_summary() -> dict[str, Any]:
                     ts.row_count,
                     td.disease_label AS top_disease_label,
                     tg.drug_label AS top_drug_label,
+                    COALESCE(ann.disease_summary, td.disease_label) AS disease_summary,
                     tm.max_algo_pass,
                     tm.max_votes,
                     tm.top_txgnn_score,
@@ -2369,6 +2655,7 @@ def meta_research_summary() -> dict[str, Any]:
                 LEFT JOIN top_disease td ON td.target_id = ts.target_id AND td.rn = 1
                 LEFT JOIN top_drug tg ON tg.target_id = ts.target_id AND tg.rn = 1
                 LEFT JOIN target_metrics tm ON tm.target_id = ts.target_id
+                LEFT JOIN node_annotations ann ON ann.node_id = ts.target_id
                 ORDER BY ts.row_count DESC, ts.target_label
                 """
             ).fetchall()
@@ -2427,9 +2714,29 @@ def meta_research_summary() -> dict[str, Any]:
             ).fetchall()
         )
 
+        released_dti_audit = load_released_dti_audit()
+        released_dti_ttd_summary = load_released_dti_ttd_summary()
+        released_disease_summary = load_released_disease_summary()
+        if released_dti_audit:
+            released_dti_audit["released_prediction_rows"] = int(pred["total_rows"] or 0)
+        if released_disease_summary:
+            released_disease_summary["additional_released_rows"] = int(released_disease_summary.get("released_rows") or 0)
+            released_disease_summary["additional_released_pairs"] = int(released_disease_summary.get("released_pairs") or 0)
+            released_disease_summary["released_rows"] = int(pred["total_rows"] or 0)
+            released_disease_summary["released_pairs"] = int(pred["pairs"] or 0)
+        if released_dti_ttd_summary:
+            released_dti_ttd_summary["released_rows"] = int(pred["total_rows"] or 0)
+            released_dti_ttd_summary["ttd_supported_released_rows"] = int(
+                (ttd_overview.get("ttd_supported_released_rows") if ttd_overview else 0)
+                or released_dti_ttd_summary.get("ttd_supported_released_rows")
+                or 0
+            )
+
+        release_filtered_pairs = int((released_dti_audit.get("release_filtered_pairs") if released_dti_audit else 0) or 9912)
         pipeline_shrinkage = {
             "raw_dti_pairs": 18016322,
             "vote4_retained": 9912,
+            "release_filtered_pairs": release_filtered_pairs,
             "released_prediction_rows": pred["total_rows"],
             "formal_network_edges": overview["edges"],
             "formal_nodes": overview["nodes"],
@@ -2474,6 +2781,13 @@ def meta_research_summary() -> dict[str, Any]:
             {"name": "Approved drug priority table", "rows": len(top_approved_leaderboard), "description": "Best supported retained rows among approved drugs."},
             {"name": "Selected prediction results", "rows": len(representative_cases), "description": "High-support released rows selected for direct review."},
         ]
+        ncrna_linked_results: dict[str, Any] = {
+            "available": False,
+            "overview": {},
+            "top_linked_drugs": [],
+            "top_linked_consensus_cases": [],
+            "top_linked_selected_approved": [],
+        }
         if ncrna_overview:
             result_tables.extend(
                 [
@@ -2544,6 +2858,26 @@ def meta_research_summary() -> dict[str, Any]:
                     },
                 ]
             )
+        if released_disease_summary.get("released_rows"):
+            result_tables.extend(
+                [
+                    {
+                        "name": "Released disease-linked result table",
+                        "rows": released_disease_summary["released_rows"],
+                        "description": "Disease-linked released rows incorporated into the current formal release through the broadened DTI intake together with curated drug-disease and target-disease intersection.",
+                    },
+                    {
+                        "name": "Released target summary",
+                        "rows": len(released_disease_summary.get("top_targets") or []),
+                        "description": "Top targets represented in the current released disease-linked layer.",
+                    },
+                    {
+                        "name": "Released drug summary",
+                        "rows": len(released_disease_summary.get("top_drugs") or []),
+                        "description": "Top drugs represented in the current released disease-linked layer.",
+                    },
+                ]
+            )
 
         approved_validation = {
             "approved_total": 4640,
@@ -2557,14 +2891,6 @@ def meta_research_summary() -> dict[str, Any]:
             "mann_whitney_p": "2.53×10⁻¹¹⁷",
             "cohens_d": 0.497,
             "summary": "Approved-drug loss occurs primarily before or during DTI-space coverage and vote-based filtering; once an approved drug enters the high-confidence candidate set, it is almost always retained in the final network.",
-        }
-
-        ncrna_linked_results: dict[str, Any] = {
-            "available": False,
-            "overview": {},
-            "top_linked_drugs": [],
-            "top_linked_consensus_cases": [],
-            "top_linked_selected_approved": [],
         }
         if ncrna_overview:
             ncrna_edge_rows = load_ncrna_drug_edge_rows()
@@ -2884,6 +3210,93 @@ def meta_research_summary() -> dict[str, Any]:
             "rows": target_centric_module_rows[:8],
         }
 
+        disease_annotation_rows = to_dicts(
+            conn.execute(
+                """
+                SELECT
+                    node_id,
+                    drug_summary,
+                    target_summary,
+                    ncrna_summary,
+                    ttd_summary
+                FROM node_annotations
+                WHERE node_type = 'Disease'
+                """
+            ).fetchall()
+        )
+        disease_annotation_map = {str(item.get("node_id") or ""): item for item in disease_annotation_rows}
+        disease_centric_module_rows: list[dict[str, Any]] = []
+        for item in disease_spotlights[:8]:
+            disease_id = str(item.get("disease_id") or "").strip()
+            ann = disease_annotation_map.get(disease_id, {})
+            top_linked_rows = to_dicts(
+                conn.execute(
+                    f"""
+                    SELECT
+                        Drug_ID AS drug_id,
+                        {src_drug_label_expr} AS drug_label,
+                        Target_ID AS target_id,
+                        {src_target_label_expr} AS target_label,
+                        CAST(COALESCE(n_algo_pass, 0) AS INTEGER) AS n_algo_pass,
+                        CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) AS Total_Votes_Optional7,
+                        CAST(COALESCE(TXGNN_score, -1) AS REAL) AS TXGNN_score,
+                        CAST(COALESCE(ENR_FDR, 999999) AS REAL) AS ENR_FDR,
+                        COALESCE(support_pattern, {src_support_pattern_expr}) AS support_pattern
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                    WHERE {src_disease_id_expr} = ?
+                    ORDER BY
+                        CAST(COALESCE(n_algo_pass, 0) AS INTEGER) DESC,
+                        CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                        CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
+                        CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC,
+                        {src_drug_label_expr},
+                        {src_target_label_expr}
+                    LIMIT 3
+                    """,
+                    [disease_id],
+                ).fetchall()
+            )
+            disease_centric_module_rows.append(
+                {
+                    "disease_id": disease_id,
+                    "disease_label": item.get("disease_label") or disease_id.removeprefix("DIS::"),
+                    "released_rows": int(item.get("row_count") or 0),
+                    "top_drug_id": item.get("top_drug_id"),
+                    "top_drug_label": item.get("top_drug_label"),
+                    "top_target_label": item.get("top_target_label"),
+                    "max_algo_pass": int(item.get("max_algo_pass") or 0),
+                    "max_votes": int(item.get("max_votes") or 0),
+                    "drug_summary": ann.get("drug_summary"),
+                    "target_summary": ann.get("target_summary"),
+                    "ncrna_summary": ann.get("ncrna_summary"),
+                    "ttd_summary": ann.get("ttd_summary"),
+                    "top_linked_rows": top_linked_rows,
+                }
+            )
+
+        disease_centric_module = {
+            "available": bool(disease_centric_module_rows),
+            "overview": {
+                "selected_disease_count": len(disease_centric_module_rows),
+                "ncrna_context_count": len(
+                    [
+                        item
+                        for item in disease_centric_module_rows
+                        if item.get("ncrna_summary") and "No ncRNA-linked" not in str(item.get("ncrna_summary"))
+                    ]
+                ),
+                "ttd_context_count": len(
+                    [
+                        item
+                        for item in disease_centric_module_rows
+                        if item.get("ttd_summary") and "No TTD-supported" not in str(item.get("ttd_summary"))
+                    ]
+                ),
+                "leading_drug": next((item.get("top_drug_label") for item in disease_centric_module_rows if item.get("top_drug_label")), None),
+            },
+            "rows": disease_centric_module_rows,
+        }
+
         return {
             "overview": overview,
             "source_tables": source_tables,
@@ -2929,9 +3342,13 @@ def meta_research_summary() -> dict[str, Any]:
             "representative_cases": representative_cases,
             "ncrna_summary": ncrna_summary,
             "ncrna_linked_results": ncrna_linked_results,
+            "released_dti_audit": released_dti_audit,
+            "released_dti_ttd_summary": released_dti_ttd_summary,
+            "released_disease_summary": released_disease_summary,
             "ttd_summary": ttd_summary,
             "ttd_supported_results": ttd_supported_results,
             "target_centric_module": target_centric_module,
+            "disease_centric_module": disease_centric_module,
             "result_tables": result_tables,
         }
     finally:
@@ -3768,6 +4185,7 @@ def node_detail(
             to_dicts(mechanism_rows),
             to_dicts(evidence_source_rows),
         )
+        related_context = build_related_context(conn, node_dict)
         algorithm_evidence = build_algorithm_evidence(conn, node_dict)
         ttd_evidence = build_ttd_node_evidence(node_dict)
         ncrna_evidence = build_ncrna_evidence(node_dict)
@@ -3798,6 +4216,7 @@ def node_detail(
                 "edge_stats": edge_stats_dicts,
                 "multimodal_profile": multimodal_profile,
                 "mechanism_snapshot": mechanism_snapshot,
+                "related_context": related_context,
                 "algorithm_evidence": algorithm_evidence,
                 "ttd_evidence": ttd_evidence,
                 "ncrna_evidence": ncrna_evidence,
@@ -3866,6 +4285,7 @@ def node_detail(
             "edge_stats": edge_stats_dicts,
             "multimodal_profile": multimodal_profile,
             "mechanism_snapshot": mechanism_snapshot,
+            "related_context": related_context,
             "algorithm_evidence": algorithm_evidence,
             "ttd_evidence": ttd_evidence,
             "ncrna_evidence": ncrna_evidence,

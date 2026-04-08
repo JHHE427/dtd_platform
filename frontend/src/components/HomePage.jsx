@@ -97,10 +97,16 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     ),
     [ttdSupportedApprovedRows]
   );
+  const diseaseCentricModule = researchSummary?.disease_centric_module || null;
+  const diseaseCentricOverview = diseaseCentricModule?.overview || null;
+  const diseaseCentricRows = diseaseCentricModule?.rows || [];
   const representativeDrugs = researchSummary?.representative_drugs || [];
   const representativeCases = researchSummary?.representative_cases || [];
   const approvedValidation = researchSummary?.approved_validation || null;
   const pipelineShrinkage = researchSummary?.pipeline_shrinkage || null;
+  const releasedDtiAudit = researchSummary?.released_dti_audit || null;
+  const releasedDtiTtdSummary = researchSummary?.released_dti_ttd_summary || null;
+  const releasedDiseaseSummary = researchSummary?.released_disease_summary || null;
   const supportTierOverview = researchSummary?.support_tier_overview || null;
   const diseaseResults = researchSummary?.disease_results || [];
   const diseaseSpotlights = researchSummary?.disease_spotlights || [];
@@ -219,7 +225,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   ];
   const conclusionCards = [
     {
-      title: "Formal disease layer expanded",
+      title: "Formal disease layer",
       value: nodeMap.Disease || 0,
       note: "Disease nodes retained after alias expansion, normalization, and network-level integration."
     },
@@ -237,8 +243,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   const keyFindings = [
     {
       title: "Pipeline retention",
-      value: pipelineShrinkage ? `${pipelineShrinkage.vote4_retained.toLocaleString()} retained` : "NA",
-      note: pipelineShrinkage ? `from ${pipelineShrinkage.raw_dti_pairs.toLocaleString()} raw DTI pairs into the vote-filtered layer.` : "Pipeline retention summary is unavailable.",
+      value: pipelineShrinkage ? `${(pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained).toLocaleString()} retained` : "NA",
+      note: pipelineShrinkage ? `from ${pipelineShrinkage.raw_dti_pairs.toLocaleString()} raw DTI pairs into the current release-filtered DTI layer.` : "Pipeline retention summary is unavailable.",
     },
     {
       title: "Disease concentration",
@@ -335,22 +341,42 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <div className="hero-network-motif" aria-hidden="true">
           <svg viewBox="0 0 520 180" className="hero-network-motif__svg" role="img">
             <defs>
-              <linearGradient id="heroArc" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.5" />
+              <linearGradient id="heroArcMain" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#7bb7ff" stopOpacity="0.6" />
+                <stop offset="100%" stopColor="#42d2c2" stopOpacity="0.62" />
               </linearGradient>
+              <linearGradient id="heroArcWarm" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#ffb45f" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#ff7e79" stopOpacity="0.54" />
+              </linearGradient>
+              <radialGradient id="heroCoreFill" cx="50%" cy="46%" r="58%">
+                <stop offset="0%" stopColor="#ff8b82" />
+                <stop offset="100%" stopColor="#ef4444" />
+              </radialGradient>
+              <filter id="heroSoftGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3.2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
             </defs>
-            <path d="M58 118C108 72 170 66 258 90C332 110 392 102 460 60" stroke="url(#heroArc)" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-            <path d="M72 132C146 118 182 70 258 90C320 106 382 128 444 118" stroke="#cbd5e1" strokeWidth="2.4" fill="none" strokeLinecap="round" />
-            <path d="M110 58C154 86 214 92 258 90C314 88 366 66 416 44" stroke="#93c5fd" strokeWidth="2.4" fill="none" strokeLinecap="round" />
-            <circle cx="258" cy="90" r="18" fill="#ef4444" />
-            <circle cx="258" cy="90" r="28" fill="none" stroke="rgba(239,68,68,0.24)" strokeWidth="5" />
-            <circle cx="72" cy="132" r="11" fill="#2563eb" />
-            <circle cx="110" cy="58" r="9" fill="#6366f1" />
-            <circle cx="444" cy="118" r="10" fill="#f59e0b" />
-            <circle cx="460" cy="60" r="10" fill="#14b8a6" />
-            <circle cx="392" cy="102" r="7" fill="#38bdf8" />
-            <circle cx="182" cy="70" r="7" fill="#22c55e" />
+            <ellipse cx="258" cy="92" rx="132" ry="44" fill="rgba(239,68,68,0.05)" />
+            <path d="M58 118C108 72 170 66 258 90C332 110 392 102 460 60" stroke="url(#heroArcMain)" strokeWidth="3.4" fill="none" strokeLinecap="round" />
+            <path d="M70 135C143 123 183 72 258 90C322 105 379 129 445 116" stroke="rgba(186,198,214,0.8)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+            <path d="M109 56C156 86 213 92 258 90C313 88 365 65 417 43" stroke="rgba(130,187,255,0.88)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+            <path d="M94 92C150 108 202 106 258 90C320 73 382 70 431 86" stroke="url(#heroArcWarm)" strokeWidth="2.1" fill="none" strokeLinecap="round" strokeDasharray="5 8" />
+            <circle cx="258" cy="90" r="18.5" fill="url(#heroCoreFill)" filter="url(#heroSoftGlow)" />
+            <circle cx="258" cy="90" r="29" fill="none" stroke="rgba(239,68,68,0.22)" strokeWidth="5" />
+            <circle cx="258" cy="90" r="37" fill="none" stroke="rgba(255,255,255,0.32)" strokeWidth="1.4" />
+            <circle cx="72" cy="132" r="11" fill="#2f7fff" />
+            <circle cx="110" cy="58" r="9" fill="#818cf8" />
+            <circle cx="444" cy="118" r="10" fill="#fbbf24" />
+            <circle cx="460" cy="60" r="10" fill="#2dd4bf" />
+            <circle cx="392" cy="102" r="7" fill="#5bc9ff" />
+            <circle cx="182" cy="70" r="7" fill="#4ade80" />
+            <circle cx="208" cy="116" r="4.6" fill="rgba(255,255,255,0.94)" />
+            <circle cx="312" cy="62" r="4.2" fill="rgba(255,255,255,0.9)" />
           </svg>
         </div>
         <div className="hero-search">
@@ -1107,6 +1133,61 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     </tr>
                   )) : (
                     <tr><td colSpan={6}>No therapeutic target module rows are available in the current release.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
+
+        {diseaseCentricOverview ? (
+          <section className="home-panel-card home-panel-wide">
+            <div className="home-panel-head">
+              <h3>Disease Context Module</h3>
+              <div className="home-panel-subtitle">A disease-centric view aligned with the released disease network: each disease is summarized by released network reach, dominant drug and target context, and linked ncRNA and TTD support.</div>
+            </div>
+            <div className="result-summary-strip">
+              <span className="result-summary-pill">
+                <strong>{diseaseCentricOverview.selected_disease_count}</strong>
+                <em>Selected diseases</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{diseaseCentricOverview.ncrna_context_count}</strong>
+                <em>With ncRNA context</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{diseaseCentricOverview.ttd_context_count}</strong>
+                <em>With TTD context</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{diseaseCentricOverview.leading_drug || "NA"}</strong>
+                <em>Leading drug context</em>
+              </span>
+            </div>
+            <div className="result-table-wrap">
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Disease</th>
+                    <th>Released rows</th>
+                    <th>Top drug</th>
+                    <th>Top target</th>
+                    <th>ncRNA context</th>
+                    <th>TTD context</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diseaseCentricRows.length ? diseaseCentricRows.map((row) => (
+                    <tr key={row.disease_id}>
+                      <td><button className="result-link-btn" onClick={() => onAnalyze(row.disease_id)}><span className="result-emphasis-label">{row.disease_label}</span></button></td>
+                      <td><span className="result-emphasis-number">{row.released_rows}</span></td>
+                      <td>{row.top_drug_label || "-"}</td>
+                      <td>{row.top_target_label || "-"}</td>
+                      <td>{row.ncrna_summary ? <span className="result-emphasis-chip is-soft">{row.ncrna_summary}</span> : "-"}</td>
+                      <td>{row.ttd_summary ? <span className="result-emphasis-chip is-soft">{row.ttd_summary}</span> : "-"}</td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan={6}>No disease-centric rows are available in the current release.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1966,7 +2047,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   {pipelineShrinkage ? (
                     <>
                       <tr><td>Raw DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.raw_dti_pairs}</span></td></tr>
-                      <tr><td>Vote≥4 retained</td><td><span className="result-emphasis-number">{pipelineShrinkage.vote4_retained}</span></td></tr>
+                      <tr><td>Release-filtered DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained}</span></td></tr>
                       <tr><td>Released prediction rows</td><td><span className="result-emphasis-number">{pipelineShrinkage.released_prediction_rows}</span></td></tr>
                       <tr><td>Formal network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
                       <tr><td>Formal network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
@@ -1977,6 +2058,164 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 </tbody>
               </table>
             </div>
+            {releasedDtiAudit?.release_filtered_pairs ? (
+              <>
+                <div className="result-summary-strip">
+                  <span className="result-summary-pill">
+                    <strong>{releasedDtiAudit.release_filtered_pairs.toLocaleString()}</strong>
+                    <em>Release-filtered DTI pairs</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{releasedDtiAudit.released_prediction_rows.toLocaleString()}</strong>
+                    <em>Released prediction rows</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{releasedDtiAudit.curated_overlap_rows.toLocaleString()}</strong>
+                    <em>Curated overlap rows</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{releasedDtiAudit.additional_released_pairs.toLocaleString()}</strong>
+                    <em>Additional released pairs</em>
+                  </span>
+                </div>
+                <div className="network-caption">{releasedDtiAudit.coverage_note}</div>
+              </>
+            ) : null}
+            {releasedDtiTtdSummary?.release_filtered_pairs ? (
+              <>
+                <div className="result-summary-strip">
+                  <span className="result-summary-pill">
+                    <strong>{releasedDtiTtdSummary.ttd_supported_pairs.toLocaleString()}</strong>
+                    <em>TTD-supported released pairs</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{releasedDtiTtdSummary.ttd_supported_pair_pct}%</strong>
+                    <em>Pair-level TTD support</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{releasedDtiTtdSummary.top_pair_moa || "NA"}</strong>
+                    <em>Leading MOA</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{releasedDtiTtdSummary.ttd_supported_released_rows.toLocaleString()}</strong>
+                    <em>TTD-supported released rows</em>
+                  </span>
+                </div>
+                <div className="home-research-grid inner-result-grid">
+                  <div className="result-table-wrap">
+                    <table className="result-table compact">
+                      <thead>
+                        <tr>
+                          <th>TTD-supported drug</th>
+                          <th>Pairs</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(releasedDtiTtdSummary.top_supported_pair_drugs || []).length ? releasedDtiTtdSummary.top_supported_pair_drugs.slice(0, 8).map((item) => (
+                          <tr key={item.Drug_ID}>
+                            <td><button className="result-link-btn" onClick={() => onJumpToNode(item.Drug_ID)}><span className="result-emphasis-label">{item.Drug_Name}</span></button></td>
+                            <td><span className="result-emphasis-number">{item.pair_count}</span></td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan={2}>No direct TTD-supported pair summary is available.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="result-table-wrap">
+                    <table className="result-table compact">
+                      <thead>
+                        <tr>
+                          <th>TTD-supported target</th>
+                          <th>Pairs</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(releasedDtiTtdSummary.top_supported_pair_targets || []).length ? releasedDtiTtdSummary.top_supported_pair_targets.slice(0, 8).map((item) => (
+                          <tr key={item.Target_ID}>
+                            <td><button className="result-link-btn" onClick={() => onJumpToNode(item.Target_ID)}><span className="result-emphasis-label">{item.gene_name || item.Target_ID}</span></button></td>
+                            <td><span className="result-emphasis-number">{item.pair_count}</span></td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan={2}>No target-level TTD support is available for the current released pair layer.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="network-caption">{releasedDtiTtdSummary.coverage_note}</div>
+              </>
+            ) : null}
+            {releasedDiseaseSummary?.released_rows ? (
+              <>
+                <div className="result-summary-strip">
+                  <span className="result-summary-pill">
+                    <strong>{releasedDiseaseSummary.released_rows.toLocaleString()}</strong>
+                    <em>Released disease-linked rows</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{releasedDiseaseSummary.released_pairs.toLocaleString()}</strong>
+                    <em>Released disease-linked pairs</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{releasedDiseaseSummary.released_unique_diseases.toLocaleString()}</strong>
+                    <em>Diseases represented</em>
+                  </span>
+                  <span className="result-summary-pill">
+                    <strong>{releasedDiseaseSummary.top_support_pattern || "NA"}</strong>
+                    <em>Leading inferred support pattern</em>
+                  </span>
+                </div>
+                <div className="home-research-grid inner-result-grid">
+                  <div className="result-table-wrap">
+                    <table className="result-table compact">
+                      <thead>
+                        <tr>
+                          <th>Released disease-linked row</th>
+                          
+                          <th>Target</th>
+                          <th>Disease</th>
+                          <th>Support</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(releasedDiseaseSummary.top_rows || []).length ? releasedDiseaseSummary.top_rows.slice(0, 8).map((item) => (
+                          <tr key={`${item.drug_id}-${item.target_id}-${item.disease_id}`}>
+                            <td><button className="result-link-btn" onClick={() => onAnalyze(item.drug_id)}><span className="result-emphasis-label">{item.drug_label}</span></button></td>
+                            <td><button className="result-link-btn" onClick={() => onAnalyze(item.target_id)}>{item.target_label}</button></td>
+                            <td>{item.disease_label}</td>
+                            <td><span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.Total_Votes_Optional7}/7</span></td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan={4}>No released disease-linked rows are available.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="result-table-wrap">
+                    <table className="result-table compact">
+                      <thead>
+                        <tr>
+                        <th>Released target</th>
+                          <th>Rows</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(releasedDiseaseSummary.top_targets || []).length ? releasedDiseaseSummary.top_targets.slice(0, 8).map((item) => (
+                          <tr key={item.target_id}>
+                            <td><button className="result-link-btn" onClick={() => onAnalyze(item.target_id)}><span className="result-emphasis-label">{item.gene_name || item.target_label}</span></button></td>
+                            <td><span className="result-emphasis-number">{item.row_count}</span></td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan={2}>No target summary is available for the current released layer.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="network-caption">{releasedDiseaseSummary.coverage_note}</div>
+              </>
+            ) : null}
           </section>
 
           <section className="home-panel-card">
@@ -2197,6 +2436,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     <th>Drug</th>
                     <th>Rows</th>
                     <th>Top disease</th>
+                    <th>Cross-associated diseases</th>
                     <th>Top target</th>
                     <th>ncRNA-supported</th>
                     <th>Best support</th>
@@ -2210,11 +2450,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td><button className="result-link-btn" onClick={() => onAnalyze(item.drug_id)}><span className="result-emphasis-label">{item.drug_label}</span></button></td>
                       <td><span className="result-emphasis-number">{item.row_count}</span></td>
                       <td>{item.top_disease_label || "-"}</td>
+                      <td><span className="result-muted-multiline">{item.disease_summary || item.top_disease_label || "-"}</span></td>
                       <td>{item.top_target_label || "-"}</td>
                       <td>{linked ? <span className="result-emphasis-chip is-soft">{linked.top_ncrna_name || "linked"} · {linked.linked_ncrna_count || 0}</span> : "-"}</td>
                       <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
                     </tr>
-                  )}) : <tr><td colSpan={6}>No drug summary rows are available in the current release.</td></tr>}
+                  )}) : <tr><td colSpan={7}>No drug summary rows are available in the current release.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -2231,6 +2472,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     <th>Target</th>
                     <th>Rows</th>
                     <th>Top disease</th>
+                    <th>Cross-associated diseases</th>
                     <th>Top drug</th>
                     <th>Best support</th>
                   </tr>
@@ -2241,10 +2483,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td><button className="result-link-btn" onClick={() => onAnalyze(item.target_id)}><span className="result-emphasis-label">{item.target_label}</span></button></td>
                       <td><span className="result-emphasis-number">{item.row_count}</span></td>
                       <td>{item.top_disease_label || "-"}</td>
+                      <td><span className="result-muted-multiline">{item.disease_summary || item.top_disease_label || "-"}</span></td>
                       <td>{item.top_drug_label || "-"}</td>
                       <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
                     </tr>
-                  )) : <tr><td colSpan={5}>No target summary rows are available in the current release.</td></tr>}
+                  )) : <tr><td colSpan={6}>No target summary rows are available in the current release.</td></tr>}
                 </tbody>
               </table>
             </div>

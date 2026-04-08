@@ -1,5 +1,6 @@
 import React from "react";
 import ForceGraph2D from "react-force-graph-2d";
+import { forceCollide, forceX, forceY } from "d3-force";
 
 function nodeColor(type) {
   if (type === "Disease") return "#ef4444";
@@ -27,6 +28,122 @@ function hash01(text) {
   let h = 0;
   for (let i = 0; i < text.length; i += 1) h = (h * 31 + text.charCodeAt(i)) | 0;
   return ((h >>> 0) % 1000) / 1000;
+}
+
+function hashSigned(text) {
+  return hash01(text) * 2 - 1;
+}
+
+function typeHub(type) {
+  if (type === "Drug") return { x: -280, y: -120 };
+  if (type === "Target") return { x: 260, y: -130 };
+  if (type === "ncRNA") return { x: -180, y: 220 };
+  return { x: 40, y: 80 };
+}
+
+function modeHub(type, layoutMode) {
+  if (layoutMode === "constellation") {
+    if (type === "Drug") return { x: -360, y: -180 };
+    if (type === "Target") return { x: 360, y: -180 };
+    if (type === "ncRNA") return { x: -250, y: 260 };
+    return { x: 120, y: 170 };
+  }
+  if (layoutMode === "clustered") {
+    if (type === "Drug") return { x: -240, y: -100 };
+    if (type === "Target") return { x: 230, y: -90 };
+    if (type === "ncRNA") return { x: -150, y: 180 };
+    return { x: 30, y: 70 };
+  }
+  return typeHub(type);
+}
+
+function initialNodePosition(node, centerId, layoutMode) {
+  const seed = hash01(`${node.id}|${node.node_type}`);
+  const signedA = hashSigned(`${node.id}|a`);
+  const signedB = hashSigned(`${node.id}|b`);
+  const signedC = hashSigned(`${node.id}|c`);
+  const importance = Math.max(1, Number(node.importance) || 1);
+  const hub = node.id === centerId ? { x: 0, y: 0 } : modeHub(node.node_type, layoutMode);
+  const baseRadius =
+    node.id === centerId
+      ? 0
+      : layoutMode === "constellation"
+        ? node.node_type === "Disease"
+          ? 90
+          : node.node_type === "ncRNA"
+            ? 160
+            : 200
+        : layoutMode === "clustered"
+          ? node.node_type === "Disease"
+            ? 110
+            : node.node_type === "ncRNA"
+              ? 180
+              : 220
+          : node.node_type === "Disease"
+            ? 120
+            : node.node_type === "ncRNA"
+              ? 200
+              : 240;
+  const spread =
+    node.id === centerId
+      ? 0
+      : layoutMode === "constellation"
+        ? node.node_type === "Disease"
+          ? 130
+          : node.node_type === "ncRNA"
+            ? 170
+            : 210
+        : layoutMode === "clustered"
+          ? node.node_type === "Disease"
+            ? 150
+            : node.node_type === "ncRNA"
+              ? 210
+              : 250
+          : node.node_type === "Disease"
+            ? 170
+            : node.node_type === "ncRNA"
+              ? 240
+              : 280;
+  const importancePull = Math.max(0, 1 - Math.min(0.78, importance / 32));
+  const radius = baseRadius + spread * seed * importancePull + spread * 0.16 * Math.abs(signedB);
+  const angleBase =
+    layoutMode === "constellation"
+      ? node.node_type === "Drug"
+        ? -Math.PI * 0.88
+        : node.node_type === "Target"
+          ? -Math.PI * 0.02
+          : node.node_type === "ncRNA"
+            ? Math.PI * 0.78
+            : Math.PI * 0.26
+      : node.node_type === "Drug"
+        ? -Math.PI * 0.78
+        : node.node_type === "Target"
+          ? -Math.PI * 0.12
+          : node.node_type === "ncRNA"
+            ? Math.PI * 0.84
+            : Math.PI * 0.18;
+  const angleVariance = layoutMode === "constellation" ? 0.58 : layoutMode === "clustered" ? 0.76 : 0.95;
+  const angle = angleBase + signedA * angleVariance + seed * Math.PI * (layoutMode === "constellation" ? 0.52 : 0.72);
+  const orbit = radius * (0.84 + Math.abs(signedC) * 0.34);
+  const driftX = signedB * (layoutMode === "constellation" ? 28 : 42 + spread * 0.08);
+  const driftY = signedC * (layoutMode === "constellation" ? 24 : 34 + spread * 0.08);
+  return {
+    x: hub.x + Math.cos(angle) * orbit + driftX,
+    y: hub.y + Math.sin(angle) * orbit + driftY
+  };
+}
+
+function labelBudget(scale, densityMode) {
+  const base =
+    densityMode === "dense"
+      ? { focus: 12, pinned: 22, important: 48, normal: 22 }
+      : densityMode === "sparse"
+        ? { focus: 14, pinned: 28, important: 64, normal: 34 }
+        : { focus: 12, pinned: 24, important: 56, normal: 28 };
+  if (scale >= 2.4) return { focus: 999, pinned: 120, important: 160, normal: 120 };
+  if (scale >= 1.9) return { focus: 999, pinned: base.pinned + 16, important: base.important + 36, normal: base.normal + 24 };
+  if (scale >= 1.4) return { focus: 999, pinned: base.pinned + 8, important: base.important + 14, normal: base.normal + 8 };
+  return { focus: 999, pinned: base.pinned, important: base.important, normal: base.normal };
 }
 
 function labelAnchors(node, radius) {
@@ -102,13 +219,14 @@ export default function GraphCanvas({
   centerId,
   searchText,
   fitSignal,
-  densityMode = "balanced"
+  densityMode = "balanced",
+  layoutMode = "organic"
 }) {
   const fgRef = React.useRef(null);
   const shellRef = React.useRef(null);
   const clickRef = React.useRef({ id: "", ts: 0 });
   const mouseRef = React.useRef({ x: 0, y: 0 });
-  const labelLayoutRef = React.useRef({ frameBucket: -1, boxes: [] });
+  const labelLayoutRef = React.useRef({ frameBucket: -1, boxes: [], counts: { focus: 0, pinned: 0, important: 0, normal: 0 } });
   const [size, setSize] = React.useState({ w: 1000, h: 620 });
   const [hoverId, setHoverId] = React.useState("");
   const [selectedId, setSelectedId] = React.useState("");
@@ -174,6 +292,16 @@ export default function GraphCanvas({
         const pri = (b.id === centerId) - (a.id === centerId);
         if (pri) return pri;
         return (b.importance || 0) - (a.importance || 0);
+      })
+      .map((n) => {
+        const pos = initialNodePosition(n, centerId, layoutMode);
+        return {
+          ...n,
+          x: Number.isFinite(n.x) ? n.x : pos.x,
+          y: Number.isFinite(n.y) ? n.y : pos.y,
+          vx: 0,
+          vy: 0
+        };
       });
     const links = keepLinks.map((l) => {
       const s = linkNodeId(l.source);
@@ -186,7 +314,11 @@ export default function GraphCanvas({
             ? 1.52
             : l.edge_category === "ncRNA-Drug"
               ? 1.46
-            : 1.16;
+              : l.edge_category === "ncRNA-Disease"
+                ? 1.58
+                : l.edge_category === "ncRNA-Target"
+                  ? 1.42
+              : 1.16;
       const curve = (curveSeed - 0.5) * 0.62 * categoryBoost;
       const supportScore = Number.isFinite(Number(l.support_score)) ? Number(l.support_score) : 0;
       const weight = Number.isFinite(Number(l.weight)) ? Number(l.weight) : 0;
@@ -201,7 +333,7 @@ export default function GraphCanvas({
       return { ...l, source: s, target: t, curve, supportScore, predictedSupportTier };
     });
     return { nodes, links };
-  }, [graph, centerId, densityMode]);
+  }, [graph, centerId, densityMode, layoutMode]);
 
   const neighborMap = React.useMemo(() => {
     const m = new Map();
@@ -237,23 +369,63 @@ export default function GraphCanvas({
 
   React.useEffect(() => {
     if (!fgRef.current) return;
+    const densityForces = {
+      sparse: { charge: -280, collision: 1.28, xStrength: 0.026, yStrength: 0.026 },
+      balanced: { charge: -330, collision: 1.38, xStrength: 0.03, yStrength: 0.03 },
+      dense: { charge: -390, collision: 1.52, xStrength: 0.034, yStrength: 0.034 }
+    }[densityMode] || { charge: -330, collision: 1.38, xStrength: 0.03, yStrength: 0.03 };
+    const layoutForces = {
+      organic: { center: 0.024, drift: 1, collision: 1, radial: 1, fitMs: 520, settleMs: 820 },
+      clustered: { center: 0.018, drift: 1.34, collision: 1.15, radial: 0.88, fitMs: 560, settleMs: 860 },
+      constellation: { center: 0.012, drift: 1.62, collision: 1.24, radial: 0.72, fitMs: 620, settleMs: 920 }
+    }[layoutMode] || { center: 0.024, drift: 1, collision: 1, radial: 1, fitMs: 520, settleMs: 820 };
     fgRef.current.d3Force("link").distance((l) => {
-      if (l.edge_category === "Drug-Target") return l.edge_type === "Known+Predicted" ? 62 : 88;
-      if (l.edge_category === "Drug-Disease" || l.edge_category === "Target-Disease") return 120;
-      if (l.edge_category === "ncRNA-Drug") return 112;
-      return 96;
+      const base =
+        l.edge_category === "Drug-Target"
+          ? (l.edge_type === "Known+Predicted" ? 62 : 88)
+          : (l.edge_category === "Drug-Disease" || l.edge_category === "Target-Disease" || l.edge_category === "ncRNA-Disease")
+            ? 120
+            : (l.edge_category === "ncRNA-Drug" || l.edge_category === "ncRNA-Target")
+              ? 112
+              : 96;
+      return base * layoutForces.radial;
     });
-    fgRef.current.d3Force("charge").strength(-220);
-    fgRef.current.d3Force("center").strength(0.06);
-    fgRef.current.d3Force("collision", null);
+    fgRef.current.d3Force("charge").strength((node) => {
+      const base = densityForces.charge;
+      const importance = Math.max(1, Number(node.importance) || 1);
+      const typeBoost = node.node_type === "Disease" ? 1.08 : node.node_type === "ncRNA" ? 1.06 : 1;
+      return base * layoutForces.drift * typeBoost * (0.88 + Math.min(0.6, Math.sqrt(importance) * 0.08));
+    });
+    fgRef.current.d3Force("center").strength(layoutForces.center);
+    fgRef.current.d3Force(
+      "collision",
+      forceCollide((node) => {
+        const importance = Math.max(1, Number(node.importance) || 1);
+        return 6 + Math.sqrt(importance) * densityForces.collision * layoutForces.collision + (node.node_type === "Disease" ? 3.4 : 1.8);
+      }).iterations(2)
+    );
+    fgRef.current.d3Force(
+      "type-x",
+      forceX((node) => (node.id === centerId ? 0 : modeHub(node.node_type, layoutMode).x)).strength((node) => {
+        if (node.id === centerId) return 0.09;
+        return densityForces.xStrength * layoutForces.drift * (node.node_type === "Disease" ? 1.12 : 1);
+      })
+    );
+    fgRef.current.d3Force(
+      "type-y",
+      forceY((node) => (node.id === centerId ? 0 : modeHub(node.node_type, layoutMode).y)).strength((node) => {
+        if (node.id === centerId) return 0.09;
+        return densityForces.yStrength * layoutForces.drift * (node.node_type === "Disease" ? 1.12 : 1);
+      })
+    );
     fgRef.current.d3ReheatSimulation();
     const t = setTimeout(() => {
       if (!fgRef.current) return;
-      fgRef.current.zoomToFit(300, 50);
+      fgRef.current.zoomToFit(layoutForces.fitMs, 60);
       fgRef.current.cooldownTicks(0);
-    }, 450);
+    }, layoutForces.settleMs);
     return () => clearTimeout(t);
-  }, [graphData]);
+  }, [graphData, centerId, densityMode, layoutMode]);
 
   React.useEffect(() => {
     if (!fgRef.current) return;
@@ -291,15 +463,17 @@ export default function GraphCanvas({
           if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
           const frameBucket = Math.floor(performance.now() / 14);
           if (labelLayoutRef.current.frameBucket !== frameBucket) {
-            labelLayoutRef.current = { frameBucket, boxes: [] };
+            labelLayoutRef.current = { frameBucket, boxes: [], counts: { focus: 0, pinned: 0, important: 0, normal: 0 } };
           }
           const isHover = node.id === hoverId;
           const isSelected = node.id === selectedId;
           const isHit = needle ? `${node.display_name || node.label} ${node.id}`.toLowerCase().includes(needle) : false;
           const inFocus = !focusNeighbors || focusNeighbors.has(node.id);
+          const focusRole = !focusId ? "ambient" : node.id === focusId ? "self" : inFocus ? "neighbor" : "ambient";
           const typeBoost = node.node_type === "Disease" ? 1.08 : node.node_type === "ncRNA" ? 1.05 : 1;
           const centerBoost = node.id === centerId ? 1.18 : 1;
-          const r = Math.max(3, (2 + Math.sqrt(node.importance || 1) * 1.8) * typeBoost * centerBoost);
+          const focusScale = focusRole === "self" ? 1.08 : focusRole === "neighbor" ? 1 : focusId ? 0.84 : 1;
+          const r = Math.max(3, (2 + Math.sqrt(node.importance || 1) * 1.8) * typeBoost * centerBoost * focusScale);
           const ev = nodeEvidence.get(node.id) || { Known: 0, Predicted: 0, "Known+Predicted": 0 };
           const evTotal = ev.Known + ev.Predicted + ev["Known+Predicted"];
           const baseNodeColor = nodeColor(node.node_type);
@@ -307,9 +481,11 @@ export default function GraphCanvas({
           const { r: cr, g: cg, b: cb } = colorChannels(baseNodeColor);
           const haloAlpha = isHover || isSelected || node.id === centerId ? 0.3 : (node.importance || 0) >= 10 ? 0.14 : 0.08;
           const pedestalAlpha = isHover || isSelected ? 0.18 : node.id === centerId ? 0.13 : 0.08;
+          const rimAlpha = isHover || isSelected ? 0.34 : node.id === centerId ? 0.28 : 0.18;
+          const innerGlowAlpha = isHover || isSelected ? 0.24 : 0.12;
 
           ctx.save();
-          ctx.globalAlpha = inFocus ? 1 : 0.2;
+          ctx.globalAlpha = focusRole === "self" ? 1 : focusRole === "neighbor" ? 0.94 : focusId ? 0.14 : 1;
           ctx.beginPath();
           ctx.ellipse(node.x, node.y + r * 1.02, r * 1.75, Math.max(2.4, r * 0.62), 0, 0, 2 * Math.PI);
           ctx.fillStyle = `rgba(15, 23, 42, ${pedestalAlpha})`;
@@ -322,6 +498,11 @@ export default function GraphCanvas({
           ctx.arc(node.x, node.y, r + 6.8, 0, 2 * Math.PI);
           ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${haloAlpha})`;
           ctx.fill();
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, r + 3.4, 0, 2 * Math.PI);
+          ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${rimAlpha})`;
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
           if (node.node_type === "Disease") {
             ctx.beginPath();
             ctx.arc(node.x, node.y, r + 4.8, 0, 2 * Math.PI);
@@ -364,14 +545,34 @@ export default function GraphCanvas({
           ctx.beginPath();
           ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
           const gradient = ctx.createRadialGradient(node.x - r * 0.32, node.y - r * 0.34, Math.max(0.5, r * 0.18), node.x, node.y, r);
-          gradient.addColorStop(0, mixColor(baseNodeColor, 0.68));
-          gradient.addColorStop(0.42, softNodeColor);
-          gradient.addColorStop(1, baseNodeColor);
+          gradient.addColorStop(0, mixColor(baseNodeColor, 0.82));
+          gradient.addColorStop(0.22, mixColor(baseNodeColor, 0.62));
+          gradient.addColorStop(0.5, softNodeColor);
+          gradient.addColorStop(0.82, baseNodeColor);
+          gradient.addColorStop(1, rgbaFromHex(baseNodeColor, 0.98));
           ctx.fillStyle = gradient;
           ctx.fill();
           ctx.beginPath();
+          ctx.arc(node.x, node.y, Math.max(1.6, r * 0.72), 0, 2 * Math.PI);
+          const innerGradient = ctx.createRadialGradient(
+            node.x - r * 0.14,
+            node.y - r * 0.18,
+            Math.max(0.4, r * 0.08),
+            node.x,
+            node.y,
+            Math.max(1.6, r * 0.72)
+          );
+          innerGradient.addColorStop(0, `rgba(255,255,255,${0.34 + innerGlowAlpha})`);
+          innerGradient.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = innerGradient;
+          ctx.fill();
+          ctx.beginPath();
           ctx.arc(node.x - r * 0.26, node.y - r * 0.32, Math.max(1.6, r * 0.34), 0, 2 * Math.PI);
-          ctx.fillStyle = "rgba(255,255,255,0.36)";
+          ctx.fillStyle = "rgba(255,255,255,0.42)";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(node.x + r * 0.18, node.y + r * 0.2, Math.max(1.4, r * 0.34), Math.max(1.1, r * 0.18), Math.PI / 6, 0, 2 * Math.PI);
+          ctx.fillStyle = "rgba(255,255,255,0.12)";
           ctx.fill();
           ctx.lineWidth = isHover || isSelected || isHit ? 2 : 1.2;
           ctx.strokeStyle = isHover || isSelected || isHit ? "#111827" : "#ffffff";
@@ -419,6 +620,13 @@ export default function GraphCanvas({
             const text = node.display_name || node.label || node.id;
             const pinned = zoomShowPinned && !isHover && !isSelected && node.id !== centerId && !isHit;
             const labelTier = isHover || isSelected || node.id === centerId || isHit ? "focus" : pinned ? "pinned" : (node.importance || 0) >= 8 ? "important" : "normal";
+            const priority = isHover || isSelected || node.id === centerId || isHit || pinned;
+            const budget = labelBudget(scale, densityMode);
+            const counts = labelLayoutRef.current.counts || { focus: 0, pinned: 0, important: 0, normal: 0 };
+            if ((focusId && focusRole === "ambient" && !priority) || (!priority && (counts[labelTier] || 0) >= (budget[labelTier] || 0))) {
+              ctx.restore();
+              return;
+            }
             const tierFade =
               labelTier === "focus"
                 ? 1
@@ -433,13 +641,12 @@ export default function GraphCanvas({
             const fs = Math.max(8.5, fsBase / Math.max(scale, 0.8));
             const fontWeight = labelTier === "normal" ? 600 : 700;
             const badgeRadius = labelTier === "focus" ? 4.4 : labelTier === "pinned" ? 3.8 : labelTier === "important" ? 3.4 : 0;
-            ctx.font = `${fontWeight} ${fs}px Inter, sans-serif`;
+            ctx.font = `${fontWeight} ${fs}px "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif`;
             ctx.textBaseline = "middle";
             const metrics = ctx.measureText(text);
             const textWidth = metrics.width + (badgeRadius ? badgeRadius * 2 + 6 : 0);
             const padX = 5;
             const padY = 3;
-            const priority = isHover || isSelected || node.id === centerId || isHit || pinned;
             const anchors = priority ? [{ dx: r + 6, dy: 0, align: "left" }, ...labelAnchors(node, r)] : labelAnchors(node, r);
             let placement = null;
             for (const anchor of anchors) {
@@ -462,6 +669,7 @@ export default function GraphCanvas({
             }
             if (placement) {
               labelLayoutRef.current.boxes.push(placement.box);
+              labelLayoutRef.current.counts[labelTier] = (labelLayoutRef.current.counts[labelTier] || 0) + 1;
               const textStartX = placement.textX + (badgeRadius ? badgeRadius * 2 + 6 : 0);
               const needsGuide = Math.abs(placement.textY - node.y) > 1 || Math.abs(placement.textX - (node.x + r + 6)) > 6;
               ctx.globalAlpha *= 0.48 + tierFade * 0.52;
@@ -524,13 +732,38 @@ export default function GraphCanvas({
           const t = typeof l.target === "object" ? l.target : nodeById.get(l.target);
           if (!s || !t || !Number.isFinite(s.x) || !Number.isFinite(s.y) || !Number.isFinite(t.x) || !Number.isFinite(t.y)) return;
           const inFocus = !focusNeighbors || (focusNeighbors.has(s.id) && focusNeighbors.has(t.id));
+          const directlyTouchesFocus = !!focusId && (s.id === focusId || t.id === focusId);
+          const neighborBand = !!focusId && !directlyTouchesFocus && inFocus;
+          const categoryBoost =
+            l.edge_category === "Drug-Target"
+              ? 1.02
+              : l.edge_category === "Drug-Disease" || l.edge_category === "Target-Disease"
+                ? 1.14
+                : l.edge_category === "ncRNA-Disease"
+                  ? 1.18
+                  : l.edge_category === "ncRNA-Target"
+                    ? 1.08
+                    : 1.1;
           const zoomAlpha = 0.62 + fadeBetween(fgRef.current?.zoom?.() || 1, 0.95, 1.85) * 0.34;
           const supportBoost = l.predictedSupportTier === "high" ? 1.18 : l.predictedSupportTier === "medium" ? 1.08 : 1;
-          const alpha = (inFocus ? 0.84 : 0.1) * zoomAlpha * supportBoost;
+          const alphaBase = directlyTouchesFocus ? 0.94 : neighborBand ? 0.58 : inFocus ? 0.38 : focusId ? 0.035 : 0.18;
+          const alpha = alphaBase * zoomAlpha * supportBoost * categoryBoost;
           const zoomWidthBoost = fadeBetween(fgRef.current?.zoom?.() || 1, 1.05, 2.1) * 0.42;
-          const lw = Math.min(0.75 + (l.weight || 1) * 0.42 + zoomWidthBoost, 2.8) * supportBoost + (inFocus ? 0.12 : 0);
+          const widthBase = directlyTouchesFocus ? 1.1 : neighborBand ? 0.92 : inFocus ? 0.8 : 0.58;
+          const lw = (Math.min(0.75 + (l.weight || 1) * 0.42 + zoomWidthBoost, 2.8) * supportBoost + (inFocus ? 0.12 : 0)) * widthBase * categoryBoost;
           const color = edgeColor(l.edge_type);
-          const glowColor = rgbaFromHex(color, inFocus ? 0.22 + (l.predictedSupportTier === "high" ? 0.06 : 0) : 0.08);
+          const categoryTint =
+            l.edge_category === "ncRNA-Disease"
+              ? "#14b8a6"
+              : l.edge_category === "Drug-Disease" || l.edge_category === "Target-Disease"
+                ? "#ef4444"
+                : l.edge_category === "ncRNA-Target"
+                  ? "#0ea5a4"
+                  : l.edge_category === "ncRNA-Drug"
+                    ? "#14b8a6"
+                    : color;
+          const glowColor = rgbaFromHex(categoryTint, directlyTouchesFocus ? 0.26 : neighborBand ? 0.14 : inFocus ? 0.1 : 0.04);
+          const sheenColor = rgbaFromHex(mixColor(color, 0.68), directlyTouchesFocus ? 0.3 : inFocus ? 0.16 : 0.05);
           const cx = (s.x + t.x) / 2 + (t.y - s.y) * (l.curve || 0);
           const cy = (s.y + t.y) / 2 + (s.x - t.x) * (l.curve || 0);
           ctx.save();
@@ -538,19 +771,19 @@ export default function GraphCanvas({
           ctx.beginPath();
           ctx.moveTo(s.x, s.y);
           ctx.quadraticCurveTo(cx, cy, t.x, t.y);
-          ctx.strokeStyle = rgbaFromHex(color, inFocus ? 0.12 : 0.04);
-          ctx.lineWidth = lw + (l.predictedSupportTier === "high" ? 6.2 : 5.1);
+          ctx.strokeStyle = rgbaFromHex(categoryTint, directlyTouchesFocus ? 0.16 : neighborBand ? 0.08 : 0.03);
+          ctx.lineWidth = lw + (l.predictedSupportTier === "high" ? 6.6 : 5.2);
           ctx.stroke();
           ctx.beginPath();
           ctx.moveTo(s.x, s.y);
           ctx.quadraticCurveTo(cx, cy, t.x, t.y);
           ctx.strokeStyle = glowColor;
-          ctx.lineWidth = lw + (l.predictedSupportTier === "high" ? 3.1 : 2.2);
+          ctx.lineWidth = lw + (l.predictedSupportTier === "high" ? 3.2 : 2.3);
           ctx.stroke();
           const edgeGradient = ctx.createLinearGradient(s.x, s.y, t.x, t.y);
-          edgeGradient.addColorStop(0, mixColor(color, 0.28));
+          edgeGradient.addColorStop(0, mixColor(color, directlyTouchesFocus ? 0.56 : 0.42));
           edgeGradient.addColorStop(0.5, color);
-          edgeGradient.addColorStop(1, mixColor(color, 0.38));
+          edgeGradient.addColorStop(1, mixColor(color, directlyTouchesFocus ? 0.62 : 0.52));
           ctx.strokeStyle = edgeGradient;
           ctx.lineWidth = lw;
           if (l.edge_type === "Predicted") ctx.setLineDash([4, 3]);
@@ -564,8 +797,8 @@ export default function GraphCanvas({
             ctx.beginPath();
             ctx.moveTo(s.x, s.y);
             ctx.quadraticCurveTo(cx, cy, t.x, t.y);
-            ctx.strokeStyle = l.predictedSupportTier === "high" ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.18)";
-            ctx.lineWidth = Math.max(0.5, lw * (l.predictedSupportTier === "high" ? 0.4 : 0.32));
+            ctx.strokeStyle = sheenColor;
+            ctx.lineWidth = Math.max(0.55, lw * (l.predictedSupportTier === "high" ? 0.44 : 0.34));
             ctx.stroke();
           }
           ctx.restore();

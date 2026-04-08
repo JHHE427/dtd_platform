@@ -97,8 +97,11 @@ export default function AnalysisPage({
   controls,
   onControlsChange,
   densityMode,
-  onDensityModeChange
+  onDensityModeChange,
+  layoutMode,
+  onLayoutModeChange
 }) {
+  const isWholeGraph = centerNode === "__ALL__";
   const [structureModalOpen, setStructureModalOpen] = React.useState(false);
   const [sequenceCopied, setSequenceCopied] = React.useState(false);
   const [resultSort, setResultSort] = React.useState({ key: "support_score", direction: "desc" });
@@ -117,6 +120,7 @@ export default function AnalysisPage({
   const ann = detail?.annotation || {};
   const profile = detail?.multimodal_profile || { modalities: [], available_modalities: 0, total_modalities: 0, coverage_ratio: 0 };
   const mechanism = detail?.mechanism_snapshot || { top_links: [], evidence_sources: [], by_neighbor_type: {}, context_summary: [] };
+  const relatedContext = detail?.related_context || { available: false, primary: [], secondary: [] };
   const algorithmEvidence = detail?.algorithm_evidence || { available: false, row_count: 0, methods: [], top_rows: [] };
   const ttdEvidence = detail?.ttd_evidence || { available: false, row_count: 0, top_rows: [] };
   const ncrnaEvidence = detail?.ncrna_evidence || { available: false, row_count: 0, top_rows: [] };
@@ -124,11 +128,15 @@ export default function AnalysisPage({
   const comparison = compareState?.data || null;
   const sevenDtiModels = SEVEN_DTI_MODEL_META.map((item) => item.label);
   const smiles = ann.smiles || "";
+  const molecularFormula = ann.molecular_formula || "";
   const textDescription = ann.text_description || "";
   const sideEffectSummary = ann.side_effect_summary || "";
   const ontologyTerms = ann.ontology_terms || "";
   const targetSummary = ann.target_summary || "";
   const diseaseSummary = ann.disease_summary || "";
+  const drugSummary = ann.drug_summary || "";
+  const ncrnaSummary = ann.ncrna_summary || "";
+  const ttdSummary = ann.ttd_summary || "";
   const synonyms = React.useMemo(() => {
     if (!ann.synonyms_json) return [];
     try {
@@ -209,6 +217,12 @@ export default function AnalysisPage({
   const diseaseCount = nodeTypeMap.Disease || 0;
   const ncrnaCount = nodeTypeMap.ncRNA || 0;
   const coveragePct = Math.round((profile.coverage_ratio || 0) * 100);
+  const selectionOverviewItems = [
+    { label: "Visible nodes", value: graphNodeCount },
+    { label: "Visible edges", value: graphEdgeCount },
+    { label: "Node families", value: `${Object.values(nodeTypeMap).filter(Boolean).length}` },
+    { label: "Edge filters", value: `${categories.length} / ${types.length}` },
+  ];
   const algoRowLabel = (row) => {
     if (!row) return "-";
     return `${row.Drug_Label || row.Drug_ID} -> ${row.Target_Label || row.Target_ID} -> ${row.Disease_Label || row.Disease_ID}`;
@@ -299,6 +313,11 @@ export default function AnalysisPage({
             <option value="balanced">Balanced</option>
             <option value="dense">Expanded</option>
           </select>
+          <select value={layoutMode} onChange={(e) => onLayoutModeChange(e.target.value)}>
+            <option value="organic">Organic</option>
+            <option value="clustered">Clustered</option>
+            <option value="constellation">Constellation</option>
+          </select>
           <button className="btn-quiet" onClick={onResetFilters}>Reset Filters</button>
           <button className="btn-quiet" onClick={onDenseGraph}>Expanded Network</button>
           <button className="btn-quiet" onClick={onAllNetwork}>Load Full Disease Network</button>
@@ -323,7 +342,7 @@ export default function AnalysisPage({
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Current Center</div>
-          <div className="kpi-value kpi-center">{centerNode || "-"}</div>
+          <div className="kpi-value kpi-center">{isWholeGraph ? "ALL NODES" : (centerNode || "-")}</div>
         </div>
       </div>
 
@@ -344,7 +363,7 @@ export default function AnalysisPage({
             <button
               key={preset.key}
               className={`online-analysis-preset ${onlineAnalysisState?.min_algo_pass === preset.patch.min_algo_pass && onlineAnalysisState?.min_votes === preset.patch.min_votes && (onlineAnalysisState?.txgnn_pass || "") === (preset.patch.txgnn_pass || "") ? "is-active" : ""}`}
-              onClick={() => onRunOnlineAnalysis({ focus_id: onlineAnalysisState?.focus_id || centerNode || "", ...preset.patch })}
+              onClick={() => onRunOnlineAnalysis({ focus_id: onlineAnalysisState?.focus_id || (isWholeGraph ? "" : centerNode) || "", ...preset.patch })}
               type="button"
             >
               <strong>{preset.title}</strong>
@@ -440,7 +459,7 @@ export default function AnalysisPage({
             </select>
           </label>
           <div className="online-analysis-actions">
-            <button className="btn-quiet" onClick={() => onOnlineAnalysisStateChange({ focus_id: centerNode || "" })}>Use Current Center</button>
+            <button className="btn-quiet" onClick={() => onOnlineAnalysisStateChange({ focus_id: isWholeGraph ? "" : (centerNode || "") })}>Use Current Center</button>
             <button
               className="btn-quiet"
               onClick={() => onRunOnlineAnalysis({
@@ -625,12 +644,29 @@ export default function AnalysisPage({
         <section className="card graph-panel">
           <div className="card-head">
             <h3>Disease-Centered Interaction Network</h3>
-            <div className="muted">Released disease network view · {graphMeta}</div>
+            <div className={`network-caption analysis-network-caption ${isWholeGraph ? "is-global" : ""}`}>
+              <span className="analysis-network-caption__badge">{isWholeGraph ? "Global atlas overview" : "Focused node view"}</span>
+              <span className="analysis-network-caption__badge is-layout">{layoutMode}</span>
+              <span>{graphMeta}</span>
+            </div>
           </div>
+          {isWholeGraph ? (
+            <div className="analysis-global-banner">
+              <div>
+                <strong>Full network loaded by default</strong>
+                <span>Start with the global disease network, then click any drug, target, disease, or ncRNA node to open the structured detail panels on the right.</span>
+              </div>
+              <span className="analysis-global-banner__tag">All-node overview</span>
+            </div>
+          ) : null}
           <div className="control-grid">
             <label>
               Center Node ID
-              <input value={centerNode} onChange={(e) => onCenterNodeChange(e.target.value)} />
+              <input
+                value={isWholeGraph ? "" : centerNode}
+                placeholder={isWholeGraph ? "Full network loaded" : "Enter Drug / Target / Disease / ncRNA ID"}
+                onChange={(e) => onCenterNodeChange(e.target.value)}
+              />
             </label>
             <label>
               Network Mode
@@ -648,7 +684,7 @@ export default function AnalysisPage({
             </label>
             <label>
               Max Edges
-              <input type="number" min="50" max="2000" value={limit} onChange={(e) => onControlsChange({ limit: Number(e.target.value) })} />
+              <input type="number" min="50" max="2500" value={limit} onChange={(e) => onControlsChange({ limit: Number(e.target.value) })} />
             </label>
             <label>
               Search In Graph
@@ -713,7 +749,7 @@ export default function AnalysisPage({
           <div className="filter-row">
             <div className="filter-group">
               <div className="filter-title">Edge Category</div>
-              {["Drug-Target", "Drug-Disease", "Target-Disease", "ncRNA-Drug"].map((value) => (
+              {["Drug-Target", "Drug-Disease", "Target-Disease", "ncRNA-Drug", "ncRNA-Target", "ncRNA-Disease"].map((value) => (
                 <label key={value}>
                   <input
                     type="checkbox"
@@ -758,6 +794,9 @@ export default function AnalysisPage({
               <span className="legend-network-item"><i className="line predicted" />Predicted evidence</span>
               <span className="legend-network-item"><i className="line kp" />Known + predicted overlap</span>
             </div>
+            <div className="legend-network-note">
+              <span>ncRNA-Drug, ncRNA-Target, and ncRNA-Disease are included as formal known-association layers.</span>
+            </div>
           </div>
 
           <div className="graph-wrap">
@@ -770,6 +809,7 @@ export default function AnalysisPage({
               onNodeHover={onHoverNodeChange}
               fitSignal={fitSignal}
               densityMode={densityMode}
+              layoutMode={layoutMode}
             />
             {graphLoading && !hasRenderableGraph ? (
               <div className="graph-loading">
@@ -848,7 +888,7 @@ export default function AnalysisPage({
           </section>
         </section>
 
-        <aside className="side-column">
+        <aside className={`side-column ${detail?.node ? "" : "is-empty"}`}>
           <section className="card panel-pad rise-in">
             <h3>Record Details</h3>
             <div key={`selected-${detailKey}`} className="card-swap">
@@ -861,6 +901,8 @@ export default function AnalysisPage({
                       <div className="annot-title">SMILES</div>
                       <pre className="annot-text smiles-box">{smiles || "SMILES not available"}</pre>
                       {!smiles ? <div className="annot-reason">{drugMissingSmilesReason}</div> : null}
+                      <div className="annot-title annot-subtitle">Molecular Formula</div>
+                      <div className="annot-text">{molecularFormula || "Molecular formula not available"}</div>
                       {textDescription ? (
                         <>
                           <div className="annot-title annot-subtitle">Description</div>
@@ -897,6 +939,19 @@ export default function AnalysisPage({
                         <>
                           <div className="annot-title annot-subtitle">Top Disease Summary</div>
                           <div className="annot-text">{diseaseSummary}</div>
+                        </>
+                      ) : null}
+                      {detail.node.node_type === "Drug" && relatedContext.available ? (
+                        <>
+                          <div className="annot-title annot-subtitle">{relatedContext.primary_label || "Cross-associated diseases"}</div>
+                          <div className="context-chip-grid">
+                            {(relatedContext.primary || []).map((item) => (
+                              <button key={item.neighbor_id} className="context-chip-card" type="button" onClick={() => onNodeClick(item.neighbor_id)}>
+                                <strong>{item.neighbor_label}</strong>
+                                <span>{item.link_count} links</span>
+                              </button>
+                            ))}
+                          </div>
                         </>
                       ) : null}
                       {structureUrl ? (
@@ -962,6 +1017,68 @@ export default function AnalysisPage({
                           {unresolvedHint || "Sequence information is not available for the current record."}
                         </div>
                       )}
+                      {detail.node.node_type === "Target" && relatedContext.available ? (
+                        <>
+                          <div className="annot-title annot-subtitle">{relatedContext.primary_label || "Cross-associated diseases"}</div>
+                          <div className="context-chip-grid">
+                            {(relatedContext.primary || []).map((item) => (
+                              <button key={item.neighbor_id} className="context-chip-card" type="button" onClick={() => onNodeClick(item.neighbor_id)}>
+                                <strong>{item.neighbor_label}</strong>
+                                <span>{item.link_count} links</span>
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {detail.node.node_type === "Disease" ? (
+                    <div className="annot-box">
+                      <div className="annot-title">Disease Context</div>
+                      {ontologyTerms ? (
+                        <>
+                          <div className="annot-title annot-subtitle">Evidence Layers</div>
+                          <div className="annot-text">{ontologyTerms}</div>
+                        </>
+                      ) : null}
+                      {ann.text_description ? (
+                        <>
+                          <div className="annot-title annot-subtitle">Release Summary</div>
+                          <div className="annot-text">{ann.text_description}</div>
+                        </>
+                      ) : null}
+                      {synonyms.length ? (
+                        <>
+                          <div className="annot-title annot-subtitle">Aliases</div>
+                          <div className="source-chip-wrap">
+                            {synonyms.map((item) => <span className="source-chip" key={item}>{item}</span>)}
+                          </div>
+                        </>
+                      ) : null}
+                      {drugSummary ? (
+                        <>
+                          <div className="annot-title annot-subtitle">Top Drug Context</div>
+                          <div className="annot-text">{drugSummary}</div>
+                        </>
+                      ) : null}
+                      {targetSummary ? (
+                        <>
+                          <div className="annot-title annot-subtitle">Top Target Context</div>
+                          <div className="annot-text">{targetSummary}</div>
+                        </>
+                      ) : null}
+                      {ncrnaSummary ? (
+                        <>
+                          <div className="annot-title annot-subtitle">Top ncRNA-Linked Drug Context</div>
+                          <div className="annot-text">{ncrnaSummary}</div>
+                        </>
+                      ) : null}
+                      {ttdSummary ? (
+                        <>
+                          <div className="annot-title annot-subtitle">TTD-Supported Target Context</div>
+                          <div className="annot-text">{ttdSummary}</div>
+                        </>
+                      ) : null}
                     </div>
                   ) : null}
                   {detail.node.node_type === "ncRNA" ? (
@@ -990,9 +1107,24 @@ export default function AnalysisPage({
                   ) : null}
                 </>
               ) : (
-                <div className="muted">Select a node in the network or results list to view its details.</div>
+                <div className="analysis-selection-empty">
+                  <div className="analysis-selection-empty__eyebrow">{isWholeGraph ? "Full network overview loaded" : "No node selected"}</div>
+                  <strong>Choose a drug, target, disease, or ncRNA to inspect multimodal evidence.</strong>
+                  <p>
+                    Use the graph canvas, current network results, or recent centers to open a structured record with chemistry,
+                    sequence, disease cross-links, ncRNA support, and TTD context.
+                  </p>
+                  <div className="analysis-selection-empty__grid">
+                    {selectionOverviewItems.map((item) => (
+                      <div className="analysis-selection-empty__metric" key={item.label}>
+                        <span>{item.label}</span>
+                        <strong>{item.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
-              <div className="list compact">{renderEdgeStats(detail?.edge_stats)}</div>
+              {detail?.node ? <div className="list compact">{renderEdgeStats(detail?.edge_stats)}</div> : null}
             </div>
           </section>
 
@@ -1421,6 +1553,8 @@ export default function AnalysisPage({
                 <option value="Drug-Disease">Drug-Disease</option>
                 <option value="Target-Disease">Target-Disease</option>
                 <option value="ncRNA-Drug">ncRNA-Drug</option>
+                <option value="ncRNA-Target">ncRNA-Target</option>
+                <option value="ncRNA-Disease">ncRNA-Disease</option>
               </select>
               <select
                 value={neighborState.order_by}
