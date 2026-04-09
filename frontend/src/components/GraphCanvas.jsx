@@ -226,6 +226,7 @@ export default function GraphCanvas({
   const shellRef = React.useRef(null);
   const clickRef = React.useRef({ id: "", ts: 0 });
   const mouseRef = React.useRef({ x: 0, y: 0 });
+  const zoomRef = React.useRef(1);
   const labelLayoutRef = React.useRef({ frameBucket: -1, boxes: [], counts: { focus: 0, pinned: 0, important: 0, normal: 0 } });
   const [size, setSize] = React.useState({ w: 1000, h: 620 });
   const [hoverId, setHoverId] = React.useState("");
@@ -349,8 +350,8 @@ export default function GraphCanvas({
     return m;
   }, [graphData]);
   const nodeById = React.useMemo(() => new Map(graphData.nodes.map((n) => [n.id, n])), [graphData.nodes]);
-  const performanceMode = graphData.nodes.length > 1000 || graphData.links.length > 1800;
-  const ultraDenseMode = graphData.nodes.length > 1300 || graphData.links.length > 2400;
+  const performanceMode = graphData.nodes.length > 400 || graphData.links.length > 700;
+  const ultraDenseMode = graphData.nodes.length > 800 || graphData.links.length > 1400;
 
   const focusId = hoverId || selectedId;
   const focusNeighbors = React.useMemo(() => (focusId ? neighborMap.get(focusId) || new Set([focusId]) : null), [focusId, neighborMap]);
@@ -454,10 +455,12 @@ export default function GraphCanvas({
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
         nodeRelSize={3}
+        warmupTicks={20}
         cooldownTime={950}
         cooldownTicks={90}
         d3AlphaDecay={0.06}
         d3VelocityDecay={0.38}
+        onZoom={({ k }) => { zoomRef.current = k; }}
         linkCurvature={(l) => l.curve || 0}
         linkDirectionalArrowLength={0}
         nodeVal={(n) => Math.max(3, 2 + Math.sqrt(n.importance || 1) * 1.8)}
@@ -555,59 +558,68 @@ export default function GraphCanvas({
             ctx.stroke();
           }
 
-          if (isHover || isSelected) {
-            ctx.shadowColor = "rgba(15,23,42,0.32)";
-            ctx.shadowBlur = 10;
+          const useShadow = isHover || isSelected || node.id === centerId;
+          if (useShadow) {
+            ctx.shadowColor = isHover || isSelected
+              ? "rgba(15,23,42,0.34)"
+              : rgbaFromHex(baseNodeColor, 0.28);
+            ctx.shadowBlur = isHover || isSelected ? 14 : 11;
+            ctx.shadowOffsetY = 2;
           }
-          ctx.shadowColor = isHover || isSelected
-            ? "rgba(15,23,42,0.34)"
-            : node.id === centerId
-              ? rgbaFromHex(baseNodeColor, 0.28)
-              : rgbaFromHex(baseNodeColor, 0.14);
-          ctx.shadowBlur = isHover || isSelected ? 14 : node.id === centerId ? 11 : 7;
-          ctx.shadowOffsetY = 2;
           ctx.beginPath();
           ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
-          const gradient = ctx.createRadialGradient(node.x - r * 0.32, node.y - r * 0.34, Math.max(0.5, r * 0.18), node.x, node.y, r);
-          gradient.addColorStop(0, mixColor(baseNodeColor, 0.82));
-          gradient.addColorStop(0.22, mixColor(baseNodeColor, 0.62));
-          gradient.addColorStop(0.5, softNodeColor);
-          gradient.addColorStop(0.82, baseNodeColor);
-          gradient.addColorStop(1, rgbaFromHex(baseNodeColor, 0.98));
-          ctx.fillStyle = gradient;
+          if (performanceMode && !isHover && !isSelected && node.id !== centerId) {
+            ctx.fillStyle = baseNodeColor;
+          } else {
+            const gradient = ctx.createRadialGradient(node.x - r * 0.32, node.y - r * 0.34, Math.max(0.5, r * 0.18), node.x, node.y, r);
+            gradient.addColorStop(0, mixColor(baseNodeColor, 0.82));
+            gradient.addColorStop(0.22, mixColor(baseNodeColor, 0.62));
+            gradient.addColorStop(0.5, softNodeColor);
+            gradient.addColorStop(0.82, baseNodeColor);
+            gradient.addColorStop(1, rgbaFromHex(baseNodeColor, 0.98));
+            ctx.fillStyle = gradient;
+          }
           ctx.fill();
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, Math.max(1.6, r * 0.72), 0, 2 * Math.PI);
-          const innerGradient = ctx.createRadialGradient(
-            node.x - r * 0.14,
-            node.y - r * 0.18,
-            Math.max(0.4, r * 0.08),
-            node.x,
-            node.y,
-            Math.max(1.6, r * 0.72)
-          );
-          innerGradient.addColorStop(0, `rgba(255,255,255,${0.34 + innerGlowAlpha})`);
-          innerGradient.addColorStop(1, "rgba(255,255,255,0)");
-          ctx.fillStyle = innerGradient;
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(node.x - r * 0.26, node.y - r * 0.32, Math.max(1.6, r * 0.34), 0, 2 * Math.PI);
-          ctx.fillStyle = "rgba(255,255,255,0.42)";
-          ctx.fill();
-          ctx.beginPath();
-          ctx.ellipse(node.x + r * 0.18, node.y + r * 0.2, Math.max(1.4, r * 0.34), Math.max(1.1, r * 0.18), Math.PI / 6, 0, 2 * Math.PI);
-          ctx.fillStyle = "rgba(255,255,255,0.12)";
-          ctx.fill();
+          if (!performanceMode || isHover || isSelected || node.id === centerId) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, Math.max(1.6, r * 0.72), 0, 2 * Math.PI);
+            const innerGradient = ctx.createRadialGradient(
+              node.x - r * 0.14,
+              node.y - r * 0.18,
+              Math.max(0.4, r * 0.08),
+              node.x,
+              node.y,
+              Math.max(1.6, r * 0.72)
+            );
+            innerGradient.addColorStop(0, `rgba(255,255,255,${0.34 + innerGlowAlpha})`);
+            innerGradient.addColorStop(1, "rgba(255,255,255,0)");
+            ctx.fillStyle = innerGradient;
+            ctx.fill();
+          }
+          if (!performanceMode || isHover || isSelected || node.id === centerId) {
+            ctx.beginPath();
+            ctx.arc(node.x - r * 0.26, node.y - r * 0.32, Math.max(1.6, r * 0.34), 0, 2 * Math.PI);
+            ctx.fillStyle = "rgba(255,255,255,0.42)";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(node.x + r * 0.18, node.y + r * 0.2, Math.max(1.4, r * 0.34), Math.max(1.1, r * 0.18), Math.PI / 6, 0, 2 * Math.PI);
+            ctx.fillStyle = "rgba(255,255,255,0.12)";
+            ctx.fill();
+          }
           ctx.lineWidth = isHover || isSelected || isHit ? 2 : 1.2;
           ctx.strokeStyle = isHover || isSelected || isHit ? "#111827" : "#ffffff";
           ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, Math.max(1.2, r - 1.7), 0, 2 * Math.PI);
-          ctx.strokeStyle = `rgba(255,255,255,${node.id === centerId ? 0.42 : 0.18})`;
-          ctx.lineWidth = 0.9;
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetY = 0;
+          if (!performanceMode || isHover || isSelected || node.id === centerId) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, Math.max(1.2, r - 1.7), 0, 2 * Math.PI);
+            ctx.strokeStyle = `rgba(255,255,255,${node.id === centerId ? 0.42 : 0.18})`;
+            ctx.lineWidth = 0.9;
+            ctx.stroke();
+          }
+          if (useShadow) {
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+          }
           if (evTotal > 0) {
             let start = -Math.PI / 2;
             const drawArc = (count, color) => {
@@ -624,7 +636,6 @@ export default function GraphCanvas({
             drawArc(ev.Predicted, "#fb923c");
             drawArc(ev["Known+Predicted"], "#8b5cf6");
           }
-          ctx.shadowBlur = 0;
           const zoomShowAll = scale >= 2.1;
           const zoomShowPinned = scale >= 0.95 && (node.importance || 0) >= 14;
           const zoomShowImportant = scale >= 1.15 && (node.importance || 0) >= 8;
@@ -768,11 +779,12 @@ export default function GraphCanvas({
                   : l.edge_category === "ncRNA-Target"
                     ? 1.08
                     : 1.1;
-          const zoomAlpha = 0.62 + fadeBetween(fgRef.current?.zoom?.() || 1, 0.95, 1.85) * 0.34;
+          const curZoom = zoomRef.current;
+          const zoomAlpha = 0.62 + fadeBetween(curZoom, 0.95, 1.85) * 0.34;
           const supportBoost = l.predictedSupportTier === "high" ? 1.18 : l.predictedSupportTier === "medium" ? 1.08 : 1;
           const alphaBase = directlyTouchesFocus ? 0.94 : neighborBand ? 0.58 : inFocus ? 0.38 : focusId ? 0.035 : 0.18;
           const alpha = alphaBase * zoomAlpha * supportBoost * categoryBoost;
-          const zoomWidthBoost = fadeBetween(fgRef.current?.zoom?.() || 1, 1.05, 2.1) * 0.42;
+          const zoomWidthBoost = fadeBetween(curZoom, 1.05, 2.1) * 0.42;
           const widthBase = directlyTouchesFocus ? 1.1 : neighborBand ? 0.92 : inFocus ? 0.8 : 0.58;
           const lw = (Math.min(0.75 + (l.weight || 1) * 0.42 + zoomWidthBoost, 2.8) * supportBoost + (inFocus ? 0.12 : 0)) * widthBase * categoryBoost;
           const color = edgeColor(l.edge_type);
@@ -817,11 +829,15 @@ export default function GraphCanvas({
           ctx.strokeStyle = glowColor;
           ctx.lineWidth = lw + (l.predictedSupportTier === "high" ? 3.2 : 2.3);
           ctx.stroke();
-          const edgeGradient = ctx.createLinearGradient(s.x, s.y, t.x, t.y);
-          edgeGradient.addColorStop(0, mixColor(color, directlyTouchesFocus ? 0.56 : 0.42));
-          edgeGradient.addColorStop(0.5, color);
-          edgeGradient.addColorStop(1, mixColor(color, directlyTouchesFocus ? 0.62 : 0.52));
-          ctx.strokeStyle = edgeGradient;
+          if (directlyTouchesFocus) {
+            const edgeGradient = ctx.createLinearGradient(s.x, s.y, t.x, t.y);
+            edgeGradient.addColorStop(0, mixColor(color, 0.56));
+            edgeGradient.addColorStop(0.5, color);
+            edgeGradient.addColorStop(1, mixColor(color, 0.62));
+            ctx.strokeStyle = edgeGradient;
+          } else {
+            ctx.strokeStyle = color;
+          }
           ctx.lineWidth = lw;
           if (l.edge_type === "Predicted") ctx.setLineDash([4, 3]);
           if (l.edge_type === "Known+Predicted") ctx.setLineDash([8, 3]);
