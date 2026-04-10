@@ -35,29 +35,29 @@ function hashSigned(text) {
 }
 
 function typeHub(type) {
-  if (type === "Drug") return { x: -280, y: -120 };
-  if (type === "Target") return { x: 260, y: -130 };
-  if (type === "ncRNA") return { x: -180, y: 220 };
-  return { x: 40, y: 80 };
+  if (type === "Drug") return { x: -180, y: -80 };
+  if (type === "Target") return { x: 170, y: -84 };
+  if (type === "ncRNA") return { x: -120, y: 150 };
+  return { x: 24, y: 54 };
 }
 
 function modeHub(type, layoutMode) {
   if (layoutMode === "constellation") {
-    if (type === "Drug") return { x: -420, y: -180 };
-    if (type === "Target") return { x: 420, y: -180 };
-    if (type === "ncRNA") return { x: -280, y: 280 };
-    return { x: 90, y: 210 };
+    if (type === "Drug") return { x: -240, y: -110 };
+    if (type === "Target") return { x: 240, y: -110 };
+    if (type === "ncRNA") return { x: -150, y: 180 };
+    return { x: 54, y: 132 };
   }
   if (layoutMode === "clustered") {
-    if (type === "Drug") return { x: -260, y: -110 };
-    if (type === "Target") return { x: 260, y: -110 };
-    if (type === "ncRNA") return { x: -160, y: 200 };
-    return { x: 20, y: 96 };
+    if (type === "Drug") return { x: -170, y: -76 };
+    if (type === "Target") return { x: 170, y: -76 };
+    if (type === "ncRNA") return { x: -112, y: 136 };
+    return { x: 14, y: 66 };
   }
-  if (type === "Drug") return { x: -220, y: -96 };
-  if (type === "Target") return { x: 220, y: -90 };
-  if (type === "ncRNA") return { x: -130, y: 170 };
-  return { x: 36, y: 84 };
+  if (type === "Drug") return { x: -150, y: -66 };
+  if (type === "Target") return { x: 150, y: -64 };
+  if (type === "ncRNA") return { x: -94, y: 120 };
+  return { x: 26, y: 58 };
 }
 
 function initialNodePosition(node, centerId, layoutMode) {
@@ -72,41 +72,41 @@ function initialNodePosition(node, centerId, layoutMode) {
       ? 0
       : layoutMode === "constellation"
           ? node.node_type === "Disease"
-            ? 170
+            ? 116
             : node.node_type === "ncRNA"
-              ? 260
-              : 320
+              ? 176
+              : 212
         : layoutMode === "clustered"
           ? node.node_type === "Disease"
-            ? 190
+            ? 126
             : node.node_type === "ncRNA"
-              ? 280
-              : 340
+              ? 188
+              : 228
           : node.node_type === "Disease"
-            ? 210
+            ? 134
             : node.node_type === "ncRNA"
-              ? 300
-              : 360;
+              ? 200
+              : 236;
   const spread =
     node.id === centerId
       ? 0
       : layoutMode === "constellation"
-        ? node.node_type === "Disease"
-          ? 220
-          : node.node_type === "ncRNA"
-            ? 300
-            : 380
+          ? node.node_type === "Disease"
+            ? 120
+            : node.node_type === "ncRNA"
+              ? 164
+              : 206
         : layoutMode === "clustered"
           ? node.node_type === "Disease"
-            ? 240
+            ? 128
             : node.node_type === "ncRNA"
-              ? 320
-              : 400
+              ? 176
+              : 216
           : node.node_type === "Disease"
-            ? 260
+            ? 138
             : node.node_type === "ncRNA"
-              ? 340
-              : 420;
+              ? 188
+              : 224;
   const importancePull = Math.max(0, 1 - Math.min(0.78, importance / 32));
   const radius = baseRadius + spread * seed * importancePull + spread * 0.16 * Math.abs(signedB);
   const angleBase =
@@ -266,18 +266,49 @@ export default function GraphCanvas({
     let keepLinks = allLinks;
 
     const densityCfg = {
-      sparse: { triggerEdges: 420, triggerNodes: 300, topNodes: 180, topEdges: 300 },
-      balanced: { triggerEdges: 760, triggerNodes: 520, topNodes: 260, topEdges: 420 },
-      dense: { triggerEdges: 1280, triggerNodes: 760, topNodes: 420, topEdges: 720 }
+      sparse: { triggerEdges: 220, triggerNodes: 140, topNodes: 64, topEdges: 96 },
+      balanced: { triggerEdges: 420, triggerNodes: 260, topNodes: 104, topEdges: 160 },
+      dense: { triggerEdges: 700, triggerNodes: 420, topNodes: 180, topEdges: 280 }
     }[densityMode] || { triggerEdges: 760, triggerNodes: 520, topNodes: 300, topEdges: 520 };
-    if (densityMode === "sparse") {
-      densityCfg.topNodes = 120;
-      densityCfg.topEdges = 180;
-    }
 
-    // For very dense graphs, render a readable high-information subgraph.
+    // For very dense graphs, render a readable center-prioritized local subgraph.
     if (allLinks.length > densityCfg.triggerEdges || allNodes.length > densityCfg.triggerNodes) {
-      const sortedNodes = [...allNodes].sort((a, b) => (b.importance || 0) - (a.importance || 0));
+      const adjacency = new Map();
+      allNodes.forEach((n) => adjacency.set(n.id, []));
+      allLinks.forEach((l) => {
+        const s = linkNodeId(l.source);
+        const t = linkNodeId(l.target);
+        if (!adjacency.has(s)) adjacency.set(s, []);
+        if (!adjacency.has(t)) adjacency.set(t, []);
+        adjacency.get(s).push({ id: t, edge: l });
+        adjacency.get(t).push({ id: s, edge: l });
+      });
+
+      const distance = new Map();
+      if (centerId && adjacency.has(centerId)) {
+        const queue = [{ id: centerId, depth: 0 }];
+        distance.set(centerId, 0);
+        while (queue.length) {
+          const current = queue.shift();
+          if (current.depth >= 2) continue;
+          (adjacency.get(current.id) || []).forEach((next) => {
+            if (!distance.has(next.id)) {
+              distance.set(next.id, current.depth + 1);
+              queue.push({ id: next.id, depth: current.depth + 1 });
+            }
+          });
+        }
+      }
+
+      const sortedNodes = [...allNodes].sort((a, b) => {
+        const da = distance.has(a.id) ? distance.get(a.id) : 99;
+        const db = distance.has(b.id) ? distance.get(b.id) : 99;
+        if (da !== db) return da - db;
+        const diseaseBiasA = a.node_type === "Disease" ? -1 : 0;
+        const diseaseBiasB = b.node_type === "Disease" ? -1 : 0;
+        if (diseaseBiasA !== diseaseBiasB) return diseaseBiasA - diseaseBiasB;
+        return (b.importance || 0) - (a.importance || 0);
+      });
       const topNodes = sortedNodes.slice(0, densityCfg.topNodes);
       keepNodeIds = new Set(topNodes.map((n) => n.id));
       if (centerId) keepNodeIds.add(centerId);
@@ -380,15 +411,15 @@ export default function GraphCanvas({
   React.useEffect(() => {
     if (!fgRef.current) return;
     const densityForces = {
-      sparse: { charge: -150, collision: 0.92, xStrength: 0.015, yStrength: 0.015 },
-      balanced: { charge: -210, collision: 1.04, xStrength: 0.019, yStrength: 0.019 },
-      dense: { charge: -250, collision: 1.1, xStrength: 0.022, yStrength: 0.022 }
-    }[densityMode] || { charge: -210, collision: 1.04, xStrength: 0.019, yStrength: 0.019 };
+      sparse: { charge: -92, collision: 0.78, xStrength: 0.024, yStrength: 0.024 },
+      balanced: { charge: -126, collision: 0.84, xStrength: 0.026, yStrength: 0.026 },
+      dense: { charge: -160, collision: 0.9, xStrength: 0.028, yStrength: 0.028 }
+    }[densityMode] || { charge: -126, collision: 0.84, xStrength: 0.026, yStrength: 0.026 };
     const layoutForces = {
-      organic: { center: 0.014, drift: 0.82, collision: 0.86, radial: 0.92, fitMs: 240, settleMs: 260 },
-      clustered: { center: 0.012, drift: 0.94, collision: 0.92, radial: 0.8, fitMs: 270, settleMs: 300 },
-      constellation: { center: 0.009, drift: 1.04, collision: 0.98, radial: 0.68, fitMs: 300, settleMs: 340 }
-    }[layoutMode] || { center: 0.014, drift: 0.88, collision: 0.9, radial: 0.96, fitMs: 260, settleMs: 300 };
+      organic: { center: 0.03, drift: 0.68, collision: 0.72, radial: 0.58, fitMs: 180, settleMs: 150 },
+      clustered: { center: 0.028, drift: 0.72, collision: 0.76, radial: 0.52, fitMs: 190, settleMs: 160 },
+      constellation: { center: 0.024, drift: 0.78, collision: 0.82, radial: 0.48, fitMs: 210, settleMs: 180 }
+    }[layoutMode] || { center: 0.028, drift: 0.72, collision: 0.76, radial: 0.56, fitMs: 190, settleMs: 160 };
     fgRef.current.d3Force("link").distance((l) => {
       const base =
         l.edge_category === "Drug-Target"
@@ -431,19 +462,25 @@ export default function GraphCanvas({
     fgRef.current.d3ReheatSimulation();
     const t = setTimeout(() => {
       if (!fgRef.current) return;
-      fgRef.current.zoomToFit(layoutForces.fitMs, 6);
+      fgRef.current.zoomToFit(layoutForces.fitMs, 0);
+      if (typeof fgRef.current.centerAt === "function") {
+        fgRef.current.centerAt(0, 0, 90);
+      }
       const currentZoom = typeof fgRef.current.zoom === "function" ? fgRef.current.zoom() : 1;
       if (typeof fgRef.current.zoom === "function") {
-        fgRef.current.zoom(currentZoom * 1.24, Math.max(110, layoutForces.fitMs - 90));
+        fgRef.current.zoom(currentZoom * 1.72, 80);
       }
       fgRef.current.cooldownTicks(0);
     }, layoutForces.settleMs);
     const t2 = setTimeout(() => {
       if (!fgRef.current) return;
-      fgRef.current.zoomToFit(Math.max(160, layoutForces.fitMs - 70), 3);
+      fgRef.current.zoomToFit(Math.max(120, layoutForces.fitMs - 60), 0);
+      if (typeof fgRef.current.centerAt === "function") {
+        fgRef.current.centerAt(0, 0, 80);
+      }
       const currentZoom = typeof fgRef.current.zoom === "function" ? fgRef.current.zoom() : 1;
       if (typeof fgRef.current.zoom === "function") {
-        fgRef.current.zoom(currentZoom * 1.18, 110);
+        fgRef.current.zoom(currentZoom * 1.46, 80);
       }
     }, layoutForces.settleMs + 180);
     return () => {
@@ -454,10 +491,13 @@ export default function GraphCanvas({
 
   React.useEffect(() => {
     if (!fgRef.current) return;
-    fgRef.current.zoomToFit(180, 4);
+    fgRef.current.zoomToFit(150, 0);
+    if (typeof fgRef.current.centerAt === "function") {
+      fgRef.current.centerAt(0, 0, 80);
+    }
     const currentZoom = typeof fgRef.current.zoom === "function" ? fgRef.current.zoom() : 1;
     if (typeof fgRef.current.zoom === "function") {
-      fgRef.current.zoom(currentZoom * 1.16, 110);
+      fgRef.current.zoom(currentZoom * 1.4, 80);
     }
   }, [fitSignal]);
 
@@ -481,11 +521,11 @@ export default function GraphCanvas({
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
         nodeRelSize={3.4}
-        warmupTicks={2}
-        cooldownTime={260}
-        cooldownTicks={18}
-        d3AlphaDecay={0.16}
-        d3VelocityDecay={0.56}
+        warmupTicks={1}
+        cooldownTime={180}
+        cooldownTicks={12}
+        d3AlphaDecay={0.22}
+        d3VelocityDecay={0.64}
         onZoom={({ k }) => { zoomRef.current = k; }}
         linkCurvature={(l) => (ultraDenseMode ? 0 : (l.curve || 0))}
         linkDirectionalArrowLength={0}
