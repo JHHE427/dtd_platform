@@ -46,7 +46,6 @@ function HomeTableToggle({ collapsed, onToggle, label = "Detailed tables" }) {
     <div className="home-table-toggle-row">
       <button type="button" className="home-table-toggle" onClick={onToggle} aria-expanded={!collapsed}>
         <strong>{collapsed ? "Show" : "Hide"} {label}</strong>
-        <span>{collapsed ? "Expand the detailed section tables" : "Collapse the detailed section tables"}</span>
       </button>
     </div>
   );
@@ -56,6 +55,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   const [keyword, setKeyword] = React.useState("");
   const [collapsedTables, setCollapsedTables] = React.useState({
     inventoryPanel: true,
+    formalTablesPanel: true,
     keyFindingsPanel: true,
     fixedCasesPanel: true,
     diseaseContextEvidence: true,
@@ -2169,28 +2169,35 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Formal Result Tables</h3>
-              <div className="home-panel-subtitle">Current release tables available for browsing and export</div>
+              {!collapsedTables.formalTablesPanel ? <div className="home-panel-subtitle">Current release tables available for browsing and export</div> : null}
             </div>
-            <div className="result-table-wrap">
-              <table className="result-table">
-                <thead>
-                  <tr>
-                    <th>Table</th>
-                    <th>Rows</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resultTables.map((item) => (
-                    <tr key={item.name}>
-                      <td>{item.name}</td>
-                      <td>{item.rows}</td>
-                      <td>{item.description}</td>
+            <HomeTableToggle
+              collapsed={collapsedTables.formalTablesPanel}
+              onToggle={() => toggleTableSection("formalTablesPanel")}
+              label="formal result tables"
+            />
+            {!collapsedTables.formalTablesPanel ? (
+              <div className="result-table-wrap">
+                <table className="result-table">
+                  <thead>
+                    <tr>
+                      <th>Table</th>
+                      <th>Rows</th>
+                      <th>Description</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {resultTables.map((item) => (
+                      <tr key={item.name}>
+                        <td>{item.name}</td>
+                        <td>{item.rows}</td>
+                        <td>{item.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </section>
         </div>
 

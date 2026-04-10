@@ -2645,13 +2645,13 @@ export default function DatabasePage({
       </div>
 
       <div className="db-layout">
-        <section className="card panel-pad db-panel">
+        <section className={`card panel-pad db-panel ${collapsedSections.nodeLayer ? "is-collapsed" : ""}`}>
           <div className="db-panel-head">
             <div>
               <h3>Node Table</h3>
-              <div className="db-panel-subtitle">Search and review drug, target, and disease entries in the current network release.</div>
+              {!collapsedSections.nodeLayer ? <div className="db-panel-subtitle">Search and review drug, target, and disease entries in the current network release.</div> : null}
             </div>
-            <div className="muted">page {nodesState.page} · size {nodesState.page_size} · total {nodesState.total}</div>
+            {!collapsedSections.nodeLayer ? <div className="muted">page {nodesState.page} · size {nodesState.page_size} · total {nodesState.total}</div> : null}
           </div>
           <SectionToggle
             collapsed={collapsedSections.nodeLayer}
@@ -2680,13 +2680,13 @@ export default function DatabasePage({
           ) : null}
         </section>
 
-        <section className="card panel-pad db-panel">
+        <section className={`card panel-pad db-panel ${collapsedSections.edgeLayer ? "is-collapsed" : ""}`}>
           <div className="db-panel-head">
             <div>
               <h3>Relationship Table</h3>
-              <div className="db-panel-subtitle">Review relationship category, evidence class, and support metrics in a unified list.</div>
+              {!collapsedSections.edgeLayer ? <div className="db-panel-subtitle">Review relationship category, evidence class, and support metrics in a unified list.</div> : null}
             </div>
-            <div className="muted">page {edgesState.page} · size {edgesState.page_size} · total {edgesState.total}</div>
+            {!collapsedSections.edgeLayer ? <div className="muted">page {edgesState.page} · size {edgesState.page_size} · total {edgesState.total}</div> : null}
           </div>
           <SectionToggle
             collapsed={collapsedSections.edgeLayer}

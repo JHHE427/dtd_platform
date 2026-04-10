@@ -14,7 +14,7 @@ const DEFAULT_GRAPH_TYPES = ["Known", "Predicted", "Known+Predicted"];
 function getDefaultGraphControls(isWholeGraph = false) {
   return {
     depth: 2,
-    limit: isWholeGraph ? 700 : 800,
+    limit: isWholeGraph ? 220 : 700,
     categories: [...DEFAULT_GRAPH_CATEGORIES],
     types: [...DEFAULT_GRAPH_TYPES],
   };
@@ -41,11 +41,11 @@ function getInitialAnalysisConfig() {
     centerNode: isWholeGraph ? "__ALL__" : center,
     graphMode: mode === "core" ? "core" : "full",
     depth: Number.isFinite(depth) && depth >= 1 && depth <= 2 ? depth : 2,
-    limit: Number.isFinite(limit) && limit >= 50 && limit <= 1200 ? limit : defaultControls.limit,
+    limit: Number.isFinite(limit) && limit >= 50 && limit <= 700 ? limit : defaultControls.limit,
     categories: categories ? categories.split(",").filter(Boolean) : defaultControls.categories,
     types: types ? types.split(",").filter(Boolean) : defaultControls.types,
     densityMode: density === "sparse" || density === "dense" || density === "balanced" ? density : (isWholeGraph ? "sparse" : "balanced"),
-    layoutMode: layout === "clustered" || layout === "constellation" || layout === "organic" ? layout : (isWholeGraph ? "constellation" : "organic"),
+    layoutMode: layout === "clustered" || layout === "constellation" || layout === "organic" ? layout : "clustered",
   };
 }
 
