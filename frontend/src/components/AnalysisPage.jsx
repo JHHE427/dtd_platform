@@ -48,6 +48,16 @@ function renderEdgeStats(items) {
   ));
 }
 
+function SectionToggle({ collapsed, onToggle, label }) {
+  return (
+    <div className="page-section-toggle-row">
+      <button type="button" className="page-section-toggle" onClick={onToggle} aria-expanded={!collapsed}>
+        <strong>{collapsed ? "Show" : "Hide"} {label}</strong>
+      </button>
+    </div>
+  );
+}
+
 export default function AnalysisPage({
   graph,
   centerNode,
@@ -105,6 +115,11 @@ export default function AnalysisPage({
   const [structureModalOpen, setStructureModalOpen] = React.useState(false);
   const [sequenceCopied, setSequenceCopied] = React.useState(false);
   const [resultSort, setResultSort] = React.useState({ key: "support_score", direction: "desc" });
+  const [collapsedSections, setCollapsedSections] = React.useState({
+    onlineAnalysis: true,
+    sevenModel: true,
+    graphControls: true,
+  });
   const { depth, limit, categories, types } = controls;
 
   const toggleArrValue = (arr, value) => (arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value]);
@@ -127,6 +142,33 @@ export default function AnalysisPage({
   const ncrnaLinkedResults = detail?.ncrna_linked_results || { available: false, row_count: 0, top_rows: [] };
   const comparison = compareState?.data || null;
   const sevenDtiModels = SEVEN_DTI_MODEL_META.map((item) => item.label);
+  const aiModelSummary = React.useMemo(() => {
+    const rows = algorithmEvidence?.top_rows || [];
+    const counts = Object.fromEntries(SEVEN_DTI_MODEL_META.map((item) => [item.label, 0]));
+    const scoreTotals = Object.fromEntries(SEVEN_DTI_MODEL_META.map((item) => [item.label, 0]));
+    const scoreCounts = Object.fromEntries(SEVEN_DTI_MODEL_META.map((item) => [item.label, 0]));
+    rows.forEach((row) => {
+      const supporting = new Set(row?.seven_model_supporting_models || []);
+      const scores = row?.seven_model_scores || {};
+      SEVEN_DTI_MODEL_META.forEach((item) => {
+        const score = scores[item.label];
+        if (supporting.has(item.label) || score != null) counts[item.label] += 1;
+        if (score != null && Number.isFinite(Number(score))) {
+          scoreTotals[item.label] += Number(score);
+          scoreCounts[item.label] += 1;
+        }
+      });
+    });
+    const ranked = SEVEN_DTI_MODEL_META.map((item) => ({
+      ...item,
+      count: counts[item.label] || 0,
+      avg: scoreCounts[item.label] ? (scoreTotals[item.label] / scoreCounts[item.label]).toFixed(3) : null,
+    })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    return {
+      rows: ranked,
+      top: ranked[0] || null,
+    };
+  }, [algorithmEvidence]);
   const smiles = ann.smiles || "";
   const molecularFormula = ann.molecular_formula || "";
   const textDescription = ann.text_description || "";
@@ -304,8 +346,8 @@ export default function AnalysisPage({
     <section className="page is-active analysis-page">
       <div className="analysis-header">
         <div>
-          <h2>Disease Network Analysis</h2>
-          <div className="analysis-subtitle">Structured analysis of the released disease-centered drug, target, disease, and ncRNA network with evidence-aware annotation, filtering, comparison, and query-specific result views.</div>
+          <h2>AI-Powered Disease Network Analysis</h2>
+          <div className="analysis-subtitle">Analyze an AI-powered disease network release with retained prediction evidence, curated knowledge layers, and query-specific result subsets.</div>
         </div>
         <div className="toolbar">
           <select value={densityMode} onChange={(e) => onDensityModeChange(e.target.value)}>
@@ -349,14 +391,21 @@ export default function AnalysisPage({
       <section className="card panel-pad online-analysis-panel">
         <div className="card-head">
           <h3>Online Analysis</h3>
-          <div className="muted">Run a query-specific analysis around a released Drug, Target, Disease, or ncRNA node with dynamic support thresholds. For ncRNA centers, released rows are resolved through curated ncRNA-linked drugs and then filtered through the same support logic.</div>
+          <div className="muted">Run a filtered query around a released drug, target, disease, or ncRNA node.</div>
         </div>
+        <SectionToggle
+          collapsed={collapsedSections.onlineAnalysis}
+          onToggle={() => setCollapsedSections((prev) => ({ ...prev, onlineAnalysis: !prev.onlineAnalysis }))}
+          label="online analysis"
+        />
+        {!collapsedSections.onlineAnalysis ? (
+          <>
         <div className="online-analysis-banner">
           <div>
             <strong>Dynamic result generation</strong>
-            <span>Apply thresholds to the released disease network atlas and produce a query-specific result subset, support profile, and drill-down table.</span>
+            <span>Apply thresholds and return a compact released-result subset.</span>
           </div>
-          <span className="online-analysis-banner-tag">Released disease network only</span>
+          <span className="online-analysis-banner-tag">Released network only</span>
         </div>
         <div className="online-analysis-presets">
           {ONLINE_ANALYSIS_PRESETS.map((preset) => (
@@ -584,6 +633,8 @@ export default function AnalysisPage({
         ) : (
           <div className="muted">Use the current center or enter any released Drug, Target, Disease, or ncRNA identifier to generate a query-specific analysis subset.</div>
         )}
+          </>
+        ) : null}
       </section>
 
       {recentCenters?.length ? (
@@ -600,8 +651,15 @@ export default function AnalysisPage({
       <section className="card panel-pad analysis-seven-model-panel">
         <div className="card-head">
           <h3>Seven DTI Model Support</h3>
-          <div className="muted">The optional DTI vote layer is composed of seven upstream DTI models. Active counts below summarize the current top prediction records for this network view.</div>
+          <div className="muted">Seven-model vote support for the current network view.</div>
         </div>
+        <SectionToggle
+          collapsed={collapsedSections.sevenModel}
+          onToggle={() => setCollapsedSections((prev) => ({ ...prev, sevenModel: !prev.sevenModel }))}
+          label="seven-model support"
+        />
+        {!collapsedSections.sevenModel ? (
+          <>
         <div className="result-summary-strip analysis-seven-model-summary">
           <span className="result-summary-pill">
             <strong>{activeSevenModelCount}/7</strong>
@@ -638,14 +696,16 @@ export default function AnalysisPage({
             </article>
           ))}
         </div>
+          </>
+        ) : null}
       </section>
 
       <div className="analysis-layout">
         <section className="card graph-panel">
           <div className="card-head">
-            <h3>Disease-Centered Interaction Network</h3>
+            <h3>AI-Powered Disease-Centered Network</h3>
             <div className={`network-caption analysis-network-caption ${isWholeGraph ? "is-global" : ""}`}>
-              <span className="analysis-network-caption__badge">{isWholeGraph ? "Global atlas overview" : "Focused node view"}</span>
+              <span className="analysis-network-caption__badge">{isWholeGraph ? "Global AI atlas overview" : "Focused AI node view"}</span>
               <span className="analysis-network-caption__badge is-layout">{layoutMode}</span>
               <span>{graphMeta}</span>
             </div>
@@ -654,11 +714,18 @@ export default function AnalysisPage({
             <div className="analysis-global-banner">
               <div>
                 <strong>Full network loaded by default</strong>
-                <span>Start with the global disease network, then click any drug, target, disease, or ncRNA node to open the structured detail panels on the right.</span>
+                <span>Click a node to open structured detail on the right.</span>
               </div>
               <span className="analysis-global-banner__tag">All-node overview</span>
             </div>
           ) : null}
+          <SectionToggle
+            collapsed={collapsedSections.graphControls}
+            onToggle={() => setCollapsedSections((prev) => ({ ...prev, graphControls: !prev.graphControls }))}
+            label="graph controls"
+          />
+          {!collapsedSections.graphControls ? (
+          <>
           <div className="control-grid">
             <label>
               Center Node ID
@@ -782,8 +849,8 @@ export default function AnalysisPage({
 
           <div className="legend legend-network">
             <div className="legend-network-head">
-              <strong>Disease-centered network legend</strong>
-              <span>Disease nodes are emphasized as the central interpretation layer, with drug, target, and ncRNA relations distributed around them.</span>
+              <strong>AI-powered disease network legend</strong>
+              <span>Disease is the primary interpretation layer; released AI model evidence and curated knowledge layers distribute around it.</span>
             </div>
             <div className="legend-network-grid">
               <span className="legend-network-item is-disease-core"><i className="dot disease" />Disease core</span>
@@ -798,6 +865,8 @@ export default function AnalysisPage({
               <span>ncRNA-Drug, ncRNA-Target, and ncRNA-Disease are included as formal known-association layers.</span>
             </div>
           </div>
+          </>
+          ) : null}
 
           <div className="graph-wrap">
             <GraphCanvas
@@ -1292,14 +1361,38 @@ export default function AnalysisPage({
           </section>
 
           <section className="card panel-pad rise-in delay-1">
+            <h3>AI Model Score Summary</h3>
+            {algorithmEvidence.available ? (
+              <>
+                <div className="algo-evidence-summary">
+                  <span className="ai-brand-chip">7 deep models</span>
+                  {aiModelSummary.top ? <span className="ai-brand-chip">top {aiModelSummary.top.label}</span> : null}
+                  {aiModelSummary.top?.avg != null ? <span className="ai-brand-chip">avg {aiModelSummary.top.avg}</span> : null}
+                </div>
+                <div className="algo-evidence-grid compact seven-model-score-grid">
+                  {aiModelSummary.rows.map((item) => (
+                    <div className={`algo-evidence-card model-${item.key} ${item.count > 0 ? "is-on" : "is-off"}`} key={`ai-summary-${item.label}`}>
+                      <div className="algo-evidence-head"><span>{item.label}</span><strong>{item.count} rows</strong></div>
+                      <div className="algo-evidence-meta">Visible prediction support</div>
+                      <div className="algo-evidence-value">{item.avg != null ? item.avg : "-"}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="empty-state">No per-model AI score summary is available for the current record.</div>
+            )}
+          </section>
+
+          <section className="card panel-pad rise-in delay-1">
             <h3>Algorithm Evidence</h3>
             {algorithmEvidence.available ? (
               <>
                 <div className="algo-evidence-summary">
-                  <span className="source-chip">prediction rows {algorithmEvidence.row_count}</span>
-                  <span className="source-chip">max released support {algorithmEvidence.max_n_algo_pass ?? 0}/3</span>
-                  <span className="source-chip">avg 7-model votes {algorithmEvidence.avg_total_votes ?? 0}/7</span>
-                  <span className="source-chip">max 7-model votes {algorithmEvidence.max_total_votes ?? 0}/7</span>
+                  <span className="ai-brand-chip">rows {algorithmEvidence.row_count}</span>
+                  <span className="ai-brand-chip">released {algorithmEvidence.max_n_algo_pass ?? 0}/3</span>
+                  <span className="ai-brand-chip">avg vote {algorithmEvidence.avg_total_votes ?? 0}/7</span>
+                  <span className="ai-brand-chip">max vote {algorithmEvidence.max_total_votes ?? 0}/7</span>
                 </div>
                 <div className="algo-evidence-grid">
                   {(algorithmEvidence.methods || []).map((item) => (

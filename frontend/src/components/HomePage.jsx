@@ -55,6 +55,9 @@ function HomeTableToggle({ collapsed, onToggle, label = "Detailed tables" }) {
 export default function HomePage({ stats, researchSummary, onAnalyze, onOpenDatabase }) {
   const [keyword, setKeyword] = React.useState("");
   const [collapsedTables, setCollapsedTables] = React.useState({
+    inventoryPanel: true,
+    keyFindingsPanel: true,
+    fixedCasesPanel: true,
     diseaseContextEvidence: true,
     diseaseLinkedContext: true,
     ttdValidation: true,
@@ -62,6 +65,21 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     targetModule: true,
     diseaseModule: true,
     modelOverview: true,
+    sevenModelIntro: true,
+    diseaseEvidencePanel: true,
+    diseaseReleasedPanel: true,
+    ttdValidationPanel: true,
+    ttdSupportedPanel: true,
+    targetModulePanel: true,
+    diseaseModulePanel: true,
+    modelSummaryPanel: true,
+    resultAccessPanel: true,
+    constructionPanel: true,
+    voteOverviewPanel: true,
+    dtiConsistencyPanel: true,
+    methodConsistencyPanel: true,
+    screeningMapPanel: true,
+    resultSummaryPanel: true,
   });
   const toggleTableSection = React.useCallback((key) => {
     setCollapsedTables((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -352,14 +370,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   return (
     <section className="page is-active home-page">
       <div className="hero">
-        <div className="hero-pill">Formal Release</div>
+        <div className="hero-pill">AI-Driven Formal Release</div>
         <h1>
-          Disease Network
+          AI Disease Network
           <span>Atlas</span>
         </h1>
         <p>
-          Access curated disease-centered network records, retained prediction results, and
-          structured evidence across the released drug, target, disease, and ncRNA interaction atlas.
+          Explore an AI-driven disease network release that unifies seven deep learning DTI models, retained prediction rows, and curated evidence across drug, target, disease, and ncRNA layers.
         </p>
         <div className="hero-network-motif" aria-hidden="true">
           <svg viewBox="0 0 520 180" className="hero-network-motif__svg" role="img">
@@ -411,6 +428,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           />
           <button onClick={() => onAnalyze(keyword)}>Access Network Analysis</button>
         </div>
+        <div className="hero-ai-strip">
+          <span className="ai-brand-chip">7 deep models</span>
+          {topDtiModel ? <span className="ai-brand-chip">top {topDtiModel.model}</span> : null}
+          {topDtiModel?.avg_score != null ? <span className="ai-brand-chip">avg {topDtiModel.avg_score}</span> : null}
+          {topDtiPair ? <span className="ai-brand-chip">{topDtiPair.pair_label}</span> : null}
+          {topDtiPattern ? <span className="ai-brand-chip">{topDtiPattern.pattern_label}</span> : null}
+        </div>
         <div className="home-stats">
           <article className="stat-card">
             <div className="stat-title">Drug Nodes</div>
@@ -455,29 +479,79 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Release Result Inventory</h3>
-            <div className="home-panel-subtitle">A compact index of the result families included in the current release before browsing detailed tables and network views.</div>
+            <div className="home-panel-subtitle">Compact index of the current release.</div>
           </div>
-          <div className="result-summary-strip">
-            <span className="result-summary-pill">
-              <strong>{pipelineShrinkage ? 5 : 0}</strong>
-              <em>Pipeline stages</em>
+          <HomeTableToggle
+            collapsed={collapsedTables.inventoryPanel}
+            onToggle={() => toggleTableSection("inventoryPanel")}
+            label="release inventory"
+          />
+          {!collapsedTables.inventoryPanel ? (
+            <div className="result-summary-strip">
+              <span className="result-summary-pill">
+                <strong>{pipelineShrinkage ? 5 : 0}</strong>
+                <em>Pipeline stages</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{diseaseSpotlights.length + drugSpotlights.length + targetSpotlights.length + (ncrnaOverview ? 2 : 0) + (ncrnaLinkedOverview ? 3 : 0)}</strong>
+                <em>Summary tables</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{highConsensusCases.length + topConsensusLeaderboard.length}</strong>
+                  <em>Consensus result rows</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{approvedDrugDeepResults.length + topApprovedLeaderboard.length}</strong>
+                <em>Approved-drug rows</em>
+              </span>
+              <span className="result-summary-pill">
+                <strong>{resultTables.length}</strong>
+                <em>Formal result tables</em>
+              </span>
+            </div>
+          ) : null}
+        </section>
+
+        <section className="home-panel-card home-panel-wide ai-brand-panel">
+          <div className="home-panel-head">
+            <h3>Disease AI Intelligence Layer</h3>
+            <div className="home-panel-subtitle">Seven deep learning DTI models provide raw pair scores and vote support for the disease-centered release.</div>
+          </div>
+          <div className="result-summary-strip ai-summary-strip">
+            <span className="result-summary-pill ai-pill">
+              <strong>7 models</strong>
+              <em>GraphDTA · DTIAM · DrugBAN · DeepPurpose · DeepDTAGen · MolTrans · Conplex</em>
             </span>
-            <span className="result-summary-pill">
-              <strong>{diseaseSpotlights.length + drugSpotlights.length + targetSpotlights.length + (ncrnaOverview ? 2 : 0) + (ncrnaLinkedOverview ? 3 : 0)}</strong>
-              <em>Summary tables</em>
-            </span>
-            <span className="result-summary-pill">
-              <strong>{highConsensusCases.length + topConsensusLeaderboard.length}</strong>
-                <em>Consensus result rows</em>
-            </span>
-            <span className="result-summary-pill">
-              <strong>{approvedDrugDeepResults.length + topApprovedLeaderboard.length}</strong>
-              <em>Approved-drug rows</em>
-            </span>
-            <span className="result-summary-pill">
-              <strong>{resultTables.length}</strong>
-              <em>Formal result tables</em>
-            </span>
+            {topDtiModel ? (
+              <span className="result-summary-pill ai-pill">
+                <strong>{topDtiModel.model}</strong>
+                <em>{topDtiModel.count} rows · avg {topDtiModel.avg_score ?? "-"}</em>
+              </span>
+            ) : null}
+            {topDtiPair ? (
+              <span className="result-summary-pill ai-pill">
+                <strong>{topDtiPair.pair_label}</strong>
+                <em>{topDtiPair.count} co-support rows</em>
+              </span>
+            ) : null}
+            {topDtiPattern ? (
+              <span className="result-summary-pill ai-pill">
+                <strong>{topDtiPattern.pattern_label}</strong>
+                <em>{topDtiPattern.count} released rows</em>
+              </span>
+            ) : null}
+          </div>
+          <div className="ai-model-chip-grid">
+            {dtiModelCoverage.slice(0, 7).map((item) => {
+              const meta = SEVEN_DTI_MODEL_META.find((x) => x.label === item.model);
+              return (
+                <article className={`ai-model-chip model-${meta?.key || "graphdta"}`} key={item.model}>
+                  <strong>{item.model}</strong>
+                  <span>{item.count} rows</span>
+                  <span>avg {item.avg_score ?? "-"}</span>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -486,51 +560,72 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <section className="home-panel-card">
               <div className="home-panel-head">
                 <h3>Key Findings</h3>
-                <div className="home-panel-subtitle">Release-level statements highlighting retention, disease concentration, approved-drug retention, and seven-model agreement.</div>
+                <div className="home-panel-subtitle">Short release-level findings.</div>
               </div>
-              <div className="key-findings-grid">
-                {keyFindings.map((item) => (
-                  <article className="key-finding-card" key={item.title}>
-                    <div className="key-finding-title">{item.title}</div>
-                    <div className="key-finding-value">{item.value}</div>
-                    <div className="key-finding-note">{item.note}</div>
-                  </article>
-                ))}
-              </div>
+              <HomeTableToggle
+                collapsed={collapsedTables.keyFindingsPanel}
+                onToggle={() => toggleTableSection("keyFindingsPanel")}
+                label="key findings"
+              />
+              {!collapsedTables.keyFindingsPanel ? (
+                <div className="key-findings-grid">
+                  {keyFindings.map((item) => (
+                    <article className="key-finding-card" key={item.title}>
+                      <div className="key-finding-title">{item.title}</div>
+                      <div className="key-finding-value">{item.value}</div>
+                      <div className="key-finding-note">{item.note}</div>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
             </section>
             <section className="home-panel-card">
               <div className="home-panel-head">
                 <h3>Fixed Case Studies</h3>
-              <div className="home-panel-subtitle">Selected released records pinned for direct review in the formal disease network atlas instead of relying only on free-form browsing.</div>
+              <div className="home-panel-subtitle">Pinned records for direct review.</div>
               </div>
-              <div className="fixed-case-grid">
-                {fixedCaseStudies.length ? fixedCaseStudies.map((item) => (
-                  <article className="fixed-case-card" key={item.key}>
-                    <div className="fixed-case-tag">{item.title}</div>
-                    <button className="result-link-btn fixed-case-link" onClick={() => onAnalyze(item.primaryId)}>
-                      <span className="result-emphasis-label">{item.primaryLabel}</span>
-                    </button>
-                    <div className="fixed-case-secondary">{item.secondary}</div>
-                    <div className="fixed-case-conclusion">{item.conclusion}</div>
-                    <div className="fixed-case-metrics">
-                      <span className="result-emphasis-chip">{item.metrics}</span>
-                      <span className="result-emphasis-number">{item.score}</span>
-                      <span className="result-emphasis-chip is-soft">{item.fdr}</span>
-                    </div>
-                  </article>
-                )) : <div className="empty-state">No fixed case-study rows are available in the current release.</div>}
-              </div>
+              <HomeTableToggle
+                collapsed={collapsedTables.fixedCasesPanel}
+                onToggle={() => toggleTableSection("fixedCasesPanel")}
+                label="fixed case studies"
+              />
+              {!collapsedTables.fixedCasesPanel ? (
+                <div className="fixed-case-grid">
+                  {fixedCaseStudies.length ? fixedCaseStudies.map((item) => (
+                    <article className="fixed-case-card" key={item.key}>
+                      <div className="fixed-case-tag">{item.title}</div>
+                      <button className="result-link-btn fixed-case-link" onClick={() => onAnalyze(item.primaryId)}>
+                        <span className="result-emphasis-label">{item.primaryLabel}</span>
+                      </button>
+                      <div className="fixed-case-secondary">{item.secondary}</div>
+                      <div className="fixed-case-conclusion">{item.conclusion}</div>
+                      <div className="fixed-case-metrics">
+                        <span className="result-emphasis-chip">{item.metrics}</span>
+                        <span className="result-emphasis-number">{item.score}</span>
+                        <span className="result-emphasis-chip is-soft">{item.fdr}</span>
+                      </div>
+                    </article>
+                  )) : <div className="empty-state">No fixed case-study rows are available in the current release.</div>}
+                </div>
+              ) : null}
             </section>
           </div>
 
           <section className="home-panel-card home-seven-model-card home-priority-seven">
             <div className="home-panel-head">
               <h3>Seven DTI Models</h3>
-              <div className="home-panel-subtitle">The released disease network integrates seven upstream DTI models in the optional vote layer before retention by TXGNN, ENR, and RWR.</div>
+              <div className="home-panel-subtitle">Seven upstream DTI models feed the released disease network.</div>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.sevenModelIntro}
+              onToggle={() => toggleTableSection("sevenModelIntro")}
+              label="seven-model overview"
+            />
+            {!collapsedTables.sevenModelIntro ? (
+            <>
             <div className="seven-model-section-note">
               <span className="seven-model-note-badge">Unified network palette</span>
-              <span className="seven-model-note-text">The same model order and color encoding are preserved on the homepage, the analysis view, and the prediction result table.</span>
+              <span className="seven-model-note-text">The same model order and colors are reused across the site.</span>
             </div>
             <div className="seven-model-chip-grid">
               {SEVEN_DTI_MODEL_META.map((model) => (
@@ -571,9 +666,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="home-action-row">
               <button className="quick-access-card is-inline-action" onClick={() => onOpenDatabase?.("predictions")}>
                 <strong>View Prediction Result Table</strong>
-                <span>View the 7 DTI models for each released prediction record.</span>
+                <span>Open released prediction rows and per-model support.</span>
               </button>
             </div>
+            </>
+            ) : null}
           </section>
         </div>
 
@@ -581,8 +678,15 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Disease-Context Evidence Layer</h3>
-              <div className="home-panel-subtitle">Curated human ncRNA-drug evidence is retained as a disease-context knowledge layer alongside the released disease network. The focus remains on how known associations reinforce disease-linked interpretation.</div>
+              <div className="home-panel-subtitle">Curated evidence retained as a disease-context knowledge layer.</div>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.diseaseEvidencePanel}
+              onToggle={() => toggleTableSection("diseaseEvidencePanel")}
+              label="disease-context module"
+            />
+            {!collapsedTables.diseaseEvidencePanel ? (
+            <>
             <div className="layer-legend-strip">
               <span className="layer-legend-pill is-known-only">
                 <strong>Disease-context input</strong>
@@ -742,6 +846,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
             </>
             ) : null}
+            </>
+            ) : null}
           </section>
         ) : null}
 
@@ -749,8 +855,15 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Disease-Linked Released Context</h3>
-              <div className="home-panel-subtitle">Released prediction rows are linked back to curated disease-context evidence through shared drugs, so disease-centered interpretation remains connected to consensus, approved, and known-association layers.</div>
+              <div className="home-panel-subtitle">Released rows linked back to curated disease-context evidence.</div>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.diseaseReleasedPanel}
+              onToggle={() => toggleTableSection("diseaseReleasedPanel")}
+              label="disease-linked release module"
+            />
+            {!collapsedTables.diseaseReleasedPanel ? (
+            <>
             <div className="layer-legend-strip">
               <span className="layer-legend-pill is-known-only">
                 <strong>Input layer</strong>
@@ -873,6 +986,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </div>
             </div>
             ) : null}
+            </>
+            ) : null}
           </section>
         ) : null}
 
@@ -880,8 +995,15 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>TTD Therapeutic Target Validation</h3>
-              <div className="home-panel-subtitle">TTD adds an external therapeutic target knowledge layer for drug-disease, target-disease, and drug-target mode-of-action validation alongside the released disease-network results.</div>
+              <div className="home-panel-subtitle">External therapeutic-target validation for released disease-network results.</div>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.ttdValidationPanel}
+              onToggle={() => toggleTableSection("ttdValidationPanel")}
+              label="TTD validation module"
+            />
+            {!collapsedTables.ttdValidationPanel ? (
+            <>
             <div className="layer-legend-strip">
               <span className="layer-legend-pill is-known-only">
                 <strong>TTD knowledge layer</strong>
@@ -1046,14 +1168,23 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
             </>
             ) : null}
+            </>
+            ) : null}
           </section>
         ) : null}
         {ttdSupportedOverview ? (
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>TTD-Supported Released Results</h3>
-              <div className="home-panel-subtitle">These rows sit inside the released disease-network layer and are additionally supported by TTD therapeutic target mappings, giving us a stricter external validation slice.</div>
+              <div className="home-panel-subtitle">Released rows with extra therapeutic-target validation.</div>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.ttdSupportedPanel}
+              onToggle={() => toggleTableSection("ttdSupportedPanel")}
+              label="TTD-supported results"
+            />
+            {!collapsedTables.ttdSupportedPanel ? (
+            <>
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>{ttdSupportedOverview.released_row_count}</strong>
@@ -1137,6 +1268,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </div>
             </div>
             ) : null}
+            </>
+            ) : null}
           </section>
         ) : null}
 
@@ -1144,8 +1277,15 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Therapeutic Target Module</h3>
-              <div className="home-panel-subtitle">A target-centric view modeled after therapeutic target databases: each target is summarized by released network reach, dominant disease/drug context, and external TTD/MOA support.</div>
+              <div className="home-panel-subtitle">Target-centered released-network browsing.</div>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.targetModulePanel}
+              onToggle={() => toggleTableSection("targetModulePanel")}
+              label="target module"
+            />
+            {!collapsedTables.targetModulePanel ? (
+            <>
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>{targetCentricOverview.selected_target_count}</strong>
@@ -1199,6 +1339,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </table>
             </div>
             ) : null}
+            </>
+            ) : null}
           </section>
         ) : null}
 
@@ -1206,8 +1348,15 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Disease Context Module</h3>
-              <div className="home-panel-subtitle">A disease-centric view aligned with the released disease network: each disease is summarized by released network reach, dominant drug and target context, and linked ncRNA and TTD support.</div>
+              <div className="home-panel-subtitle">Disease-centered released-network browsing.</div>
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.diseaseModulePanel}
+              onToggle={() => toggleTableSection("diseaseModulePanel")}
+              label="disease module"
+            />
+            {!collapsedTables.diseaseModulePanel ? (
+            <>
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>{diseaseCentricOverview.selected_disease_count}</strong>
@@ -1261,14 +1410,23 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </table>
             </div>
             ) : null}
+            </>
+            ) : null}
           </section>
         ) : null}
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Model-Stratified Result Overview</h3>
-            <div className="home-panel-subtitle">Prediction records grouped by single-method retention and multi-method consensus support.</div>
+            <div className="home-panel-subtitle">Released rows grouped by method support.</div>
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.modelSummaryPanel}
+            onToggle={() => toggleTableSection("modelSummaryPanel")}
+            label="model summary"
+          />
+          {!collapsedTables.modelSummaryPanel ? (
+          <>
           <div className="support-tier-grid">
             {coreMethodSupportCards.map((item) => (
               <article className={`support-tier-card ${item.tier}`} key={item.label}>
@@ -1333,13 +1491,22 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </table>
           </div>
           ) : null}
+          </>
+          ) : null}
         </section>
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Seven-Model Support Overview</h3>
-            <div className="home-panel-subtitle">Prediction records grouped by the number of supporting DTI models in the optional seven-model vote layer.</div>
+            <div className="home-panel-subtitle">Released rows grouped by seven-model support.</div>
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.voteOverviewPanel}
+            onToggle={() => toggleTableSection("voteOverviewPanel")}
+            label="seven-model support"
+          />
+          {!collapsedTables.voteOverviewPanel ? (
+          <>
           <div className="support-tier-grid">
             {sevenVoteCards.map((item) => (
               <article className="support-tier-card votes" key={item.label}>
@@ -1371,13 +1538,22 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </tbody>
             </table>
           </div>
+          </>
+          ) : null}
         </section>
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Seven-Model DTI Consistency</h3>
-            <div className="home-panel-subtitle">Coverage and co-support patterns across GraphDTA, DTIAM, DrugBAN, DeepPurpose, DeepDTAGen, MolTrans, and Conplex in the released prediction rows.</div>
+            <div className="home-panel-subtitle">Coverage and co-support across the seven DTI models.</div>
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.dtiConsistencyPanel}
+            onToggle={() => toggleTableSection("dtiConsistencyPanel")}
+            label="seven-model consistency"
+          />
+          {!collapsedTables.dtiConsistencyPanel ? (
+          <>
           <div className="seven-model-chip-grid dti-consistency-grid">
             {dtiModelCoverage.length ? dtiModelCoverage.map((item) => {
               const meta = SEVEN_DTI_MODEL_META.find((x) => x.label === item.model);
@@ -1471,13 +1647,22 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </table>
             </div>
           </div>
+          </>
+          ) : null}
         </section>
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Released-Method vs DTI-Model Consistency</h3>
-            <div className="home-panel-subtitle">A direct comparison between the released interpretation layer (TXGNN, ENR, RWR) and the upstream seven-model DTI support layer.</div>
+            <div className="home-panel-subtitle">Released-method support compared with seven-model DTI support.</div>
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.methodConsistencyPanel}
+            onToggle={() => toggleTableSection("methodConsistencyPanel")}
+            label="method consistency"
+          />
+          {!collapsedTables.methodConsistencyPanel ? (
+          <>
           <div className="home-result-two-col">
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
@@ -1533,13 +1718,22 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </div>
             </div>
           </div>
+          </>
+          ) : null}
         </section>
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Seven-Model DTI Screening Map</h3>
-            <div className="home-panel-subtitle">Seven DTI model outputs are aggregated into the retained DTI vote layer and then interpreted together with TXGNN, ENR, and RWR evidence in the released disease network atlas.</div>
+            <div className="home-panel-subtitle">How seven-model DTI support feeds the released disease network.</div>
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.screeningMapPanel}
+            onToggle={() => toggleTableSection("screeningMapPanel")}
+            label="screening map"
+          />
+          {!collapsedTables.screeningMapPanel ? (
+          <>
           <div className="dti-model-map">
             <div className="dti-model-diagram">
               <svg viewBox="0 0 760 320" role="img" aria-label="Seven-model DTI screening map">
@@ -1605,13 +1799,22 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </div>
             </div>
           </div>
+          </>
+          ) : null}
         </section>
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Disease Network Result Summary</h3>
-            <div className="home-panel-subtitle">A compact overview linking drug-target-disease structure, known and predicted evidence, seven-model DTI votes, and disease-level interpretation modules.</div>
+            <div className="home-panel-subtitle">A compact overview of the released disease network.</div>
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.resultSummaryPanel}
+            onToggle={() => toggleTableSection("resultSummaryPanel")}
+            label="result summary"
+          />
+          {!collapsedTables.resultSummaryPanel ? (
+          <>
           <div className="atlas-summary-figure">
             <svg viewBox="0 0 1160 320" role="img" aria-label="Disease network result summary figure">
               <defs>
@@ -1686,13 +1889,22 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               <text x="484" y="112" textAnchor="middle" className="atlas-summary-note">Target-Disease</text>
             </svg>
           </div>
+          </>
+          ) : null}
         </section>
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Result Table Access</h3>
-            <div className="home-panel-subtitle">Direct entry points to released result tables, algorithm summaries, retained prediction records, and the disease-context evidence module.</div>
+            <div className="home-panel-subtitle">Direct entry points to the main result tables.</div>
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.resultAccessPanel}
+            onToggle={() => toggleTableSection("resultAccessPanel")}
+            label="table access"
+          />
+          {!collapsedTables.resultAccessPanel ? (
+          <>
           {ncrnaOverview ? (
             <div className="layer-legend-strip">
               <span className="layer-legend-pill is-release-layer">
@@ -1729,13 +1941,22 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               <span>Review released node and relationship tables before drilling down into network-level analysis.</span>
             </button>
           </div>
+          </>
+          ) : null}
         </section>
 
         <section className="home-panel-card home-panel-wide home-schema-card">
           <div className="home-panel-head">
             <h3>Disease Network Construction Schema</h3>
-            <div className="home-panel-subtitle">End-to-end workflow from curated source tables and multi-method prediction to formal network tables and disease network release.</div>
+            <div className="home-panel-subtitle">Workflow from source tables to formal network release.</div>
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.constructionPanel}
+            onToggle={() => toggleTableSection("constructionPanel")}
+            label="construction schema"
+          />
+          {!collapsedTables.constructionPanel ? (
+          <>
           <div className="schema-kpis">
             <div className="schema-kpi">
               <span className="schema-kpi-label">Formal disease release</span>
@@ -1816,6 +2037,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </div>
             </div>
           </div>
+          </>
+          ) : null}
         </section>
 
         <div className="home-research-grid">

@@ -136,13 +136,13 @@ function initialNodePosition(node, centerId, layoutMode) {
 function labelBudget(scale, densityMode) {
   const base =
     densityMode === "dense"
-      ? { focus: 10, pinned: 16, important: 34, normal: 12 }
+      ? { focus: 8, pinned: 12, important: 22, normal: 6 }
       : densityMode === "sparse"
-        ? { focus: 14, pinned: 28, important: 64, normal: 34 }
-        : { focus: 12, pinned: 20, important: 44, normal: 20 };
-  if (scale >= 2.4) return { focus: 999, pinned: 96, important: 132, normal: 88 };
-  if (scale >= 1.9) return { focus: 999, pinned: base.pinned + 12, important: base.important + 24, normal: base.normal + 16 };
-  if (scale >= 1.4) return { focus: 999, pinned: base.pinned + 6, important: base.important + 10, normal: base.normal + 6 };
+        ? { focus: 12, pinned: 20, important: 44, normal: 18 }
+        : { focus: 10, pinned: 16, important: 28, normal: 10 };
+  if (scale >= 2.4) return { focus: 999, pinned: 72, important: 96, normal: 48 };
+  if (scale >= 1.9) return { focus: 999, pinned: base.pinned + 8, important: base.important + 16, normal: base.normal + 10 };
+  if (scale >= 1.4) return { focus: 999, pinned: base.pinned + 4, important: base.important + 6, normal: base.normal + 4 };
   return { focus: 999, pinned: base.pinned, important: base.important, normal: base.normal };
 }
 
@@ -263,10 +263,10 @@ export default function GraphCanvas({
     let keepLinks = allLinks;
 
     const densityCfg = {
-      sparse: { triggerEdges: 900, triggerNodes: 700, topNodes: 520, topEdges: 900 },
-      balanced: { triggerEdges: 1800, triggerNodes: 1200, topNodes: 900, topEdges: 1700 },
-      dense: { triggerEdges: 3200, triggerNodes: 1800, topNodes: 1350, topEdges: 2400 }
-    }[densityMode] || { triggerEdges: 1800, triggerNodes: 1200, topNodes: 900, topEdges: 1700 };
+      sparse: { triggerEdges: 420, triggerNodes: 300, topNodes: 180, topEdges: 300 },
+      balanced: { triggerEdges: 760, triggerNodes: 520, topNodes: 300, topEdges: 520 },
+      dense: { triggerEdges: 1280, triggerNodes: 760, topNodes: 520, topEdges: 880 }
+    }[densityMode] || { triggerEdges: 760, triggerNodes: 520, topNodes: 300, topEdges: 520 };
 
     // For very dense graphs, render a readable high-information subgraph.
     if (allLinks.length > densityCfg.triggerEdges || allNodes.length > densityCfg.triggerNodes) {
@@ -350,8 +350,8 @@ export default function GraphCanvas({
     return m;
   }, [graphData]);
   const nodeById = React.useMemo(() => new Map(graphData.nodes.map((n) => [n.id, n])), [graphData.nodes]);
-  const performanceMode = graphData.nodes.length > 400 || graphData.links.length > 700;
-  const ultraDenseMode = graphData.nodes.length > 800 || graphData.links.length > 1400;
+  const performanceMode = graphData.nodes.length > 120 || graphData.links.length > 220;
+  const ultraDenseMode = graphData.nodes.length > 240 || graphData.links.length > 420;
 
   const focusId = hoverId || selectedId;
   const focusNeighbors = React.useMemo(() => (focusId ? neighborMap.get(focusId) || new Set([focusId]) : null), [focusId, neighborMap]);
@@ -373,15 +373,15 @@ export default function GraphCanvas({
   React.useEffect(() => {
     if (!fgRef.current) return;
     const densityForces = {
-      sparse: { charge: -240, collision: 1.16, xStrength: 0.022, yStrength: 0.022 },
-      balanced: { charge: -290, collision: 1.24, xStrength: 0.026, yStrength: 0.026 },
-      dense: { charge: -330, collision: 1.32, xStrength: 0.028, yStrength: 0.028 }
-    }[densityMode] || { charge: -290, collision: 1.24, xStrength: 0.026, yStrength: 0.026 };
+      sparse: { charge: -170, collision: 0.96, xStrength: 0.016, yStrength: 0.016 },
+      balanced: { charge: -210, collision: 1.04, xStrength: 0.019, yStrength: 0.019 },
+      dense: { charge: -250, collision: 1.1, xStrength: 0.022, yStrength: 0.022 }
+    }[densityMode] || { charge: -210, collision: 1.04, xStrength: 0.019, yStrength: 0.019 };
     const layoutForces = {
-      organic: { center: 0.02, drift: 1, collision: 1, radial: 1, fitMs: 420, settleMs: 560 },
-      clustered: { center: 0.016, drift: 1.22, collision: 1.1, radial: 0.9, fitMs: 460, settleMs: 620 },
-      constellation: { center: 0.011, drift: 1.46, collision: 1.18, radial: 0.76, fitMs: 520, settleMs: 700 }
-    }[layoutMode] || { center: 0.02, drift: 1, collision: 1, radial: 1, fitMs: 420, settleMs: 560 };
+      organic: { center: 0.014, drift: 0.88, collision: 0.9, radial: 0.96, fitMs: 260, settleMs: 300 },
+      clustered: { center: 0.012, drift: 1.02, collision: 0.98, radial: 0.86, fitMs: 300, settleMs: 340 },
+      constellation: { center: 0.009, drift: 1.14, collision: 1.04, radial: 0.72, fitMs: 340, settleMs: 380 }
+    }[layoutMode] || { center: 0.014, drift: 0.88, collision: 0.9, radial: 0.96, fitMs: 260, settleMs: 300 };
     fgRef.current.d3Force("link").distance((l) => {
       const base =
         l.edge_category === "Drug-Target"
@@ -405,7 +405,7 @@ export default function GraphCanvas({
       forceCollide((node) => {
         const importance = Math.max(1, Number(node.importance) || 1);
         return 6 + Math.sqrt(importance) * densityForces.collision * layoutForces.collision + (node.node_type === "Disease" ? 3.4 : 1.8);
-      }).iterations(performanceMode ? 1 : 2)
+      }).iterations(ultraDenseMode ? 1 : performanceMode ? 1 : 2)
     );
     fgRef.current.d3Force(
       "type-x",
@@ -455,13 +455,13 @@ export default function GraphCanvas({
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
         nodeRelSize={3}
-        warmupTicks={20}
-        cooldownTime={950}
-        cooldownTicks={90}
-        d3AlphaDecay={0.06}
-        d3VelocityDecay={0.38}
+        warmupTicks={2}
+        cooldownTime={260}
+        cooldownTicks={18}
+        d3AlphaDecay={0.16}
+        d3VelocityDecay={0.56}
         onZoom={({ k }) => { zoomRef.current = k; }}
-        linkCurvature={(l) => l.curve || 0}
+        linkCurvature={(l) => (ultraDenseMode ? 0 : (l.curve || 0))}
         linkDirectionalArrowLength={0}
         nodeVal={(n) => Math.max(3, 2 + Math.sqrt(n.importance || 1) * 1.8)}
         nodeCanvasObject={(node, ctx, scale) => {
@@ -620,7 +620,7 @@ export default function GraphCanvas({
             ctx.shadowBlur = 0;
             ctx.shadowOffsetY = 0;
           }
-          if (evTotal > 0) {
+          if (evTotal > 0 && (!performanceMode || isHover || isSelected || node.id === centerId)) {
             let start = -Math.PI / 2;
             const drawArc = (count, color) => {
               if (!count) return;
@@ -637,10 +637,10 @@ export default function GraphCanvas({
             drawArc(ev["Known+Predicted"], "#8b5cf6");
           }
           const zoomShowAll = scale >= 2.1;
-          const zoomShowPinned = scale >= 0.95 && (node.importance || 0) >= 14;
-          const zoomShowImportant = scale >= 1.15 && (node.importance || 0) >= 8;
-          const zoomShowMedium = scale >= 1.45 && (node.importance || 0) >= 5;
-          const zoomShowWide = scale >= 1.8 && (node.importance || 0) >= 2;
+            const zoomShowPinned = scale >= 1.05 && (node.importance || 0) >= 16;
+            const zoomShowImportant = scale >= 1.3 && (node.importance || 0) >= 10;
+            const zoomShowMedium = scale >= 1.6 && (node.importance || 0) >= 6;
+            const zoomShowWide = scale >= 2.05 && (node.importance || 0) >= 3;
           const shouldShowLabel =
             isHover ||
             isSelected ||
@@ -808,7 +808,11 @@ export default function GraphCanvas({
           if (simplifiedLink) {
             ctx.beginPath();
             ctx.moveTo(s.x, s.y);
-            ctx.quadraticCurveTo(cx, cy, t.x, t.y);
+            if (ultraDenseMode) {
+              ctx.lineTo(t.x, t.y);
+            } else {
+              ctx.quadraticCurveTo(cx, cy, t.x, t.y);
+            }
             ctx.strokeStyle = rgbaFromHex(categoryTint, inFocus ? 0.1 : 0.035);
             ctx.lineWidth = Math.max(0.3, lw * 0.72);
             if (l.edge_type === "Predicted") ctx.setLineDash([3, 3]);
@@ -857,7 +861,7 @@ export default function GraphCanvas({
           ctx.restore();
         }}
         linkDirectionalParticles={(l) => {
-          if (!focusNeighbors || performanceMode || ultraDenseMode) return 0;
+          if (!focusNeighbors || performanceMode || ultraDenseMode || graphData.links.length > 180) return 0;
           const s = linkNodeId(l.source);
           const t = linkNodeId(l.target);
           if (!(hoverId || selectedId)) return 0;
