@@ -1178,13 +1178,12 @@ export default function AnalysisPage({
               ) : (
                 <div className="analysis-selection-empty">
                   <div className="analysis-selection-empty__eyebrow">{isWholeGraph ? "Full network overview loaded" : "No node selected"}</div>
-                  <strong>Choose a drug, target, disease, or ncRNA to inspect multimodal evidence.</strong>
+                  <strong>{isWholeGraph ? "Select a local node to inspect details." : "Choose a node to inspect details."}</strong>
                   <p>
-                    Use the graph canvas, current network results, or recent centers to open a structured record with chemistry,
-                    sequence, disease cross-links, ncRNA support, and TTD context.
+                    Click the graph or a result row to open chemistry, sequence, disease links, and evidence context.
                   </p>
                   <div className="analysis-selection-empty__grid">
-                    {selectionOverviewItems.map((item) => (
+                    {selectionOverviewItems.slice(0, 2).map((item) => (
                       <div className="analysis-selection-empty__metric" key={item.label}>
                         <span>{item.label}</span>
                         <strong>{item.value}</strong>

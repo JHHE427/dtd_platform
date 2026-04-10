@@ -43,18 +43,21 @@ function typeHub(type) {
 
 function modeHub(type, layoutMode) {
   if (layoutMode === "constellation") {
-    if (type === "Drug") return { x: -360, y: -180 };
-    if (type === "Target") return { x: 360, y: -180 };
-    if (type === "ncRNA") return { x: -250, y: 260 };
-    return { x: 120, y: 170 };
+    if (type === "Drug") return { x: -620, y: -260 };
+    if (type === "Target") return { x: 620, y: -260 };
+    if (type === "ncRNA") return { x: -420, y: 420 };
+    return { x: 140, y: 320 };
   }
   if (layoutMode === "clustered") {
-    if (type === "Drug") return { x: -240, y: -100 };
-    if (type === "Target") return { x: 230, y: -90 };
-    if (type === "ncRNA") return { x: -150, y: 180 };
-    return { x: 30, y: 70 };
+    if (type === "Drug") return { x: -420, y: -160 };
+    if (type === "Target") return { x: 420, y: -150 };
+    if (type === "ncRNA") return { x: -260, y: 300 };
+    return { x: 40, y: 140 };
   }
-  return typeHub(type);
+  if (type === "Drug") return { x: -360, y: -150 };
+  if (type === "Target") return { x: 340, y: -140 };
+  if (type === "ncRNA") return { x: -220, y: 250 };
+  return { x: 50, y: 110 };
 }
 
 function initialNodePosition(node, centerId, layoutMode) {
@@ -68,42 +71,42 @@ function initialNodePosition(node, centerId, layoutMode) {
     node.id === centerId
       ? 0
       : layoutMode === "constellation"
-        ? node.node_type === "Disease"
-          ? 90
-          : node.node_type === "ncRNA"
-            ? 160
-            : 200
+          ? node.node_type === "Disease"
+            ? 170
+            : node.node_type === "ncRNA"
+              ? 260
+              : 320
         : layoutMode === "clustered"
           ? node.node_type === "Disease"
-            ? 110
+            ? 190
             : node.node_type === "ncRNA"
-              ? 180
-              : 220
+              ? 280
+              : 340
           : node.node_type === "Disease"
-            ? 120
+            ? 210
             : node.node_type === "ncRNA"
-              ? 200
-              : 240;
+              ? 300
+              : 360;
   const spread =
     node.id === centerId
       ? 0
       : layoutMode === "constellation"
         ? node.node_type === "Disease"
-          ? 130
+          ? 220
           : node.node_type === "ncRNA"
-            ? 170
-            : 210
+            ? 300
+            : 380
         : layoutMode === "clustered"
           ? node.node_type === "Disease"
-            ? 150
+            ? 240
             : node.node_type === "ncRNA"
-              ? 210
-              : 250
+              ? 320
+              : 400
           : node.node_type === "Disease"
-            ? 170
+            ? 260
             : node.node_type === "ncRNA"
-              ? 240
-              : 280;
+              ? 340
+              : 420;
   const importancePull = Math.max(0, 1 - Math.min(0.78, importance / 32));
   const radius = baseRadius + spread * seed * importancePull + spread * 0.16 * Math.abs(signedB);
   const angleBase =
@@ -373,14 +376,14 @@ export default function GraphCanvas({
   React.useEffect(() => {
     if (!fgRef.current) return;
     const densityForces = {
-      sparse: { charge: -170, collision: 0.96, xStrength: 0.016, yStrength: 0.016 },
+      sparse: { charge: -150, collision: 0.92, xStrength: 0.015, yStrength: 0.015 },
       balanced: { charge: -210, collision: 1.04, xStrength: 0.019, yStrength: 0.019 },
       dense: { charge: -250, collision: 1.1, xStrength: 0.022, yStrength: 0.022 }
     }[densityMode] || { charge: -210, collision: 1.04, xStrength: 0.019, yStrength: 0.019 };
     const layoutForces = {
-      organic: { center: 0.014, drift: 0.88, collision: 0.9, radial: 0.96, fitMs: 260, settleMs: 300 },
-      clustered: { center: 0.012, drift: 1.02, collision: 0.98, radial: 0.86, fitMs: 300, settleMs: 340 },
-      constellation: { center: 0.009, drift: 1.14, collision: 1.04, radial: 0.72, fitMs: 340, settleMs: 380 }
+      organic: { center: 0.014, drift: 0.82, collision: 0.86, radial: 0.92, fitMs: 240, settleMs: 260 },
+      clustered: { center: 0.012, drift: 0.94, collision: 0.92, radial: 0.8, fitMs: 270, settleMs: 300 },
+      constellation: { center: 0.009, drift: 1.04, collision: 0.98, radial: 0.68, fitMs: 300, settleMs: 340 }
     }[layoutMode] || { center: 0.014, drift: 0.88, collision: 0.9, radial: 0.96, fitMs: 260, settleMs: 300 };
     fgRef.current.d3Force("link").distance((l) => {
       const base =
@@ -424,15 +427,34 @@ export default function GraphCanvas({
     fgRef.current.d3ReheatSimulation();
     const t = setTimeout(() => {
       if (!fgRef.current) return;
-      fgRef.current.zoomToFit(layoutForces.fitMs, 60);
+      fgRef.current.zoomToFit(layoutForces.fitMs, 6);
+      const currentZoom = typeof fgRef.current.zoom === "function" ? fgRef.current.zoom() : 1;
+      if (typeof fgRef.current.zoom === "function") {
+        fgRef.current.zoom(currentZoom * 1.24, Math.max(110, layoutForces.fitMs - 90));
+      }
       fgRef.current.cooldownTicks(0);
     }, layoutForces.settleMs);
-    return () => clearTimeout(t);
+    const t2 = setTimeout(() => {
+      if (!fgRef.current) return;
+      fgRef.current.zoomToFit(Math.max(160, layoutForces.fitMs - 70), 3);
+      const currentZoom = typeof fgRef.current.zoom === "function" ? fgRef.current.zoom() : 1;
+      if (typeof fgRef.current.zoom === "function") {
+        fgRef.current.zoom(currentZoom * 1.18, 110);
+      }
+    }, layoutForces.settleMs + 180);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(t2);
+    };
   }, [graphData, centerId, densityMode, layoutMode]);
 
   React.useEffect(() => {
     if (!fgRef.current) return;
-    fgRef.current.zoomToFit(260, 50);
+    fgRef.current.zoomToFit(180, 4);
+    const currentZoom = typeof fgRef.current.zoom === "function" ? fgRef.current.zoom() : 1;
+    if (typeof fgRef.current.zoom === "function") {
+      fgRef.current.zoom(currentZoom * 1.16, 110);
+    }
   }, [fitSignal]);
 
   const needle = (searchText || "").trim().toLowerCase();
@@ -454,7 +476,7 @@ export default function GraphCanvas({
         width={size.w}
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
-        nodeRelSize={3}
+        nodeRelSize={3.4}
         warmupTicks={2}
         cooldownTime={260}
         cooldownTicks={18}
