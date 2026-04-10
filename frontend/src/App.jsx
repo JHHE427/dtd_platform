@@ -11,10 +11,19 @@ const HelpPage = React.lazy(() => import("./components/HelpPage"));
 const DEFAULT_GRAPH_CATEGORIES = ["Drug-Target", "Drug-Disease", "Target-Disease", "ncRNA-Drug", "ncRNA-Target", "ncRNA-Disease"];
 const DEFAULT_GRAPH_TYPES = ["Known", "Predicted", "Known+Predicted"];
 
+function pickDefaultAnalysisCenter(summary) {
+  return (
+    summary?.released_disease_summary?.top_diseases?.[0]?.disease_id ||
+    summary?.disease_results?.[0]?.disease_id ||
+    summary?.disease_distribution?.top_diseases?.[0]?.disease_id ||
+    ""
+  );
+}
+
 function getDefaultGraphControls(isWholeGraph = false) {
   return {
     depth: 2,
-    limit: isWholeGraph ? 220 : 700,
+    limit: isWholeGraph ? 160 : 700,
     categories: [...DEFAULT_GRAPH_CATEGORIES],
     types: [...DEFAULT_GRAPH_TYPES],
   };
@@ -28,20 +37,19 @@ function getInitialAnalysisConfig() {
   const params = new URLSearchParams(window.location.search);
   const mode = params.get("mode");
   const center = params.get("center");
-  const wholeGraph = params.get("whole_graph");
   const density = params.get("density");
   const layout = params.get("layout");
   const depth = Number(params.get("depth"));
   const limit = Number(params.get("limit"));
   const categories = params.get("categories");
   const types = params.get("types");
-  const isWholeGraph = wholeGraph === "true" || !center;
+  const isWholeGraph = false;
   const defaultControls = getDefaultGraphControls(isWholeGraph);
   return {
-    centerNode: isWholeGraph ? "__ALL__" : center,
+    centerNode: center || "",
     graphMode: mode === "core" ? "core" : "full",
     depth: Number.isFinite(depth) && depth >= 1 && depth <= 2 ? depth : 2,
-    limit: Number.isFinite(limit) && limit >= 50 && limit <= 700 ? limit : defaultControls.limit,
+    limit: Number.isFinite(limit) && limit >= 50 && limit <= 500 ? limit : defaultControls.limit,
     categories: categories ? categories.split(",").filter(Boolean) : defaultControls.categories,
     types: types ? types.split(",").filter(Boolean) : defaultControls.types,
     densityMode: density === "sparse" || density === "dense" || density === "balanced" ? density : (isWholeGraph ? "sparse" : "balanced"),
@@ -83,9 +91,9 @@ export default function App() {
   const [densityMode, setDensityMode] = React.useState(init.densityMode);
   const [layoutMode, setLayoutMode] = React.useState(init.layoutMode);
   const [pathState, setPathState] = React.useState({ source_id: "", target_id: "", max_hops: 4 });
-  const [compareState, setCompareState] = React.useState({ left_id: init.centerNode === "__ALL__" ? "" : init.centerNode, right_id: "", data: null });
+  const [compareState, setCompareState] = React.useState({ left_id: init.centerNode || "", right_id: "", data: null });
   const [onlineAnalysisState, setOnlineAnalysisState] = React.useState({
-    focus_id: init.centerNode === "__ALL__" ? "" : init.centerNode,
+    focus_id: init.centerNode || "",
     min_algo_pass: 2,
     min_votes: 4,
     ncrna_type: "",
@@ -119,7 +127,7 @@ export default function App() {
   const [predictionState, setPredictionState] = React.useState(defaultNodesState());
   const [ncrnaEvidenceState, setNcrnaEvidenceState] = React.useState(defaultNodesState());
   const [ncrnaEdgeState, setNcrnaEdgeState] = React.useState(defaultNodesState());
-  const [selectedNodeId, setSelectedNodeId] = React.useState(init.centerNode === "__ALL__" ? "" : init.centerNode);
+  const [selectedNodeId, setSelectedNodeId] = React.useState(init.centerNode || "");
   const [neighborState, setNeighborState] = React.useState({
     q: "",
     edge_category: "",
@@ -156,8 +164,7 @@ export default function App() {
 
   const loadGraph = React.useCallback(async (nodeId, overrideControls = null) => {
     const id = (nodeId || centerNode).trim();
-    const wholeGraph = id === "__ALL__";
-    if (!id && !wholeGraph) return;
+    if (!id) return;
     const mergedControls = overrideControls
       ? {
           ...graphControls,
@@ -168,7 +175,6 @@ export default function App() {
       : graphControls;
     const reqKey = JSON.stringify({
       id,
-      wholeGraph,
       mode: graphMode,
       depth: mergedControls.depth,
       limit: mergedControls.limit,
@@ -184,9 +190,8 @@ export default function App() {
     setGraphLoading(true);
     try {
       const params = query({
-        center_id: wholeGraph ? "" : id,
+        center_id: id,
         mode: graphMode,
-        whole_graph: wholeGraph ? "true" : "",
         depth: mergedControls.depth,
         limit: mergedControls.limit,
         edge_category: mergedControls.categories.join(","),
@@ -195,7 +200,7 @@ export default function App() {
       let data = await api(`/api/graph?${params}`);
       let effectiveMode = graphMode;
 
-      if (!wholeGraph && graphMode === "core" && (!data.edges?.length || (data.nodes?.length || 0) <= 1)) {
+      if (graphMode === "core" && (!data.edges?.length || (data.nodes?.length || 0) <= 1)) {
         const fullParams = query({
           center_id: id,
           mode: "full",
@@ -215,15 +220,8 @@ export default function App() {
 
       if (ticket !== reqSeq.current.graph) return;
       setGraph(data);
-      if (wholeGraph) {
-        setCenterNode("__ALL__");
-        setSelectedNodeId("");
-        setDetail(null);
-        setNeighborState((prev) => ({ ...prev, total: 0, items: [] }));
-      } else {
-        setCenterNode(id);
-      }
-      setGraphMeta(`mode=${data.mode || effectiveMode} · center=${wholeGraph ? "ALL" : data.center_id} · depth=${data.depth} · nodes=${data.nodes.length} · edges=${data.edges.length}`);
+      setCenterNode(id);
+      setGraphMeta(`mode=${data.mode || effectiveMode} · center=${data.center_id} · depth=${data.depth} · nodes=${data.nodes.length} · edges=${data.edges.length}`);
     } catch (e) {
       showToast("warn", `Load graph failed: ${e.message}`);
     } finally {
@@ -233,7 +231,7 @@ export default function App() {
   }, [centerNode, graphControls, graphLoading, graphMode, showToast]);
 
   const loadDetail = React.useCallback(async (nodeId, options = { withNeighbors: false }) => {
-    if (!nodeId || nodeId === "__ALL__") return;
+    if (!nodeId) return;
     const ticket = ++reqSeq.current.detail;
     try {
       let endpoint = `/api/node/${encodeURIComponent(nodeId)}`;
@@ -664,8 +662,7 @@ export default function App() {
   const shareCurrentView = React.useCallback(async () => {
     const params = query({
       mode: graphMode,
-      center: centerNode === "__ALL__" ? "" : centerNode,
-      whole_graph: centerNode === "__ALL__" ? "true" : "",
+      center: centerNode,
       depth: graphControls.depth,
       limit: graphControls.limit,
       categories: graphControls.categories.join(","),
@@ -753,7 +750,7 @@ export default function App() {
     loadNcrnaEvidence(1);
     loadNcrnaEdges(1);
     loadGraph(centerNode);
-    if (centerNode && centerNode !== "__ALL__") {
+    if (centerNode) {
       loadDetail(centerNode, { withNeighbors: true });
     } else {
       setDetail(null);
@@ -761,8 +758,19 @@ export default function App() {
   }, [loadStats]); // intentionally single-run
 
   React.useEffect(() => {
-    setOnlineAnalysisState((prev) => ({ ...prev, focus_id: centerNode && centerNode !== "__ALL__" ? centerNode : prev.focus_id }));
+    setOnlineAnalysisState((prev) => ({ ...prev, focus_id: centerNode || prev.focus_id }));
   }, [centerNode]);
+
+  React.useEffect(() => {
+    if (centerNode || !researchSummary) return;
+    const nextCenter = pickDefaultAnalysisCenter(researchSummary);
+    if (!nextCenter) return;
+    setCenterNode(nextCenter);
+    if (page === "analysis") {
+      loadDetail(nextCenter, { withNeighbors: true });
+      loadGraph(nextCenter);
+    }
+  }, [centerNode, loadDetail, loadGraph, page, researchSummary]);
 
   React.useEffect(() => {
     if (!centerNode) return;
@@ -773,8 +781,7 @@ export default function App() {
     if (!centerNode) return;
     const params = query({
       mode: graphMode,
-      center: centerNode === "__ALL__" ? "" : centerNode,
-      whole_graph: centerNode === "__ALL__" ? "true" : "",
+      center: centerNode,
       depth: graphControls.depth,
       limit: graphControls.limit,
       categories: graphControls.categories.join(","),
@@ -879,9 +886,9 @@ export default function App() {
                   showToast("ok", `Network view expanded from ${selected} (depth=${nextDepth}, limit=${nextLimit})`);
                 }}
                 onResetFilters={async () => {
-                  const next = getDefaultGraphControls(centerNode === "__ALL__");
+                  const next = getDefaultGraphControls(false);
                   setGraphMode("full");
-                  setDensityMode(centerNode === "__ALL__" ? "sparse" : "balanced");
+                  setDensityMode("balanced");
                   setGraphControls(next);
                   await loadGraph(centerNode, next);
                   showToast("ok", "Network filters restored to default settings");
@@ -889,7 +896,7 @@ export default function App() {
                 onDenseGraph={async () => {
                   const next = {
                     depth: 2,
-                    limit: 1200,
+                    limit: 420,
                     categories: [...DEFAULT_GRAPH_CATEGORIES],
                     types: [...DEFAULT_GRAPH_TYPES]
                   };
@@ -900,12 +907,18 @@ export default function App() {
                   showToast("ok", "Expanded network view loaded");
                 }}
                 onAllNetwork={async () => {
-                  const next = getDefaultGraphControls(true);
+                  const nextCenter = pickDefaultAnalysisCenter(researchSummary);
+                  if (!nextCenter) {
+                    showToast("warn", "No disease-centered overview node is available");
+                    return;
+                  }
+                  const next = getDefaultGraphControls(false);
                   setGraphMode("full");
                   setDensityMode("sparse");
                   setGraphControls(next);
-                  await loadGraph("__ALL__", next);
-                  showToast("ok", "Full-network view loaded");
+                  await loadDetail(nextCenter, { withNeighbors: true });
+                  await loadGraph(nextCenter, next);
+                  showToast("ok", "Disease overview loaded");
                 }}
                 onExportSubgraph={exportSubgraph}
                 onNodeClick={async (id) => {

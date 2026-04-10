@@ -43,21 +43,21 @@ function typeHub(type) {
 
 function modeHub(type, layoutMode) {
   if (layoutMode === "constellation") {
-    if (type === "Drug") return { x: -620, y: -260 };
-    if (type === "Target") return { x: 620, y: -260 };
-    if (type === "ncRNA") return { x: -420, y: 420 };
-    return { x: 140, y: 320 };
+    if (type === "Drug") return { x: -420, y: -180 };
+    if (type === "Target") return { x: 420, y: -180 };
+    if (type === "ncRNA") return { x: -280, y: 280 };
+    return { x: 90, y: 210 };
   }
   if (layoutMode === "clustered") {
-    if (type === "Drug") return { x: -420, y: -160 };
-    if (type === "Target") return { x: 420, y: -150 };
-    if (type === "ncRNA") return { x: -260, y: 300 };
-    return { x: 40, y: 140 };
+    if (type === "Drug") return { x: -260, y: -110 };
+    if (type === "Target") return { x: 260, y: -110 };
+    if (type === "ncRNA") return { x: -160, y: 200 };
+    return { x: 20, y: 96 };
   }
-  if (type === "Drug") return { x: -360, y: -150 };
-  if (type === "Target") return { x: 340, y: -140 };
-  if (type === "ncRNA") return { x: -220, y: 250 };
-  return { x: 50, y: 110 };
+  if (type === "Drug") return { x: -220, y: -96 };
+  if (type === "Target") return { x: 220, y: -90 };
+  if (type === "ncRNA") return { x: -130, y: 170 };
+  return { x: 36, y: 84 };
 }
 
 function initialNodePosition(node, centerId, layoutMode) {
@@ -267,9 +267,13 @@ export default function GraphCanvas({
 
     const densityCfg = {
       sparse: { triggerEdges: 420, triggerNodes: 300, topNodes: 180, topEdges: 300 },
-      balanced: { triggerEdges: 760, triggerNodes: 520, topNodes: 300, topEdges: 520 },
-      dense: { triggerEdges: 1280, triggerNodes: 760, topNodes: 520, topEdges: 880 }
+      balanced: { triggerEdges: 760, triggerNodes: 520, topNodes: 260, topEdges: 420 },
+      dense: { triggerEdges: 1280, triggerNodes: 760, topNodes: 420, topEdges: 720 }
     }[densityMode] || { triggerEdges: 760, triggerNodes: 520, topNodes: 300, topEdges: 520 };
+    if (densityMode === "sparse") {
+      densityCfg.topNodes = 120;
+      densityCfg.topEdges = 180;
+    }
 
     // For very dense graphs, render a readable high-information subgraph.
     if (allLinks.length > densityCfg.triggerEdges || allNodes.length > densityCfg.triggerNodes) {
