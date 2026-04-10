@@ -23,7 +23,7 @@ function pickDefaultAnalysisCenter(summary) {
 function getDefaultGraphControls(isWholeGraph = false) {
   return {
     depth: 2,
-    limit: isWholeGraph ? 160 : 700,
+    limit: isWholeGraph ? 100 : 320,
     categories: [...DEFAULT_GRAPH_CATEGORIES],
     types: [...DEFAULT_GRAPH_TYPES],
   };
@@ -47,9 +47,9 @@ function getInitialAnalysisConfig() {
   const defaultControls = getDefaultGraphControls(isWholeGraph);
   return {
     centerNode: center || "",
-    graphMode: mode === "core" ? "core" : "full",
+    graphMode: mode === "full" ? "full" : "core",
     depth: Number.isFinite(depth) && depth >= 1 && depth <= 2 ? depth : 2,
-    limit: Number.isFinite(limit) && limit >= 50 && limit <= 500 ? limit : defaultControls.limit,
+    limit: Number.isFinite(limit) && limit >= 50 && limit <= 240 ? limit : defaultControls.limit,
     categories: categories ? categories.split(",").filter(Boolean) : defaultControls.categories,
     types: types ? types.split(",").filter(Boolean) : defaultControls.types,
     densityMode: density === "sparse" || density === "dense" || density === "balanced" ? density : (isWholeGraph ? "sparse" : "balanced"),
@@ -887,8 +887,8 @@ export default function App() {
                 }}
                 onResetFilters={async () => {
                   const next = getDefaultGraphControls(false);
-                  setGraphMode("full");
-                  setDensityMode("balanced");
+                  setGraphMode("core");
+                  setDensityMode("sparse");
                   setGraphControls(next);
                   await loadGraph(centerNode, next);
                   showToast("ok", "Network filters restored to default settings");
@@ -896,7 +896,7 @@ export default function App() {
                 onDenseGraph={async () => {
                   const next = {
                     depth: 2,
-                    limit: 420,
+                    limit: 220,
                     categories: [...DEFAULT_GRAPH_CATEGORIES],
                     types: [...DEFAULT_GRAPH_TYPES]
                   };
@@ -913,7 +913,7 @@ export default function App() {
                     return;
                   }
                   const next = getDefaultGraphControls(false);
-                  setGraphMode("full");
+                  setGraphMode("core");
                   setDensityMode("sparse");
                   setGraphControls(next);
                   await loadDetail(nextCenter, { withNeighbors: true });

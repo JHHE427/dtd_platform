@@ -111,7 +111,6 @@ export default function AnalysisPage({
   layoutMode,
   onLayoutModeChange
 }) {
-  const isWholeGraph = false;
   const isOverviewMode = !detail?.node;
   const [structureModalOpen, setStructureModalOpen] = React.useState(false);
   const [sequenceCopied, setSequenceCopied] = React.useState(false);
@@ -120,6 +119,17 @@ export default function AnalysisPage({
     onlineAnalysis: true,
     sevenModel: true,
     graphControls: true,
+    currentResults: true,
+    multimodal: true,
+    ncrnaEvidence: true,
+    ncrnaLinked: true,
+    evidenceComposition: true,
+    aiModelSummary: true,
+    algorithmEvidence: true,
+    ttdSupport: true,
+    mechanism: true,
+    compare: true,
+    neighbors: true,
   });
   const { depth, limit, categories, types } = controls;
 
@@ -362,9 +372,9 @@ export default function AnalysisPage({
             <option value="constellation">Constellation</option>
           </select>
           <button className="btn-quiet" onClick={onResetFilters}>Reset Filters</button>
-          <button className="btn-quiet" onClick={onDenseGraph}>Expanded Network</button>
-          <button className="btn-quiet" onClick={onAllNetwork}>Load Disease Overview</button>
-          <button className="btn-quiet" onClick={onCompareModes}>Comparison View</button>
+          <button className="btn-quiet" onClick={onDenseGraph}>Expand View</button>
+          <button className="btn-quiet" onClick={onAllNetwork}>Disease Overview</button>
+          <button className="btn-quiet" onClick={onCompareModes}>Compare</button>
           <button className="btn-quiet" onClick={onShareState}>Copy Share Link</button>
           <button className="primary" onClick={onExportSubgraph}>Export Current View</button>
         </div>
@@ -920,12 +930,17 @@ export default function AnalysisPage({
             ) : null}
           </div>
 
-          <section className="analysis-results-panel">
+          <section className={`analysis-results-panel ${collapsedSections.currentResults ? "is-collapsed" : ""}`}>
             <div className="card-head">
               <h3>Current Network Results</h3>
-              <div className="muted">Top visible relationships in the current network view. Click column labels to sort the current result set.</div>
+              {!collapsedSections.currentResults ? <div className="muted">Top visible relationships in the current network view. Click column labels to sort the current result set.</div> : null}
             </div>
-            <div className="result-table-wrap analysis-result-wrap">
+            <SectionToggle
+              collapsed={collapsedSections.currentResults}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, currentResults: !prev.currentResults }))}
+              label="current network results"
+            />
+            {!collapsedSections.currentResults ? <div className="result-table-wrap analysis-result-wrap">
               <table className="result-table edge-result-table analysis-result-table">
                 <thead>
                   <tr>
@@ -954,7 +969,7 @@ export default function AnalysisPage({
                   )}
                 </tbody>
               </table>
-            </div>
+            </div> : null}
           </section>
         </section>
 
@@ -1197,8 +1212,14 @@ export default function AnalysisPage({
             </div>
           </section>
 
-          <section className="card panel-pad rise-in delay-1">
+          <section className={`card panel-pad rise-in delay-1 analysis-collapse-card ${collapsedSections.multimodal ? "is-collapsed" : ""}`}>
             <h3>Multi-Modal Profile</h3>
+            <SectionToggle
+              collapsed={collapsedSections.multimodal}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, multimodal: !prev.multimodal }))}
+              label="multi-modal profile"
+            />
+            {!collapsedSections.multimodal ? <>
             <div className="modality-summary">
               <div className="modality-summary-top">
                 <span>Coverage</span>
@@ -1225,11 +1246,17 @@ export default function AnalysisPage({
                 </div>
               ))}
             </div>
+            </> : null}
           </section>
 
-          <section className="card panel-pad rise-in delay-1">
+          <section className={`card panel-pad rise-in delay-1 analysis-collapse-card ${collapsedSections.ncrnaEvidence ? "is-collapsed" : ""}`}>
             <h3>Known ncRNA-Drug Evidence</h3>
-            {ncrnaEvidence.available ? (
+            <SectionToggle
+              collapsed={collapsedSections.ncrnaEvidence}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, ncrnaEvidence: !prev.ncrnaEvidence }))}
+              label="known ncRNA-drug evidence"
+            />
+            {!collapsedSections.ncrnaEvidence ? (ncrnaEvidence.available ? (
               <>
                 <div className="support-meter-row">
                   <div className="support-meter-card">
@@ -1268,12 +1295,17 @@ export default function AnalysisPage({
               </>
             ) : (
               <div className="empty-state">No curated ncRNA-drug evidence is linked to the current record.</div>
-            )}
+            )) : null}
           </section>
 
-          <section className="card panel-pad rise-in delay-1">
+          <section className={`card panel-pad rise-in delay-1 analysis-collapse-card ${collapsedSections.ncrnaLinked ? "is-collapsed" : ""}`}>
             <h3>ncRNA-Linked Released Results</h3>
-            {ncrnaLinkedResults.available ? (
+            <SectionToggle
+              collapsed={collapsedSections.ncrnaLinked}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, ncrnaLinked: !prev.ncrnaLinked }))}
+              label="ncRNA-linked released results"
+            />
+            {!collapsedSections.ncrnaLinked ? (ncrnaLinkedResults.available ? (
               <>
                 <div className="support-meter-row">
                   <div className="support-meter-card">
@@ -1339,12 +1371,17 @@ export default function AnalysisPage({
               </>
             ) : (
               <div className="empty-state">No released-result overlap is currently available between the selected record and the curated ncRNA-drug layer.</div>
-            )}
+            )) : null}
           </section>
 
-          <section className="card panel-pad rise-in delay-1">
+          <section className={`card panel-pad rise-in delay-1 analysis-collapse-card ${collapsedSections.evidenceComposition ? "is-collapsed" : ""}`}>
             <h3>Evidence Composition</h3>
-            <div key={`evidence-${detailKey}`} className="evidence-bars card-swap">
+            <SectionToggle
+              collapsed={collapsedSections.evidenceComposition}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, evidenceComposition: !prev.evidenceComposition }))}
+              label="evidence composition"
+            />
+            {!collapsedSections.evidenceComposition ? <div key={`evidence-${detailKey}`} className="evidence-bars card-swap">
               <div className="bar-item">
                 <div className="bar-head"><span>Known</span><span>{knownCount}</span></div>
                 <div className="bar"><i className="known" style={{ width: `${Math.min(100, knownCount * 5)}%` }} /></div>
@@ -1357,12 +1394,17 @@ export default function AnalysisPage({
                 <div className="bar-head"><span>Known+Predicted</span><span>{kpCount}</span></div>
                 <div className="bar"><i className="kp" style={{ width: `${Math.min(100, kpCount * 5)}%` }} /></div>
               </div>
-            </div>
+            </div> : null}
           </section>
 
-          <section className="card panel-pad rise-in delay-1">
+          <section className={`card panel-pad rise-in delay-1 analysis-collapse-card ${collapsedSections.aiModelSummary ? "is-collapsed" : ""}`}>
             <h3>AI Model Score Summary</h3>
-            {algorithmEvidence.available ? (
+            <SectionToggle
+              collapsed={collapsedSections.aiModelSummary}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, aiModelSummary: !prev.aiModelSummary }))}
+              label="AI model score summary"
+            />
+            {!collapsedSections.aiModelSummary ? (algorithmEvidence.available ? (
               <>
                 <div className="algo-evidence-summary">
                   <span className="ai-brand-chip">7 deep models</span>
@@ -1381,12 +1423,17 @@ export default function AnalysisPage({
               </>
             ) : (
               <div className="empty-state">No per-model AI score summary is available for the current record.</div>
-            )}
+            )) : null}
           </section>
 
-          <section className="card panel-pad rise-in delay-1">
+          <section className={`card panel-pad rise-in delay-1 analysis-collapse-card ${collapsedSections.algorithmEvidence ? "is-collapsed" : ""}`}>
             <h3>Algorithm Evidence</h3>
-            {algorithmEvidence.available ? (
+            <SectionToggle
+              collapsed={collapsedSections.algorithmEvidence}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, algorithmEvidence: !prev.algorithmEvidence }))}
+              label="algorithm evidence"
+            />
+            {!collapsedSections.algorithmEvidence ? (algorithmEvidence.available ? (
               <>
                 <div className="algo-evidence-summary">
                   <span className="ai-brand-chip">rows {algorithmEvidence.row_count}</span>
@@ -1463,12 +1510,17 @@ export default function AnalysisPage({
               </>
             ) : (
               <div className="empty-state">No prediction-model summary is available for the current record.</div>
-            )}
+            )) : null}
           </section>
 
-          <section className="card panel-pad rise-in delay-1">
+          <section className={`card panel-pad rise-in delay-1 analysis-collapse-card ${collapsedSections.ttdSupport ? "is-collapsed" : ""}`}>
             <h3>TTD Therapeutic Target Support</h3>
-            {ttdEvidence.available ? (
+            <SectionToggle
+              collapsed={collapsedSections.ttdSupport}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, ttdSupport: !prev.ttdSupport }))}
+              label="TTD therapeutic target support"
+            />
+            {!collapsedSections.ttdSupport ? (ttdEvidence.available ? (
               <>
                 <div className="support-meter-row">
                   <div className="support-meter-card">
@@ -1534,11 +1586,17 @@ export default function AnalysisPage({
               </>
             ) : (
               <div className="empty-state">No TTD therapeutic-target support is currently linked to the selected record.</div>
-            )}
+            )) : null}
           </section>
 
-          <section className="card panel-pad rise-in delay-2">
+          <section className={`card panel-pad rise-in delay-2 analysis-collapse-card ${collapsedSections.mechanism ? "is-collapsed" : ""}`}>
             <h3>Mechanism Snapshot</h3>
+            <SectionToggle
+              collapsed={collapsedSections.mechanism}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, mechanism: !prev.mechanism }))}
+              label="mechanism snapshot"
+            />
+            {!collapsedSections.mechanism ? <>
             <div className="mechanism-section">
               <div className="annot-title">Top Linked Nodes</div>
               <div className="mechanism-links">
@@ -1572,11 +1630,17 @@ export default function AnalysisPage({
                 )) : <div className="empty-state">No contextual summary is available for the current record.</div>}
               </div>
             </div>
+            </> : null}
           </section>
 
-          <section className="card panel-pad rise-in delay-2">
+          <section className={`card panel-pad rise-in delay-2 analysis-collapse-card ${collapsedSections.compare ? "is-collapsed" : ""}`}>
             <h3>Drug Pair Comparison</h3>
-            {comparison ? (
+            <SectionToggle
+              collapsed={collapsedSections.compare}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, compare: !prev.compare }))}
+              label="drug pair comparison"
+            />
+            {!collapsedSections.compare ? (comparison ? (
               <div className="comparison-grid">
                 <div className="comparison-card">
                   <div className="annot-title">Shared Mechanism Score</div>
@@ -1617,11 +1681,17 @@ export default function AnalysisPage({
               </div>
             ) : (
               <div className="empty-state">Enter two Drug identifiers above to compare target overlap, disease overlap, and shared mechanism support.</div>
-            )}
+            )) : null}
           </section>
 
-          <section className="card panel-pad rise-in delay-2">
+          <section className={`card panel-pad rise-in delay-2 analysis-collapse-card ${collapsedSections.neighbors ? "is-collapsed" : ""}`}>
             <h3>Neighbors</h3>
+            <SectionToggle
+              collapsed={collapsedSections.neighbors}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, neighbors: !prev.neighbors }))}
+              label="neighbors"
+            />
+            {!collapsedSections.neighbors ? <>
             <div className="neighbor-tools">
               <input
                 placeholder="Search neighbors..."
@@ -1671,6 +1741,7 @@ export default function AnalysisPage({
                 </div>
               )) : <div className="empty-state">No neighboring records match the current filter settings.</div>}
             </div>
+            </> : null}
             <div className="pager">
               <button onClick={() => onNeighborPage(-1)} disabled={neighborState.page <= 1}>Previous</button>
               <button

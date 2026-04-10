@@ -119,6 +119,7 @@ export default function DatabasePage({
     summaryLayer: true,
     priorityLayer: true,
     predictionTools: true,
+    predictionDetail: true,
   });
   const nodeTypeCounts = nodesState.items.reduce((acc, n) => {
     const key = n.node_type || "Other";
@@ -2861,19 +2862,24 @@ export default function DatabasePage({
           <button onClick={() => onPredictionPage(1)} disabled={!canPredictionNext}>Next Page</button>
         </div>
 
-        <div className="prediction-detail-card">
-          {selectedPrediction ? (
+        <div className={`prediction-detail-card ${collapsedSections.predictionDetail ? "is-collapsed" : ""}`}>
+          <div className="prediction-detail-head">
+            <div>
+              <h4>Selected Prediction Record</h4>
+              {!collapsedSections.predictionDetail ? <div className="db-panel-subtitle">Detailed algorithm fields and direct navigation targets for the selected row.</div> : null}
+            </div>
+          </div>
+          <SectionToggle
+            collapsed={collapsedSections.predictionDetail}
+            onToggle={() => setCollapsedSections((prev) => ({ ...prev, predictionDetail: !prev.predictionDetail }))}
+            label="selected prediction detail"
+          />
+          {!collapsedSections.predictionDetail ? (selectedPrediction ? (
             <>
-              <div className="prediction-detail-head">
-                <div>
-                  <h4>Selected Prediction Record</h4>
-                  <div className="db-panel-subtitle">Detailed algorithm fields and direct navigation targets for the selected row.</div>
-                </div>
-                <div className="prediction-detail-actions">
-                  <button className="btn-quiet" onClick={() => onJumpToNode(selectedPrediction.Drug_ID)}>View Drug</button>
-                  <button className="btn-quiet" onClick={() => onJumpToNode(selectedPrediction.Target_ID)}>View Target</button>
-                  <button className="btn-quiet" onClick={() => onJumpToNode(selectedPrediction.Disease_ID || `DIS::${selectedPrediction.Ensemble_Disease_Name}`)}>View Disease</button>
-                </div>
+              <div className="prediction-detail-actions">
+                <button className="btn-quiet" onClick={() => onJumpToNode(selectedPrediction.Drug_ID)}>View Drug</button>
+                <button className="btn-quiet" onClick={() => onJumpToNode(selectedPrediction.Target_ID)}>View Target</button>
+                <button className="btn-quiet" onClick={() => onJumpToNode(selectedPrediction.Disease_ID || `DIS::${selectedPrediction.Ensemble_Disease_Name}`)}>View Disease</button>
               </div>
               <div className="prediction-detail-grid">
                 <div className="prediction-metric">
@@ -2976,7 +2982,7 @@ export default function DatabasePage({
             </>
           ) : (
             <div className="empty-state">Select a prediction record to inspect algorithm fields and review the corresponding drug, target, or disease entry.</div>
-          )}
+          )) : null}
         </div>
       </section>
 

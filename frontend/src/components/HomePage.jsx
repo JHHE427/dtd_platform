@@ -58,6 +58,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     formalTablesPanel: true,
     keyFindingsPanel: true,
     fixedCasesPanel: true,
+    aiBrandPanel: true,
+    heroFeaturePanel: true,
     diseaseContextEvidence: true,
     diseaseLinkedContext: true,
     ttdValidation: true,
@@ -457,14 +459,21 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="stat-value">{edgeTotal}</div>
           </article>
         </div>
-        <div className="home-feature-strip">
-          {featureCards.map((item) => (
-            <article className="home-feature-card" key={item.title}>
-              <div className="home-feature-title">{item.title}</div>
-              <div className="home-feature-text">{item.body}</div>
-            </article>
-          ))}
-        </div>
+        <HomeTableToggle
+          collapsed={collapsedTables.heroFeaturePanel}
+          onToggle={() => toggleTableSection("heroFeaturePanel")}
+          label="hero feature strip"
+        />
+        {!collapsedTables.heroFeaturePanel ? (
+          <div className="home-feature-strip">
+            {featureCards.map((item) => (
+              <article className="home-feature-card" key={item.title}>
+                <div className="home-feature-title">{item.title}</div>
+                <div className="home-feature-text">{item.body}</div>
+              </article>
+            ))}
+          </div>
+        ) : null}
 
         <div className="home-conclusion-grid">
           {conclusionCards.map((item) => (
@@ -517,6 +526,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <h3>Disease AI Intelligence Layer</h3>
             <div className="home-panel-subtitle">Seven deep learning DTI models provide raw pair scores and vote support for the disease-centered release.</div>
           </div>
+          <HomeTableToggle
+            collapsed={collapsedTables.aiBrandPanel}
+            onToggle={() => toggleTableSection("aiBrandPanel")}
+            label="AI intelligence layer"
+          />
+          {!collapsedTables.aiBrandPanel ? <>
           <div className="result-summary-strip ai-summary-strip">
             <span className="result-summary-pill ai-pill">
               <strong>7 models</strong>
@@ -553,6 +568,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               );
             })}
           </div>
+          </> : null}
         </section>
 
         <div className="home-priority-grid">
