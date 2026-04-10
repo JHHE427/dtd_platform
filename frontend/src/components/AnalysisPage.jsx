@@ -111,7 +111,8 @@ export default function AnalysisPage({
   layoutMode,
   onLayoutModeChange
 }) {
-  const isWholeGraph = centerNode === "__ALL__";
+  const isWholeGraph = false;
+  const isOverviewMode = !detail?.node;
   const [structureModalOpen, setStructureModalOpen] = React.useState(false);
   const [sequenceCopied, setSequenceCopied] = React.useState(false);
   const [resultSort, setResultSort] = React.useState({ key: "support_score", direction: "desc" });
@@ -362,7 +363,7 @@ export default function AnalysisPage({
           </select>
           <button className="btn-quiet" onClick={onResetFilters}>Reset Filters</button>
           <button className="btn-quiet" onClick={onDenseGraph}>Expanded Network</button>
-          <button className="btn-quiet" onClick={onAllNetwork}>Load Full Disease Network</button>
+          <button className="btn-quiet" onClick={onAllNetwork}>Load Disease Overview</button>
           <button className="btn-quiet" onClick={onCompareModes}>Comparison View</button>
           <button className="btn-quiet" onClick={onShareState}>Copy Share Link</button>
           <button className="primary" onClick={onExportSubgraph}>Export Current View</button>
@@ -384,7 +385,7 @@ export default function AnalysisPage({
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Current Center</div>
-          <div className="kpi-value kpi-center">{isWholeGraph ? "ALL NODES" : (centerNode || "-")}</div>
+          <div className="kpi-value kpi-center">{centerNode || "-"}</div>
         </div>
       </div>
 
@@ -412,7 +413,7 @@ export default function AnalysisPage({
             <button
               key={preset.key}
               className={`online-analysis-preset ${onlineAnalysisState?.min_algo_pass === preset.patch.min_algo_pass && onlineAnalysisState?.min_votes === preset.patch.min_votes && (onlineAnalysisState?.txgnn_pass || "") === (preset.patch.txgnn_pass || "") ? "is-active" : ""}`}
-              onClick={() => onRunOnlineAnalysis({ focus_id: onlineAnalysisState?.focus_id || (isWholeGraph ? "" : centerNode) || "", ...preset.patch })}
+              onClick={() => onRunOnlineAnalysis({ focus_id: onlineAnalysisState?.focus_id || centerNode || "", ...preset.patch })}
               type="button"
             >
               <strong>{preset.title}</strong>
@@ -508,7 +509,7 @@ export default function AnalysisPage({
             </select>
           </label>
           <div className="online-analysis-actions">
-            <button className="btn-quiet" onClick={() => onOnlineAnalysisStateChange({ focus_id: isWholeGraph ? "" : (centerNode || "") })}>Use Current Center</button>
+            <button className="btn-quiet" onClick={() => onOnlineAnalysisStateChange({ focus_id: centerNode || "" })}>Use Current Center</button>
             <button
               className="btn-quiet"
               onClick={() => onRunOnlineAnalysis({
@@ -704,19 +705,19 @@ export default function AnalysisPage({
         <section className="card graph-panel">
           <div className="card-head">
             <h3>AI-Powered Disease-Centered Network</h3>
-            <div className={`network-caption analysis-network-caption ${isWholeGraph ? "is-global" : ""}`}>
-              <span className="analysis-network-caption__badge">{isWholeGraph ? "Global AI atlas overview" : "Focused AI node view"}</span>
+            <div className={`network-caption analysis-network-caption ${isOverviewMode ? "is-global" : ""}`}>
+              <span className="analysis-network-caption__badge">{isOverviewMode ? "Disease-centered local overview" : "Focused AI node view"}</span>
               <span className="analysis-network-caption__badge is-layout">{layoutMode}</span>
               <span>{graphMeta}</span>
             </div>
           </div>
-          {isWholeGraph ? (
+          {isOverviewMode ? (
             <div className="analysis-global-banner">
               <div>
-                <strong>Full network loaded by default</strong>
-                <span>Click a node to open structured detail on the right.</span>
+                <strong>Disease-centered local overview loaded</strong>
+                <span>Click a node to inspect details or expand around the current disease neighborhood.</span>
               </div>
-              <span className="analysis-global-banner__tag">All-node overview</span>
+              <span className="analysis-global-banner__tag">Local overview</span>
             </div>
           ) : null}
           <SectionToggle
@@ -730,8 +731,8 @@ export default function AnalysisPage({
             <label>
               Center Node ID
               <input
-                value={isWholeGraph ? "" : centerNode}
-                placeholder={isWholeGraph ? "Full network loaded" : "Enter Drug / Target / Disease / ncRNA ID"}
+                value={centerNode}
+                placeholder="Enter Drug / Target / Disease / ncRNA ID"
                 onChange={(e) => onCenterNodeChange(e.target.value)}
               />
             </label>
