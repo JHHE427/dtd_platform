@@ -41,6 +41,16 @@ function buildDtiHeatmap(modelCoverage, topPairs) {
   return { labels, rows };
 }
 
+function SectionToggle({ collapsed, onToggle, label }) {
+  return (
+    <div className="page-section-toggle-row">
+      <button type="button" className="page-section-toggle" onClick={onToggle} aria-expanded={!collapsed}>
+        <strong>{collapsed ? "Show" : "Hide"} {label}</strong>
+      </button>
+    </div>
+  );
+}
+
 export default function DatabasePage({
   activeSection,
   nodesState,
@@ -87,11 +97,29 @@ export default function DatabasePage({
   canNcrnaEdgePrev,
   canNcrnaEdgeNext,
 }) {
+  const algorithmsSectionRef = React.useRef(null);
+  const predictionsSectionRef = React.useRef(null);
   const ncrnaSectionRef = React.useRef(null);
+  const nodesSectionRef = React.useRef(null);
   const [selectedPrediction, setSelectedPrediction] = React.useState(null);
   const [predictionSort, setPredictionSort] = React.useState({ key: "result_rank", direction: "asc" });
   const [selectedTargetDetail, setSelectedTargetDetail] = React.useState(null);
   const [selectedDiseaseDetail, setSelectedDiseaseDetail] = React.useState(null);
+  const [collapsedSections, setCollapsedSections] = React.useState({
+    queryDecks: true,
+    releaseOverview: true,
+    evidenceLayer: true,
+    validationLayer: true,
+    objectLayer: true,
+    analyticsLayer: true,
+    nodeLayer: true,
+    edgeLayer: true,
+    targetDetail: true,
+    diseaseDetail: true,
+    summaryLayer: true,
+    priorityLayer: true,
+    predictionTools: true,
+  });
   const nodeTypeCounts = nodesState.items.reduce((acc, n) => {
     const key = n.node_type || "Other";
     acc[key] = (acc[key] || 0) + 1;
@@ -118,6 +146,38 @@ export default function DatabasePage({
         {item.label}
       </span>
     ));
+  };
+  const renderSevenModelAiSummary = (row) => {
+    const supporting = new Set(row?.seven_model_supporting_models || []);
+    const scores = row?.seven_model_scores || {};
+    const ranked = SEVEN_DTI_MODEL_META
+      .map((item) => {
+        const score = scores[item.label];
+        return {
+          ...item,
+          score: score != null && Number.isFinite(Number(score)) ? Number(score) : null,
+          active: supporting.has(item.label) || score != null,
+        };
+      })
+      .filter((item) => item.active)
+      .sort((a, b) => {
+        if (a.score == null && b.score == null) return a.label.localeCompare(b.label);
+        if (a.score == null) return 1;
+        if (b.score == null) return -1;
+        return b.score - a.score;
+      });
+    const visible = ranked.slice(0, 3);
+    return (
+      <div className="ai-score-inline">
+        <span className="ai-score-inline__lead">AI {row?.Total_Votes_Optional7 ?? 0}/7</span>
+        {visible.length ? visible.map((item) => (
+          <span className={`ai-score-badge model-${item.key}`} key={`${row?.Drug_ID}-${row?.Target_ID}-${item.label}`}>
+            <strong>{item.label}</strong>
+            <em>{item.score != null ? item.score : "listed"}</em>
+          </span>
+        )) : <span className="ai-score-inline__muted">No per-model signal</span>}
+      </div>
+    );
   };
   const renderSevenModelHoverPanel = (row) => {
     const supporting = new Set(row?.seven_model_supporting_models || []);
@@ -393,8 +453,15 @@ export default function DatabasePage({
   }, [predictionState.items, selectedPrediction]);
 
   React.useEffect(() => {
-    if (activeSection === "ncrna" && ncrnaSectionRef.current) {
-      ncrnaSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    const refMap = {
+      algorithms: algorithmsSectionRef,
+      predictions: predictionsSectionRef,
+      ncrna: ncrnaSectionRef,
+      nodes: nodesSectionRef,
+    };
+    const targetRef = refMap[activeSection];
+    if (targetRef?.current) {
+      targetRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [activeSection, researchSummary]);
 
@@ -403,7 +470,7 @@ export default function DatabasePage({
       <div className="analysis-header page-head">
         <div>
           <h2>Disease Network Database</h2>
-          <div className="analysis-subtitle">Structured access to released node, edge, evidence, and prediction-result tables in the curated disease network atlas.</div>
+          <div className="analysis-subtitle">Browse released nodes, edges, evidence, and prediction tables.</div>
         </div>
         <div className="toolbar">
           <button className="btn-quiet" onClick={onExportNodes}>Export Nodes</button>
@@ -411,6 +478,13 @@ export default function DatabasePage({
         </div>
       </div>
 
+      <SectionToggle
+        collapsed={collapsedSections.queryDecks}
+        onToggle={() => setCollapsedSections((prev) => ({ ...prev, queryDecks: !prev.queryDecks }))}
+        label="search filters"
+      />
+      {!collapsedSections.queryDecks ? (
+        <>
       <section className="card db-query-deck">
         <div className="db-query-grid">
           <div className="db-query-block">
@@ -592,14 +666,30 @@ export default function DatabasePage({
           </div>
         </div>
       </section>
+        </>
+      ) : null}
 
       <section className="card panel-pad db-research-panel">
         <div className="db-panel-head">
           <div>
             <h3>Disease Network Result Overview</h3>
-          <div className="db-panel-subtitle">Release statistics, source-table inventory, and structured result summaries for the current disease network atlas version.</div>
+          <div className="db-panel-subtitle">Release statistics, source tables, and core result summaries.</div>
           </div>
         </div>
+        <div className="db-ai-strip">
+          <span className="ai-brand-chip">7 deep models</span>
+          {dtiModelCoverage[0] ? <span className="ai-brand-chip">top {dtiModelCoverage[0].model}</span> : null}
+          {dtiModelCoverage[0]?.avg_score != null ? <span className="ai-brand-chip">avg {dtiModelCoverage[0].avg_score}</span> : null}
+          {dtiTopPairs[0] ? <span className="ai-brand-chip">{dtiTopPairs[0].pair_label}</span> : null}
+          {dtiTopPatterns[0] ? <span className="ai-brand-chip">{dtiTopPatterns[0].pattern_label}</span> : null}
+        </div>
+        <SectionToggle
+          collapsed={collapsedSections.releaseOverview}
+          onToggle={() => setCollapsedSections((prev) => ({ ...prev, releaseOverview: !prev.releaseOverview }))}
+          label="release overview"
+        />
+        {!collapsedSections.releaseOverview ? (
+          <>
         <div className="db-research-grid">
           <div className="result-table-wrap">
             <table className="result-table compact">
@@ -671,7 +761,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card target-module-card">
               <div className="dti-heatmap-head">
                 <strong>Disease-Context Evidence Tables</strong>
-                <span>The curated ncRNA-drug layer is retained as a disease-context evidence module alongside the prediction workflow. The tables below focus on how that evidence supports disease-centered interpretation.</span>
+                <span>Curated evidence summaries aligned to disease-centered interpretation.</span>
               </div>
               <div className="layer-legend-strip">
                 <span className="layer-legend-pill is-known-only">
@@ -687,10 +777,15 @@ export default function DatabasePage({
                   <em>Shared drugs expose overlap between both layers</em>
                 </span>
               </div>
+              <SectionToggle
+                collapsed={collapsedSections.evidenceLayer}
+                onToggle={() => setCollapsedSections((prev) => ({ ...prev, evidenceLayer: !prev.evidenceLayer }))}
+                label="disease-context evidence"
+              />
             </div>
           </div>
         ) : null}
-        {ncrnaOverview ? (
+        {ncrnaOverview && !collapsedSections.evidenceLayer ? (
           <div className="db-research-grid db-stack-gap">
             <div className="result-table-wrap target-module-table">
               <table className="result-table compact">
@@ -766,7 +861,7 @@ export default function DatabasePage({
             </div>
           </div>
         ) : null}
-        {ncrnaOverview ? (
+        {ncrnaOverview && !collapsedSections.evidenceLayer ? (
           <div className="db-research-grid db-stack-gap">
             <div className="result-table-wrap">
               <table className="result-table compact">
@@ -815,7 +910,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>TTD Therapeutic Target Validation</strong>
-                <span>Therapeutic Target Database rows provide external target-drug-disease and mode-of-action support for interpreting released disease-network results.</span>
+                <span>External therapeutic-target validation aligned to released disease-network results.</span>
               </div>
               <div className="layer-legend-strip">
                 <span className="layer-legend-pill is-known-only">
@@ -831,7 +926,14 @@ export default function DatabasePage({
                   <em>TTD-supported drugs, targets, and retained rows</em>
                 </span>
               </div>
+              <SectionToggle
+                collapsed={collapsedSections.validationLayer}
+                onToggle={() => setCollapsedSections((prev) => ({ ...prev, validationLayer: !prev.validationLayer }))}
+                label="TTD validation"
+              />
             </div>
+            {!collapsedSections.validationLayer ? (
+            <>
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>{ttdOverview.ttd_targets}</strong>
@@ -932,9 +1034,11 @@ export default function DatabasePage({
                 </tbody>
               </table>
             </div>
+            </>
+            ) : null}
           </div>
         ) : null}
-        {ttdOverview ? (
+        {ttdOverview && !collapsedSections.validationLayer ? (
           <div className="db-research-grid db-stack-gap">
             <div className="result-table-wrap">
               <table className="result-table compact">
@@ -998,7 +1102,7 @@ export default function DatabasePage({
             </div>
           </div>
         ) : null}
-        {ttdSupportedOverview ? (
+        {ttdSupportedOverview && !collapsedSections.validationLayer ? (
           <div className="db-research-grid db-stack-gap">
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
@@ -1083,7 +1187,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>Therapeutic Target Module</strong>
-                <span>Target-centered result browsing aligned with therapeutic target databases: each row keeps the released disease-network context while surfacing the dominant drug, disease, and TTD/MOA support around the same target.</span>
+                <span>Target- and disease-centered object browsing for the released network.</span>
               </div>
               <div className="result-summary-strip">
                 <span className="result-summary-pill">
@@ -1103,7 +1207,14 @@ export default function DatabasePage({
                   <em>Leading MOA</em>
                 </span>
               </div>
+              <SectionToggle
+                collapsed={collapsedSections.objectLayer}
+                onToggle={() => setCollapsedSections((prev) => ({ ...prev, objectLayer: !prev.objectLayer }))}
+                label="object modules"
+              />
             </div>
+            {!collapsedSections.objectLayer ? (
+            <>
             <div className="result-table-wrap">
               <table className="result-table">
                 <thead>
@@ -1156,6 +1267,13 @@ export default function DatabasePage({
                     <em>Leading MOA</em>
                   </span>
                 </div>
+                <SectionToggle
+                  collapsed={collapsedSections.targetDetail}
+                  onToggle={() => setCollapsedSections((prev) => ({ ...prev, targetDetail: !prev.targetDetail }))}
+                  label="target details"
+                />
+                {!collapsedSections.targetDetail ? (
+                <>
                 <div className="comparison-grid target-detail-grid">
                   <div className="comparison-card target-detail-panel">
                     <div className="annot-title">Top Disease Context</div>
@@ -1201,11 +1319,15 @@ export default function DatabasePage({
                     </tbody>
                   </table>
                 </div>
+                </>
+                ) : null}
               </div>
+            ) : null}
+            </>
             ) : null}
           </div>
         ) : null}
-        {ncrnaLinkedOverview ? (
+        {ncrnaLinkedOverview && !collapsedSections.evidenceLayer ? (
           <div className="db-research-grid db-stack-gap">
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
@@ -1308,7 +1430,7 @@ export default function DatabasePage({
             </div>
           </div>
         ) : null}
-        {ncrnaLinkedOverview ? (
+        {ncrnaLinkedOverview && !collapsedSections.evidenceLayer ? (
           <div className="db-research-grid db-stack-gap">
             <div className="result-table-wrap">
               <table className="result-table">
@@ -1342,7 +1464,20 @@ export default function DatabasePage({
             </div>
           </div>
         ) : null}
-        <div className="db-research-grid db-stack-gap">
+        <div className="db-research-grid db-stack-gap" ref={algorithmsSectionRef}>
+          <div className="dti-heatmap-card">
+            <div className="dti-heatmap-head">
+              <strong>Released Analytics Layer</strong>
+              <span>Method support, seven-model consistency, TTD overlap, and released disease-linked audit.</span>
+            </div>
+            <SectionToggle
+              collapsed={collapsedSections.analyticsLayer}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, analyticsLayer: !prev.analyticsLayer }))}
+              label="analytics"
+            />
+          </div>
+          {!collapsedSections.analyticsLayer ? (
+          <div className="db-stack-gap">
           <div className="result-table-wrap">
             <table className="result-table">
               <thead>
@@ -1419,7 +1554,6 @@ export default function DatabasePage({
               ))}
             </div>
           </div>
-        </div>
         <div className="db-research-grid db-stack-gap">
           <div className="result-table-wrap">
             <table className="result-table">
@@ -1678,8 +1812,22 @@ export default function DatabasePage({
               </tbody>
             </table>
           </div>
+          </div>
+          </div>
+          ) : null}
         </div>
         <div className="db-research-grid db-stack-gap">
+          <div className="dti-heatmap-card">
+            <div className="dti-heatmap-head">
+              <strong>Released Summary Tables</strong>
+              <span>Disease, drug, target, validation, and representative released summaries.</span>
+            </div>
+            <SectionToggle
+              collapsed={collapsedSections.summaryLayer}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, summaryLayer: !prev.summaryLayer }))}
+              label="summary tables"
+            />
+          </div>
           <div className="result-table-wrap">
             <table className="result-table">
               <thead>
@@ -1722,7 +1870,7 @@ export default function DatabasePage({
             </table>
           </div>
         </div>
-        {diseaseCentricOverview ? (
+        {diseaseCentricOverview && !collapsedSections.objectLayer ? (
           <div className="db-research-grid db-stack-gap">
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
@@ -1800,6 +1948,13 @@ export default function DatabasePage({
                     <em>Best vote support</em>
                   </span>
                 </div>
+                <SectionToggle
+                  collapsed={collapsedSections.diseaseDetail}
+                  onToggle={() => setCollapsedSections((prev) => ({ ...prev, diseaseDetail: !prev.diseaseDetail }))}
+                  label="disease details"
+                />
+                {!collapsedSections.diseaseDetail ? (
+                <>
                 <div className="comparison-grid target-detail-grid">
                   <div className="comparison-card target-detail-panel">
                     <div className="annot-title">Top Drug Context</div>
@@ -1845,6 +2000,8 @@ export default function DatabasePage({
                     </tbody>
                   </table>
                 </div>
+                </>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -2393,7 +2550,14 @@ export default function DatabasePage({
                 <em>Leading ncRNA across approved-linked rows</em>
               </span>
             </div>
+            <SectionToggle
+              collapsed={collapsedSections.priorityLayer}
+              onToggle={() => setCollapsedSections((prev) => ({ ...prev, priorityLayer: !prev.priorityLayer }))}
+              label="priority tables"
+            />
           </div>
+          {!collapsedSections.priorityLayer ? (
+          <>
           <div className="result-table-wrap">
             <table className="result-table">
               <thead>
@@ -2454,7 +2618,11 @@ export default function DatabasePage({
               </tbody>
             </table>
           </div>
+          </>
+          ) : null}
         </div>
+          </>
+          ) : null}
       </section>
 
       <div className="db-summary">
@@ -2485,22 +2653,31 @@ export default function DatabasePage({
             </div>
             <div className="muted">page {nodesState.page} · size {nodesState.page_size} · total {nodesState.total}</div>
           </div>
-          <div className="list">
-            {nodesState.items.length ? nodesState.items.map((n) => (
-              <div className="item db-item" key={n.id} onClick={() => onJumpToNode(n.id)}>
-                <div className="db-item-top">
-                  <div className="item-title">{n.display_name || n.label}</div>
-                  <span className={`db-badge type-${String(n.node_type || "").toLowerCase()}`}>{n.node_type}</span>
-                </div>
-                <div className="item-meta">{n.id}</div>
+          <SectionToggle
+            collapsed={collapsedSections.nodeLayer}
+            onToggle={() => setCollapsedSections((prev) => ({ ...prev, nodeLayer: !prev.nodeLayer }))}
+            label="node table"
+          />
+          {!collapsedSections.nodeLayer ? (
+            <>
+              <div className="list">
+                {nodesState.items.length ? nodesState.items.map((n) => (
+                  <div className="item db-item" key={n.id} onClick={() => onJumpToNode(n.id)}>
+                    <div className="db-item-top">
+                      <div className="item-title">{n.display_name || n.label}</div>
+                      <span className={`db-badge type-${String(n.node_type || "").toLowerCase()}`}>{n.node_type}</span>
+                    </div>
+                    <div className="item-meta">{n.id}</div>
+                  </div>
+                )) : <div className="empty-state">No node records matched the current filters.</div>}
               </div>
-            )) : <div className="empty-state">No node records matched the current filters.</div>}
-          </div>
-          <div className="pager">
-            <button onClick={() => onNodePage(-1)} disabled={!canNodePrev}>Previous</button>
-            <span className="pager-status">Page {nodesState.page}</span>
-            <button onClick={() => onNodePage(1)} disabled={!canNodeNext}>Next Page</button>
-          </div>
+              <div className="pager">
+                <button onClick={() => onNodePage(-1)} disabled={!canNodePrev}>Previous</button>
+                <span className="pager-status">Page {nodesState.page}</span>
+                <button onClick={() => onNodePage(1)} disabled={!canNodeNext}>Next Page</button>
+              </div>
+            </>
+          ) : null}
         </section>
 
         <section className="card panel-pad db-panel">
@@ -2511,88 +2688,110 @@ export default function DatabasePage({
             </div>
             <div className="muted">page {edgesState.page} · size {edgesState.page_size} · total {edgesState.total}</div>
           </div>
-          <div className="result-table-wrap edge-result-wrap">
-            {edgesState.items.length ? (
-              <table className="result-table edge-result-table">
-                <thead>
-                  <tr>
-                    <th>Source</th>
-                    <th>Target</th>
-                    <th>Category</th>
-                    <th>Evidence</th>
-                    <th>Score</th>
-                    <th>Remark</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {edgesState.items.map((e, idx) => (
-                    <tr key={`${e.source}-${e.target}-${e.edge_category}-${idx}`} onClick={() => onJumpToNode(e.source)}>
-                      <td>{e.source_label || e.source}</td>
-                      <td>{e.target_label || e.target}</td>
-                      <td><span className="db-meta-pill">{e.edge_category}</span></td>
-                      <td><span className={`db-badge ${edgeTypeClass(e.edge_type)}`}>{e.edge_type}</span></td>
-                      <td>{e.support_score ?? "NA"}</td>
-                      <td>{e.remark || "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : <div className="empty-state">No relationship records matched the current filters.</div>}
-          </div>
-          <div className="pager">
-            <button onClick={() => onEdgePage(-1)} disabled={!canEdgePrev}>Previous</button>
-            <span className="pager-status">Page {edgesState.page}</span>
-            <button onClick={() => onEdgePage(1)} disabled={!canEdgeNext}>Next Page</button>
-          </div>
+          <SectionToggle
+            collapsed={collapsedSections.edgeLayer}
+            onToggle={() => setCollapsedSections((prev) => ({ ...prev, edgeLayer: !prev.edgeLayer }))}
+            label="relationship table"
+          />
+          {!collapsedSections.edgeLayer ? (
+            <>
+              <div className="result-table-wrap edge-result-wrap">
+                {edgesState.items.length ? (
+                  <table className="result-table edge-result-table">
+                    <thead>
+                      <tr>
+                        <th>Source</th>
+                        <th>Target</th>
+                        <th>Category</th>
+                        <th>Evidence</th>
+                        <th>Score</th>
+                        <th>Remark</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {edgesState.items.map((e, idx) => (
+                        <tr key={`${e.source}-${e.target}-${e.edge_category}-${idx}`} onClick={() => onJumpToNode(e.source)}>
+                          <td>{e.source_label || e.source}</td>
+                          <td>{e.target_label || e.target}</td>
+                          <td><span className="db-meta-pill">{e.edge_category}</span></td>
+                          <td><span className={`db-badge ${edgeTypeClass(e.edge_type)}`}>{e.edge_type}</span></td>
+                          <td>{e.support_score ?? "NA"}</td>
+                          <td>{e.remark || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : <div className="empty-state">No relationship records matched the current filters.</div>}
+              </div>
+              <div className="pager">
+                <button onClick={() => onEdgePage(-1)} disabled={!canEdgePrev}>Previous</button>
+                <span className="pager-status">Page {edgesState.page}</span>
+                <button onClick={() => onEdgePage(1)} disabled={!canEdgeNext}>Next Page</button>
+              </div>
+            </>
+          ) : null}
         </section>
       </div>
 
-      <section className="card panel-pad db-panel db-stack-gap">
+      <section className="card panel-pad db-panel db-stack-gap" ref={nodesSectionRef}>
         <div className="db-panel-head">
           <div>
             <h3>Prediction Result Table</h3>
-            <div className="db-panel-subtitle">Drug-target-disease prediction results with identifiers, ranks, vote counts, and method-specific evidence fields.</div>
+            <div className="db-panel-subtitle">Disease-centered prediction rows with released-method evidence and per-model AI score traces.</div>
           </div>
           <div className="db-panel-actions">
             <div className="muted">page {predictionState.page} · size {predictionState.page_size} · total {predictionState.total}</div>
             <button className="btn-quiet" onClick={onExportPredictions}>Export Prediction Table</button>
           </div>
         </div>
-        <div className="result-summary-strip db-result-summary">
-          <span className="result-summary-pill">
-            <strong>{predictionState.total}</strong>
-            <em>Released prediction records</em>
-          </span>
-          {predictionSummary ? (
-            <span className="result-summary-pill">
-              <strong>{predictionSummary.txgnn_pass}/{predictionSummary.enr_pass}/{predictionSummary.rwr_pass}</strong>
-              <em>TXGNN / ENR / RWR support counts</em>
-            </span>
-          ) : null}
-          {topDiseaseShare != null ? (
-            <span className="result-summary-pill">
-              <strong>{topDiseaseShare}%</strong>
-              <em>Top disease share</em>
-            </span>
-          ) : null}
-          {representativeDrugCount ? (
-            <span className="result-summary-pill">
-              <strong>{representativeDrugCount}</strong>
-              <em>Selected clinical drugs</em>
-            </span>
-          ) : null}
-          {highConsensusCases.length ? (
-            <span className="result-summary-pill">
-              <strong>{highConsensusCases.length}</strong>
-              <em>High-consensus results</em>
-            </span>
-          ) : null}
-        </div>
-        <div className="toolbar toolbar-wrap">
-          <button className="btn-quiet" onClick={onExportConsensusResults}>Export Consensus-only Results</button>
-          <button className="btn-quiet" onClick={onExportApprovedResults}>Export Approved-related Results</button>
-          <button className="btn-quiet" onClick={onExportDiseaseResults}>Export Disease Result Table</button>
-        </div>
+        <SectionToggle
+          collapsed={collapsedSections.predictionTools}
+          onToggle={() => setCollapsedSections((prev) => ({ ...prev, predictionTools: !prev.predictionTools }))}
+          label="prediction tools"
+        />
+        {!collapsedSections.predictionTools ? (
+          <>
+            <div className="ai-inline-banner">
+              <strong>AI score layer</strong>
+              <span>Each retained drug-target pair can carry raw scores from GraphDTA, DTIAM, DrugBAN, DeepPurpose, DeepDTAGen, MolTrans, and Conplex.</span>
+            </div>
+            <div className="result-summary-strip db-result-summary">
+              <span className="result-summary-pill">
+                <strong>{predictionState.total}</strong>
+                <em>Released prediction records</em>
+              </span>
+              {predictionSummary ? (
+                <span className="result-summary-pill">
+                  <strong>{predictionSummary.txgnn_pass}/{predictionSummary.enr_pass}/{predictionSummary.rwr_pass}</strong>
+                  <em>TXGNN / ENR / RWR support counts</em>
+                </span>
+              ) : null}
+              {topDiseaseShare != null ? (
+                <span className="result-summary-pill">
+                  <strong>{topDiseaseShare}%</strong>
+                  <em>Top disease share</em>
+                </span>
+              ) : null}
+              {representativeDrugCount ? (
+                <span className="result-summary-pill">
+                  <strong>{representativeDrugCount}</strong>
+                  <em>Selected clinical drugs</em>
+                </span>
+              ) : null}
+              {highConsensusCases.length ? (
+                <span className="result-summary-pill">
+                  <strong>{highConsensusCases.length}</strong>
+                  <em>High-consensus results</em>
+                </span>
+              ) : null}
+            </div>
+            <div className="toolbar toolbar-wrap">
+              <button className="btn-quiet" onClick={onExportConsensusResults}>Export Consensus-only Results</button>
+              <button className="btn-quiet" onClick={onExportApprovedResults}>Export Approved-related Results</button>
+              <button className="btn-quiet" onClick={onExportDiseaseResults}>Export Disease Result Table</button>
+            </div>
+          </>
+        ) : null}
         <div className="result-table-wrap edge-result-wrap">
           {predictionState.items.length ? (
             <table className="result-table edge-result-table prediction-result-table">
@@ -2609,7 +2808,7 @@ export default function DatabasePage({
                     <th><button className="table-sort-btn" onClick={() => togglePredictionSort("n_algo_pass")}>Retained methods {sortIcon("n_algo_pass")}</button></th>
                     <th><button className="table-sort-btn" onClick={() => togglePredictionSort("Total_Votes_Optional7")}>7-model votes {sortIcon("Total_Votes_Optional7")}</button></th>
                   <th>Core evidence</th>
-                  <th>7 DTI models</th>
+                  <th>AI models</th>
                   <th><button className="table-sort-btn" onClick={() => togglePredictionSort("TXGNN_score")}>TXGNN score {sortIcon("TXGNN_score")}</button></th>
                   <th><button className="table-sort-btn" onClick={() => togglePredictionSort("ENR_FDR")}>ENR FDR {sortIcon("ENR_FDR")}</button></th>
                   <th>Support pattern</th>
@@ -2642,7 +2841,7 @@ export default function DatabasePage({
                     </td>
                     <td>
                       <div className="algo-chip-row has-hover-panel">
-                        {renderSevenModelBadges(row)}
+                        {renderSevenModelAiSummary(row)}
                         {renderSevenModelHoverPanel(row)}
                       </div>
                     </td>
@@ -2736,6 +2935,7 @@ export default function DatabasePage({
                 </div>
               </div>
               <div className="prediction-support-pattern">Supporting DTI models: {(selectedPrediction.seven_model_supporting_models || []).join(", ") || "No per-model support list is available for this record"}</div>
+              <div className="prediction-ai-title">Seven-model AI score matrix</div>
               <div className="algo-evidence-grid compact">
                 <div className={`algo-evidence-card ${passFlag(selectedPrediction.TXGNN_pass) ? "is-on" : "is-off"}`}>
                   <div className="algo-evidence-head"><span>TXGNN</span><strong>{passFlag(selectedPrediction.TXGNN_pass) ? "Pass" : "Not retained"}</strong></div>
@@ -2839,7 +3039,7 @@ export default function DatabasePage({
         </div>
       </section>
 
-      <section className="card panel-pad db-panel db-stack-gap">
+      <section className="card panel-pad db-panel db-stack-gap" ref={predictionsSectionRef}>
         <div className="db-panel-head">
           <div>
             <h3>ncRNA-Drug Relationship Table</h3>

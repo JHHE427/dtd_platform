@@ -2258,6 +2258,7 @@ def meta_research_summary() -> dict[str, Any]:
                 SELECT
                     Target_ID AS target_id,
                     {src_target_label_expr} AS target_label,
+                    MAX(COALESCE(gene_name, '')) AS gene_name,
                     COUNT(*) AS row_count
                 FROM src_highconfidence_expand_vote4_top50_tx07
                 GROUP BY Target_ID, target_label
@@ -2268,6 +2269,73 @@ def meta_research_summary() -> dict[str, Any]:
         )
         for item in target_distribution:
             item["share_pct"] = round((item["row_count"] / drug_total_rows) * 100, 2) if drug_total_rows else 0.0
+
+        released_disease_top_rows = to_dicts(
+            conn.execute(
+                f"""
+                WITH ranked AS (
+                    SELECT
+                        Drug_ID AS drug_id,
+                        {src_drug_label_expr} AS drug_label,
+                        Target_ID AS target_id,
+                        {src_target_label_expr} AS target_label,
+                        COALESCE(gene_name, '') AS gene_name,
+                        {src_disease_id_expr} AS disease_id,
+                        Ensemble_Disease_Name AS disease_label,
+                        CAST(COALESCE(n_algo_pass, 0) AS INTEGER) AS n_algo_pass,
+                        CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) AS Total_Votes_Optional7,
+                        ROUND(CAST(COALESCE(TXGNN_score, 0) AS REAL), 4) AS TXGNN_score,
+                        CASE
+                            WHEN ENR_FDR IS NULL OR TRIM(CAST(ENR_FDR AS TEXT)) = '' THEN NULL
+                            ELSE CAST(ENR_FDR AS REAL)
+                        END AS ENR_FDR,
+                        COALESCE(NULLIF(TRIM(support_pattern), ''), 'No algorithm support') AS support_pattern,
+                        ROW_NUMBER() OVER (
+                            ORDER BY
+                                CAST(COALESCE(n_algo_pass, 0) AS INTEGER) DESC,
+                                CAST(COALESCE(Total_Votes_Optional7, 0) AS INTEGER) DESC,
+                                CAST(COALESCE(TXGNN_score, -1) AS REAL) DESC,
+                                CAST(COALESCE(ENR_FDR, 999999) AS REAL) ASC,
+                                Drug_ID,
+                                Target_ID,
+                                Ensemble_Disease_Name
+                        ) AS result_rank
+                    FROM src_highconfidence_expand_vote4_top50_tx07
+                )
+                SELECT
+                    result_rank,
+                    drug_id,
+                    drug_label,
+                    target_id,
+                    target_label,
+                    gene_name,
+                    disease_id,
+                    disease_label,
+                    n_algo_pass,
+                    Total_Votes_Optional7,
+                    TXGNN_score,
+                    ENR_FDR,
+                    support_pattern
+                FROM ranked
+                ORDER BY result_rank
+                LIMIT 12
+                """
+            ).fetchall()
+        )
+        released_top_diseases = to_dicts(
+            conn.execute(
+                f"""
+                SELECT
+                    {src_disease_id_expr} AS disease_id,
+                    Ensemble_Disease_Name AS disease_label,
+                    COUNT(*) AS row_count
+                FROM src_highconfidence_expand_vote4_top50_tx07
+                GROUP BY disease_id, disease_label
+                ORDER BY row_count DESC, disease_label
+                LIMIT 10
+                """
+            ).fetchall()
+        )
 
         representative_rows: list[dict[str, Any]] = []
         rep_ids = [item[0] for item in REPRESENTATIVE_DRUGS]
@@ -2724,6 +2792,22 @@ def meta_research_summary() -> dict[str, Any]:
             released_disease_summary["additional_released_pairs"] = int(released_disease_summary.get("released_pairs") or 0)
             released_disease_summary["released_rows"] = int(pred["total_rows"] or 0)
             released_disease_summary["released_pairs"] = int(pred["pairs"] or 0)
+            released_disease_summary["released_unique_drugs"] = int(pred["drugs"] or 0)
+            released_disease_summary["released_unique_targets"] = int(pred["targets"] or 0)
+            released_disease_summary["released_unique_diseases"] = int(pred["diseases"] or 0)
+            released_disease_summary["top_support_pattern"] = (
+                support_pattern_distribution[0]["support_pattern_label"] if support_pattern_distribution else "NA"
+            )
+            released_disease_summary["vote_distribution"] = {
+                str(item.get("total_votes")): int(item.get("count") or 0) for item in vote_distribution
+            }
+            released_disease_summary["algo_distribution"] = {
+                str(item.get("algorithm_support")): int(item.get("count") or 0) for item in algo_distribution
+            }
+            released_disease_summary["top_rows"] = released_disease_top_rows
+            released_disease_summary["top_targets"] = target_distribution
+            released_disease_summary["top_drugs"] = drug_distribution
+            released_disease_summary["top_diseases"] = released_top_diseases
         if released_dti_ttd_summary:
             released_dti_ttd_summary["released_rows"] = int(pred["total_rows"] or 0)
             released_dti_ttd_summary["ttd_supported_released_rows"] = int(
