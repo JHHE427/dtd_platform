@@ -3434,8 +3434,8 @@ button.primary:hover,
 .graph-wrap {
   position: relative;
   flex: 1;
-  min-height: 300px;
-  height: 100%;
+  min-height: 480px;
+  height: clamp(480px, calc(100vh - 220px), 800px);
   display: flex;
 }
 
@@ -6411,8 +6411,9 @@ ul {
 .graph-wrap {
   position: relative;
   flex: 1;
-  min-height: calc(100vh - 280px);
-  height: 100%;
+  height: calc(100vh - 220px);
+  min-height: 480px;
+  max-height: 800px;
 }
 
 .graph-canvas-shell {
