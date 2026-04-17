@@ -749,8 +749,8 @@ export default function AnalysisPage({
             <label>
               Network Mode
               <select value={graphMode} onChange={(e) => onGraphModeChange(e.target.value)}>
-                <option value="full">full (default)</option>
-                <option value="core">core</option>
+                <option value="core">core (default)</option>
+                <option value="full">full (heavy)</option>
               </select>
             </label>
             <label>

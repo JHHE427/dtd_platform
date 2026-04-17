@@ -564,6 +564,7 @@ export default function GraphCanvas({
 
           ctx.save();
           ctx.globalAlpha = focusRole === "self" ? 1 : focusRole === "neighbor" ? 0.94 : focusId ? 0.14 : 1;
+          
           if (simplifiedNode) {
             ctx.beginPath();
             ctx.arc(node.x, node.y, Math.max(2.4, r * 0.92), 0, 2 * Math.PI);
@@ -572,119 +573,48 @@ export default function GraphCanvas({
             if (node.node_type === "Disease") {
               ctx.beginPath();
               ctx.arc(node.x, node.y, Math.max(3.2, r + 1.4), 0, 2 * Math.PI);
-              ctx.strokeStyle = "rgba(255,255,255,0.28)";
+              ctx.strokeStyle = "rgba(255,255,255,0.4)";
               ctx.lineWidth = 1;
               ctx.stroke();
             }
             ctx.restore();
             return;
           }
-          ctx.beginPath();
-          ctx.ellipse(node.x, node.y + r * 1.02, r * 1.75, Math.max(2.4, r * 0.62), 0, 0, 2 * Math.PI);
-          ctx.fillStyle = `rgba(15, 23, 42, ${pedestalAlpha})`;
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, r + 10.2, 0, 2 * Math.PI);
-          ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${haloAlpha * 0.72})`;
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, r + 6.8, 0, 2 * Math.PI);
-          ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${haloAlpha})`;
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, r + 3.4, 0, 2 * Math.PI);
-          ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${rimAlpha})`;
-          ctx.lineWidth = 1.8;
-          ctx.stroke();
-          if (node.node_type === "Disease") {
+
+          const isActive = isHover || isSelected || node.id === centerId;
+
+          // Halo for active nodes
+          if (isActive) {
             ctx.beginPath();
-            ctx.arc(node.x, node.y, r + 4.8, 0, 2 * Math.PI);
-            ctx.strokeStyle = "rgba(239, 68, 68, 0.18)";
-            ctx.lineWidth = 2.1;
-            ctx.stroke();
-          }
-          if (node.node_type === "ncRNA") {
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, r + 4.6, 0, 2 * Math.PI);
-            ctx.strokeStyle = "rgba(20, 184, 166, 0.22)";
-            ctx.lineWidth = 2.1;
-            ctx.stroke();
-          }
-          if (isSelected) {
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, r + 7.5, 0, 2 * Math.PI);
-            ctx.fillStyle = "rgba(37,99,235,0.12)";
+            ctx.arc(node.x, node.y, r + (node.id === centerId ? 6 : 4), 0, 2 * Math.PI);
+            ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, 0.22)`;
             ctx.fill();
-          }
-          if (node.id === centerId) {
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, r + 9.6, 0, 2 * Math.PI);
-            ctx.strokeStyle = "rgba(37, 99, 235, 0.3)";
-            ctx.lineWidth = 2.3;
-            ctx.stroke();
           }
 
-          const useShadow = isHover || isSelected || node.id === centerId;
-          if (useShadow) {
-            ctx.shadowColor = isHover || isSelected
-              ? "rgba(15,23,42,0.34)"
-              : rgbaFromHex(baseNodeColor, 0.28);
-            ctx.shadowBlur = isHover || isSelected ? 14 : 11;
-            ctx.shadowOffsetY = 2;
-          }
+          // Main body (Clean modern flat look, extremely fast)
           ctx.beginPath();
           ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
-          if (performanceMode && !isHover && !isSelected && node.id !== centerId) {
-            ctx.fillStyle = baseNodeColor;
-          } else {
-            const gradient = ctx.createRadialGradient(node.x - r * 0.32, node.y - r * 0.34, Math.max(0.5, r * 0.18), node.x, node.y, r);
-            gradient.addColorStop(0, mixColor(baseNodeColor, 0.82));
-            gradient.addColorStop(0.22, mixColor(baseNodeColor, 0.62));
-            gradient.addColorStop(0.5, softNodeColor);
-            gradient.addColorStop(0.82, baseNodeColor);
-            gradient.addColorStop(1, rgbaFromHex(baseNodeColor, 0.98));
-            ctx.fillStyle = gradient;
-          }
+          ctx.fillStyle = baseNodeColor;
           ctx.fill();
-          if (!performanceMode || isHover || isSelected || node.id === centerId) {
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, Math.max(1.6, r * 0.72), 0, 2 * Math.PI);
-            const innerGradient = ctx.createRadialGradient(
-              node.x - r * 0.14,
-              node.y - r * 0.18,
-              Math.max(0.4, r * 0.08),
-              node.x,
-              node.y,
-              Math.max(1.6, r * 0.72)
-            );
-            innerGradient.addColorStop(0, `rgba(255,255,255,${0.34 + innerGlowAlpha})`);
-            innerGradient.addColorStop(1, "rgba(255,255,255,0)");
-            ctx.fillStyle = innerGradient;
-            ctx.fill();
-          }
-          if (!performanceMode || isHover || isSelected || node.id === centerId) {
-            ctx.beginPath();
-            ctx.arc(node.x - r * 0.26, node.y - r * 0.32, Math.max(1.6, r * 0.34), 0, 2 * Math.PI);
-            ctx.fillStyle = "rgba(255,255,255,0.42)";
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(node.x + r * 0.18, node.y + r * 0.2, Math.max(1.4, r * 0.34), Math.max(1.1, r * 0.18), Math.PI / 6, 0, 2 * Math.PI);
-            ctx.fillStyle = "rgba(255,255,255,0.12)";
-            ctx.fill();
-          }
-          ctx.lineWidth = isHover || isSelected || isHit ? 2 : 1.2;
-          ctx.strokeStyle = isHover || isSelected || isHit ? "#111827" : "#ffffff";
+
+          // Stroke
+          ctx.lineWidth = isActive || isHit ? 2 : 1;
+          ctx.strokeStyle = isActive || isHit ? "#111827" : "#ffffff";
           ctx.stroke();
-          if (!performanceMode || isHover || isSelected || node.id === centerId) {
+
+          // Type marks
+          if (node.node_type === "Disease") {
             ctx.beginPath();
-            ctx.arc(node.x, node.y, Math.max(1.2, r - 1.7), 0, 2 * Math.PI);
-            ctx.strokeStyle = `rgba(255,255,255,${node.id === centerId ? 0.42 : 0.18})`;
-            ctx.lineWidth = 0.9;
+            ctx.arc(node.x, node.y, r + 2.5, 0, 2 * Math.PI);
+            ctx.strokeStyle = "rgba(239, 68, 68, 0.4)";
+            ctx.lineWidth = 1.5;
             ctx.stroke();
-          }
-          if (useShadow) {
-            ctx.shadowBlur = 0;
-            ctx.shadowOffsetY = 0;
+          } else if (node.node_type === "ncRNA") {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, r + 2.5, 0, 2 * Math.PI);
+            ctx.strokeStyle = "rgba(20, 184, 166, 0.4)";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
           }
           if (evTotal > 0 && (!performanceMode || isHover || isSelected || node.id === centerId)) {
             let start = -Math.PI / 2;
