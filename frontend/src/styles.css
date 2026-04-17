@@ -6409,9 +6409,10 @@ ul {
 }
 
 .graph-wrap {
+  position: relative;
   flex: 1;
   min-height: calc(100vh - 280px);
-  height: auto;
+  height: 100%;
 }
 
 .graph-canvas-shell {
