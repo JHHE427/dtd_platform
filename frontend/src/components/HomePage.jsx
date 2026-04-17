@@ -82,6 +82,14 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     methodConsistencyPanel: true,
     screeningMapPanel: true,
     resultSummaryPanel: true,
+    workflowPanel: true,
+    algoSummaryPanel: true,
+    methodMatrixPanel: true,
+    sourceDatasetPanel: true,
+    approvedValidationPanel: true,
+    diseaseDistributionPanel: true,
+    selectedClinicalPanel: true,
+    pipelineShrinkagePanel: true,
   });
   const toggleTableSection = React.useCallback((key) => {
     setCollapsedTables((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -368,6 +376,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       body: "Chemical structures, SMILES, target sequences, ontology terms, summaries, and evidence context are presented within structured network records."
     }
   ];
+  const releasedPredictionTotal = Number(predictionSummary?.total_rows || predictionResultTotal || 0);
+  const releasedDiseaseLinkedTotal = Number(releasedDiseaseSummary?.released_rows || 0);
+  const consensusTotal = Number(supportTierOverview?.high_consensus_rows || highConsensusCases.length || 0);
+  const approvedResultTotal = Number(approvedValidation?.retained_final || approvedDrugDeepResults.length || 0);
+  const coveredDiseases = Number(researchSummary?.overview?.diseases || nodeMap.Disease || 0);
 
   return (
     <section className="page is-active home-page">
@@ -459,6 +472,34 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="stat-value">{edgeTotal}</div>
           </article>
         </div>
+        <section className="home-result-scale-card">
+          <div className="home-result-scale-head">
+            <strong>Release Result Scale</strong>
+            <span>Current page tables are top-list previews. Full records are available in Database export.</span>
+          </div>
+          <div className="home-result-scale-grid">
+            <span className="result-summary-pill">
+              <strong>{releasedPredictionTotal.toLocaleString()}</strong>
+              <em>Released prediction rows</em>
+            </span>
+            <span className="result-summary-pill">
+              <strong>{releasedDiseaseLinkedTotal.toLocaleString()}</strong>
+              <em>Disease-linked released rows</em>
+            </span>
+            <span className="result-summary-pill">
+              <strong>{consensusTotal.toLocaleString()}</strong>
+              <em>High-consensus rows</em>
+            </span>
+            <span className="result-summary-pill">
+              <strong>{approvedResultTotal.toLocaleString()}</strong>
+              <em>Approved-drug retained rows</em>
+            </span>
+            <span className="result-summary-pill">
+              <strong>{coveredDiseases.toLocaleString()}</strong>
+              <em>Disease nodes covered</em>
+            </span>
+          </div>
+        </section>
         <HomeTableToggle
           collapsed={collapsedTables.heroFeaturePanel}
           onToggle={() => toggleTableSection("heroFeaturePanel")}
@@ -2061,67 +2102,81 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-pipeline-card">
             <div className="home-panel-head">
               <h3>Data Integration Workflow</h3>
-              <div className="home-panel-subtitle">Primary data sources, algorithm screening, and final atlas output</div>
+              {!collapsedTables.workflowPanel ? <div className="home-panel-subtitle">Primary data sources, algorithm screening, and final atlas output</div> : null}
             </div>
-            <div className="pipeline-flow">
-              <div className="pipeline-col">
-                <div className="pipeline-step is-source">
-                  <strong>Input Sources</strong>
-                  <span>DrugBank DTI</span>
-                  <span>DrugBank indication data</span>
-                  <span>CTD gene-disease associations</span>
-                  <span>TXGNN / ENR / RWR prediction outputs</span>
+            <HomeTableToggle
+              collapsed={collapsedTables.workflowPanel}
+              onToggle={() => toggleTableSection("workflowPanel")}
+              label="data integration workflow"
+            />
+            {!collapsedTables.workflowPanel ? (
+              <div className="pipeline-flow">
+                <div className="pipeline-col">
+                  <div className="pipeline-step is-source">
+                    <strong>Input Sources</strong>
+                    <span>DrugBank DTI</span>
+                    <span>DrugBank indication data</span>
+                    <span>CTD gene-disease associations</span>
+                    <span>TXGNN / ENR / RWR prediction outputs</span>
+                  </div>
+                </div>
+                <div className="pipeline-arrow">→</div>
+                <div className="pipeline-col">
+                  <div className="pipeline-step is-process">
+                    <strong>Processing</strong>
+                    <span>Identifier standardization</span>
+                    <span>Disease normalization and alias expansion</span>
+                    <span>Known/predicted edge integration</span>
+                    <span>Loose Target-Disease matching retention</span>
+                  </div>
+                </div>
+                <div className="pipeline-arrow">→</div>
+                <div className="pipeline-col">
+                  <div className="pipeline-step is-output">
+                    <strong>Network Output</strong>
+                    <span>{nodeMap.Drug || 0} drug nodes</span>
+                    <span>{nodeMap.Target || 0} target nodes</span>
+                    <span>{nodeMap.Disease || 0} disease nodes</span>
+                    <span>{edgeTotal} formal network edges</span>
+                  </div>
                 </div>
               </div>
-              <div className="pipeline-arrow">→</div>
-              <div className="pipeline-col">
-                <div className="pipeline-step is-process">
-                  <strong>Processing</strong>
-                  <span>Identifier standardization</span>
-                  <span>Disease normalization and alias expansion</span>
-                  <span>Known/predicted edge integration</span>
-                  <span>Loose Target-Disease matching retention</span>
-                </div>
-              </div>
-              <div className="pipeline-arrow">→</div>
-              <div className="pipeline-col">
-                <div className="pipeline-step is-output">
-                  <strong>Network Output</strong>
-                  <span>{nodeMap.Drug || 0} drug nodes</span>
-                  <span>{nodeMap.Target || 0} target nodes</span>
-                  <span>{nodeMap.Disease || 0} disease nodes</span>
-                  <span>{edgeTotal} formal network edges</span>
-                </div>
-              </div>
-            </div>
+            ) : null}
           </section>
 
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Algorithm Result Summary</h3>
-              <div className="home-panel-subtitle">Prediction-support composition retained in the current release</div>
+              {!collapsedTables.algoSummaryPanel ? <div className="home-panel-subtitle">Prediction-support composition retained in the current release</div> : null}
             </div>
-            {predictionSummary ? (
-              <div className="result-table-wrap">
-                <table className="result-table compact">
-                  <thead>
-                    <tr>
-                      <th>Metric</th>
-                      <th>Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr><td>Prediction rows</td><td>{predictionSummary.total_rows}</td></tr>
-                    <tr><td>Predicted drugs</td><td>{predictionSummary.drugs}</td></tr>
-                    <tr><td>Predicted targets</td><td>{predictionSummary.targets}</td></tr>
-                    <tr><td>Predicted diseases</td><td>{predictionSummary.diseases}</td></tr>
-                    <tr><td>TXGNN pass</td><td>{predictionSummary.txgnn_pass}</td></tr>
-                    <tr><td>ENR pass</td><td>{predictionSummary.enr_pass}</td></tr>
-                    <tr><td>RWR pass</td><td>{predictionSummary.rwr_pass}</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            ) : <div className="empty-state">Release-level research summary is not available.</div>}
+            <HomeTableToggle
+              collapsed={collapsedTables.algoSummaryPanel}
+              onToggle={() => toggleTableSection("algoSummaryPanel")}
+              label="algorithm result summary"
+            />
+            {!collapsedTables.algoSummaryPanel ? (
+              predictionSummary ? (
+                <div className="result-table-wrap">
+                  <table className="result-table compact">
+                    <thead>
+                      <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>Prediction rows</td><td>{predictionSummary.total_rows}</td></tr>
+                      <tr><td>Predicted drugs</td><td>{predictionSummary.drugs}</td></tr>
+                      <tr><td>Predicted targets</td><td>{predictionSummary.targets}</td></tr>
+                      <tr><td>Predicted diseases</td><td>{predictionSummary.diseases}</td></tr>
+                      <tr><td>TXGNN pass</td><td>{predictionSummary.txgnn_pass}</td></tr>
+                      <tr><td>ENR pass</td><td>{predictionSummary.enr_pass}</td></tr>
+                      <tr><td>RWR pass</td><td>{predictionSummary.rwr_pass}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : <div className="empty-state">Release-level research summary is not available.</div>
+            ) : null}
           </section>
         </div>
 
@@ -2129,57 +2184,71 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Method-to-Result Matrix</h3>
-            <div className="home-panel-subtitle">Primary algorithm outputs surfaced in the database tables and released result views.</div>
+            {!collapsedTables.methodMatrixPanel ? <div className="home-panel-subtitle">Primary algorithm outputs surfaced in the database tables and released result views.</div> : null}
             </div>
-            <div className="result-table-wrap">
-              <table className="result-table">
-                <thead>
-                  <tr>
-                    <th>Method</th>
-                    <th>Input basis</th>
-                    <th>Output fields</th>
-                    <th>Interpretation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {methodMatrix.map((row) => (
-                    <tr key={row.method}>
-                      <td>{row.method}</td>
-                      <td>{row.input}</td>
-                      <td>{row.output}</td>
-                      <td>{row.meaning}</td>
+            <HomeTableToggle
+              collapsed={collapsedTables.methodMatrixPanel}
+              onToggle={() => toggleTableSection("methodMatrixPanel")}
+              label="method-to-result matrix"
+            />
+            {!collapsedTables.methodMatrixPanel ? (
+              <div className="result-table-wrap">
+                <table className="result-table">
+                  <thead>
+                    <tr>
+                      <th>Method</th>
+                      <th>Input basis</th>
+                      <th>Output fields</th>
+                      <th>Interpretation</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {methodMatrix.map((row) => (
+                      <tr key={row.method}>
+                        <td>{row.method}</td>
+                        <td>{row.input}</td>
+                        <td>{row.output}</td>
+                        <td>{row.meaning}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </section>
 
           <section className="home-panel-card">
             <div className="home-panel-head">
             <h3>Source Dataset Table</h3>
-            <div className="home-panel-subtitle">Rows incorporated from major source datasets in the current release.</div>
+            {!collapsedTables.sourceDatasetPanel ? <div className="home-panel-subtitle">Rows incorporated from major source datasets in the current release.</div> : null}
             </div>
-            <div className="result-table-wrap">
-              <table className="result-table">
-                <thead>
-                  <tr>
-                    <th>Dataset</th>
-                    <th>Rows</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sourceTables.map((item) => (
-                    <tr key={item.dataset}>
-                      <td>{item.dataset}</td>
-                      <td>{item.rows}</td>
-                      <td>{item.description}</td>
+            <HomeTableToggle
+              collapsed={collapsedTables.sourceDatasetPanel}
+              onToggle={() => toggleTableSection("sourceDatasetPanel")}
+              label="source dataset table"
+            />
+            {!collapsedTables.sourceDatasetPanel ? (
+              <div className="result-table-wrap">
+                <table className="result-table">
+                  <thead>
+                    <tr>
+                      <th>Dataset</th>
+                      <th>Rows</th>
+                      <th>Description</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {sourceTables.map((item) => (
+                      <tr key={item.dataset}>
+                        <td>{item.dataset}</td>
+                        <td>{item.rows}</td>
+                        <td>{item.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </section>
 
           <section className="home-panel-card">
@@ -2221,9 +2290,15 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Approved Drug Validation</h3>
-              <div className="home-panel-subtitle">External validation summary extracted from the formal report, showing coverage, retention, and score separation between approved and non-approved drugs.</div>
+              {!collapsedTables.approvedValidationPanel ? <div className="home-panel-subtitle">External validation summary extracted from the formal report, showing coverage, retention, and score separation between approved and non-approved drugs.</div> : null}
             </div>
-            {approvedValidation ? (
+            <HomeTableToggle
+              collapsed={collapsedTables.approvedValidationPanel}
+              onToggle={() => toggleTableSection("approvedValidationPanel")}
+              label="approved drug validation"
+            />
+            {!collapsedTables.approvedValidationPanel ? (
+            approvedValidation ? (
               <>
                 <div className="home-conclusion-grid model-result-grid">
                   <article className="home-conclusion-card model-result-card">
@@ -2266,87 +2341,103 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </>
             ) : (
               <div className="empty-state">No approved-drug validation summary is available in the current release.</div>
-            )}
+            )) : null}
           </section>
 
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Disease Distribution Summary</h3>
-              <div className="home-panel-subtitle">Top disease nodes ranked by retained Drug-Disease and Target-Disease connectivity in the released disease network.</div>
+              {!collapsedTables.diseaseDistributionPanel ? <div className="home-panel-subtitle">Top disease nodes ranked by retained Drug-Disease and Target-Disease connectivity in the released disease network.</div> : null}
             </div>
-            <div className="result-table-wrap">
-              <table className="result-table compact">
-                <thead>
-                  <tr>
-                    <th>Disease</th>
-                    <th>Edges</th>
-                    <th>Share</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {diseaseDistribution.length ? diseaseDistribution.map((item) => (
-                    <tr key={item.disease_id}>
-                      <td>{item.disease_label}</td>
-                      <td><span className="result-emphasis-number">{item.edge_count}</span></td>
-                      <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
-                    </tr>
-                  )) : (
-                    <tr>
-                      <td colSpan={3}>No disease-distribution summary is available in the current release.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="result-summary-strip">
-              <span className="result-summary-pill">
-                <strong>{diseaseTotalLinks}</strong>
-                <em>Disease-linked edges</em>
-              </span>
-              {diseaseDistribution[0] ? (
-                <span className="result-summary-pill">
-                  <strong>{diseaseDistribution[0].share_pct}%</strong>
-                  <em>Top disease share</em>
-                </span>
-              ) : null}
-            </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.diseaseDistributionPanel}
+              onToggle={() => toggleTableSection("diseaseDistributionPanel")}
+              label="disease distribution summary"
+            />
+            {!collapsedTables.diseaseDistributionPanel ? (
+              <>
+                <div className="result-table-wrap">
+                  <table className="result-table compact">
+                    <thead>
+                      <tr>
+                        <th>Disease</th>
+                        <th>Edges</th>
+                        <th>Share</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {diseaseDistribution.length ? diseaseDistribution.map((item) => (
+                        <tr key={item.disease_id}>
+                          <td>{item.disease_label}</td>
+                          <td><span className="result-emphasis-number">{item.edge_count}</span></td>
+                          <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan={3}>No disease-distribution summary is available in the current release.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="result-summary-strip">
+                  <span className="result-summary-pill">
+                    <strong>{diseaseTotalLinks}</strong>
+                    <em>Disease-linked edges</em>
+                  </span>
+                  {diseaseDistribution[0] ? (
+                    <span className="result-summary-pill">
+                      <strong>{diseaseDistribution[0].share_pct}%</strong>
+                      <em>Top disease share</em>
+                    </span>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
           </section>
 
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Selected Clinical Drug Results</h3>
-              <div className="home-panel-subtitle">Retained clinical drugs highlighted in the report, shown with their leading disease association in the current high-confidence result table.</div>
+              {!collapsedTables.selectedClinicalPanel ? <div className="home-panel-subtitle">Retained clinical drugs highlighted in the report, shown with their leading disease association in the current high-confidence result table.</div> : null}
             </div>
-            <div className="result-table-wrap">
-              <table className="result-table">
-                <thead>
-                  <tr>
-                    <th>Drug</th>
-                    <th>Drug ID</th>
-                    <th>Leading disease</th>
-                    <th>TXGNN score</th>
-                    <th>ENR FDR</th>
-                    <th>Support</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {representativeDrugs.length ? representativeDrugs.map((item) => (
-                    <tr key={item.drug_id}>
-                      <td><span className="result-emphasis-label">{item.drug_label}</span></td>
-                      <td><span className="result-id-chip">{item.drug_id}</span></td>
-                      <td>{item.disease_label || "Retained in network release"}</td>
-                      <td><span className="result-emphasis-number">{item.txgnn_score ?? "-"}</span></td>
-                      <td>{item.enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.enr_fdr}</span> : "-"}</td>
-                      <td>{item.n_algo_pass != null ? <span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.seven_model_votes}/7</span> : "-"}</td>
-                    </tr>
-                  )) : (
+            <HomeTableToggle
+              collapsed={collapsedTables.selectedClinicalPanel}
+              onToggle={() => toggleTableSection("selectedClinicalPanel")}
+              label="selected clinical drug results"
+            />
+            {!collapsedTables.selectedClinicalPanel ? (
+              <div className="result-table-wrap">
+                <table className="result-table">
+                  <thead>
                     <tr>
-                      <td colSpan={6}>No representative-drug summary is available in the current release.</td>
+                      <th>Drug</th>
+                      <th>Drug ID</th>
+                      <th>Leading disease</th>
+                      <th>TXGNN score</th>
+                      <th>ENR FDR</th>
+                      <th>Support</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {representativeDrugs.length ? representativeDrugs.map((item) => (
+                      <tr key={item.drug_id}>
+                        <td><span className="result-emphasis-label">{item.drug_label}</span></td>
+                        <td><span className="result-id-chip">{item.drug_id}</span></td>
+                        <td>{item.disease_label || "Retained in network release"}</td>
+                        <td><span className="result-emphasis-number">{item.txgnn_score ?? "-"}</span></td>
+                        <td>{item.enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.enr_fdr}</span> : "-"}</td>
+                        <td>{item.n_algo_pass != null ? <span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.seven_model_votes}/7</span> : "-"}</td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={6}>No representative-drug summary is available in the current release.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </section>
 
         </div>
@@ -2355,8 +2446,15 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Pipeline Shrinkage Summary</h3>
-              <div className="home-panel-subtitle">Scale reduction from raw DTI candidates to the released disease network and retained prediction rows.</div>
+              {!collapsedTables.pipelineShrinkagePanel ? <div className="home-panel-subtitle">Scale reduction from raw DTI candidates to the released disease network and retained prediction rows.</div> : null}
             </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.pipelineShrinkagePanel}
+              onToggle={() => toggleTableSection("pipelineShrinkagePanel")}
+              label="pipeline shrinkage summary"
+            />
+            {!collapsedTables.pipelineShrinkagePanel ? (
+              <>
             <div className="result-table-wrap">
               <table className="result-table compact">
                 <thead>
@@ -2538,8 +2636,26 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <div className="network-caption">{releasedDiseaseSummary.coverage_note}</div>
               </>
             ) : null}
+              </>
+            ) : null}
           </section>
 
+          <section className="home-panel-card">
+            <div className="home-panel-head">
+              <h3>Detailed Result Tables</h3>
+              {!collapsedTables.resultSummaryPanel ? <div className="home-panel-subtitle">Expanded release tables for consensus, disease, drug, target, and support distributions.</div> : null}
+            </div>
+            <HomeTableToggle
+              collapsed={collapsedTables.resultSummaryPanel}
+              onToggle={() => toggleTableSection("resultSummaryPanel")}
+              label="detailed result tables"
+            />
+          </section>
+        </div>
+
+        {!collapsedTables.resultSummaryPanel ? (
+          <>
+        <div className="home-research-grid">
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Support Tier Overview</h3>
@@ -3177,6 +3293,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
           </section>
         </div>
+            </>
+          ) : null}
       </div>
     </section>
   );

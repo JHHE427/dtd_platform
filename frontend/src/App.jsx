@@ -23,7 +23,7 @@ function pickDefaultAnalysisCenter(summary) {
 function getDefaultGraphControls(isWholeGraph = false) {
   return {
     depth: 2,
-    limit: isWholeGraph ? 100 : 320,
+    limit: isWholeGraph ? 80 : 150,
     categories: [...DEFAULT_GRAPH_CATEGORIES],
     types: [...DEFAULT_GRAPH_TYPES],
   };

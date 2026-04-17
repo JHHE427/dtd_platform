@@ -297,6 +297,13 @@ export default function DatabasePage({
   const topApprovedLeaderboard = researchSummary?.top_approved_leaderboard || [];
   const representativeDrugCount = representativeDrugs.length;
   const topDiseaseShare = diseaseDistribution[0]?.share_pct ?? null;
+  const predictionVisibleEnd = Math.min(
+    predictionState.total || 0,
+    ((predictionState.page || 1) - 1) * (predictionState.page_size || 0) + (predictionState.items?.length || 0)
+  );
+  const predictionVisibleStart = predictionState.total
+    ? ((predictionState.page || 1) - 1) * (predictionState.page_size || 0) + 1
+    : 0;
   const ncrnaLinkedDrugMap = React.useMemo(
     () => Object.fromEntries(ncrnaLinkedDrugs.map((item) => [item.drug_id, item])),
     [ncrnaLinkedDrugs]
@@ -453,6 +460,7 @@ export default function DatabasePage({
     }
   }, [predictionState.items, selectedPrediction]);
 
+  const lastScrolledSectionRef = React.useRef("");
   React.useEffect(() => {
     const refMap = {
       algorithms: algorithmsSectionRef,
@@ -460,11 +468,13 @@ export default function DatabasePage({
       ncrna: ncrnaSectionRef,
       nodes: nodesSectionRef,
     };
+    if (!activeSection || lastScrolledSectionRef.current === activeSection) return;
     const targetRef = refMap[activeSection];
     if (targetRef?.current) {
       targetRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      lastScrolledSectionRef.current = activeSection;
     }
-  }, [activeSection, researchSummary]);
+  }, [activeSection]);
 
   return (
     <section className="page is-active db-page">
@@ -2644,6 +2654,13 @@ export default function DatabasePage({
           <div className="kpi-value kpi-split">{nodesState.total} nodes · {edgesState.total} edges</div>
         </div>
       </div>
+      <section className="db-result-visibility">
+        <span className="db-result-visibility-tag">Result visibility</span>
+        <span>
+          Current prediction table shows <strong>{predictionVisibleStart}-{predictionVisibleEnd}</strong> of <strong>{predictionState.total || 0}</strong> rows (page {predictionState.page}, size {predictionState.page_size}).
+        </span>
+        <span className="db-result-visibility-note">Use export buttons for full released tables.</span>
+      </section>
 
       <div className="db-layout">
         <section className={`card panel-pad db-panel ${collapsedSections.nodeLayer ? "is-collapsed" : ""}`}>
