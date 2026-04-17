@@ -4834,7 +4834,8 @@ button.primary:hover,
 }
 
 .db-page {
-  min-height: calc(100vh - 86px);
+  min-height: auto;
+  padding-bottom: 2rem;
 }
 
 .db-panel {
