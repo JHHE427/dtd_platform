@@ -185,34 +185,49 @@ function fadeBetween(scale, start, end) {
   return clamp01((scale - start) / Math.max(0.001, end - start));
 }
 
+const _mixColorCache = new Map();
 function mixColor(hex, amount = 0.3) {
+  const key = hex + '|' + amount;
+  if (_mixColorCache.has(key)) return _mixColorCache.get(key);
   const normalized = (hex || "#94a3b8").replace("#", "");
   const value = normalized.length === 3 ? normalized.split("").map((c) => c + c).join("") : normalized;
   const r = parseInt(value.slice(0, 2), 16);
   const g = parseInt(value.slice(2, 4), 16);
   const b = parseInt(value.slice(4, 6), 16);
   const mix = (channel) => Math.round(channel + (255 - channel) * amount);
-  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+  const res = `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+  _mixColorCache.set(key, res);
+  return res;
 }
 
+const _rgbaCache = new Map();
 function rgbaFromHex(hex, alpha) {
+  const key = hex + '|' + alpha;
+  if (_rgbaCache.has(key)) return _rgbaCache.get(key);
   const normalized = (hex || "#94a3b8").replace("#", "");
   const value = normalized.length === 3 ? normalized.split("").map((c) => c + c).join("") : normalized;
   const r = parseInt(value.slice(0, 2), 16);
   const g = parseInt(value.slice(2, 4), 16);
   const b = parseInt(value.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  const res = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  _rgbaCache.set(key, res);
+  return res;
 }
 
+const _channelCache = new Map();
 function colorChannels(hex) {
+  if (_channelCache.has(hex)) return _channelCache.get(hex);
   const normalized = (hex || "#94a3b8").replace("#", "");
   const value = normalized.length === 3 ? normalized.split("").map((c) => c + c).join("") : normalized;
-  return {
+  const res = {
     r: parseInt(value.slice(0, 2), 16),
     g: parseInt(value.slice(2, 4), 16),
     b: parseInt(value.slice(4, 6), 16)
   };
+  _channelCache.set(hex, res);
+  return res;
 }
+
 
 export default function GraphCanvas({
   graph,
