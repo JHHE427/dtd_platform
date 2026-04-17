@@ -1274,7 +1274,7 @@ export default function AnalysisPage({
                 </div>
                 <div className="mechanism-section">
                   <div className="mechanism-links">
-                    {ncrnaEvidence.top_rows.map((row) => (
+                    {(ncrnaEvidence.top_rows || []).map((row) => (
                       <div className="mechanism-link-card" key={`${row.counterpart_id}-${row.evidence_rows}`}>
                         <div className="mechanism-link-head">
                           <strong>{row.counterpart_label}</strong>
