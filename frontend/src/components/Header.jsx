@@ -15,6 +15,18 @@ function prefetchPage(tab) {
   load().catch(() => prefetched.delete(tab));
 }
 
+// Warm up heavy chunks during browser idle time so first-click into
+// Analysis / Database is instant instead of waiting on a lazy import.
+if (typeof window !== "undefined") {
+  const warm = () => {
+    prefetchPage("analysis");
+    prefetchPage("database");
+  };
+  const ric = window.requestIdleCallback;
+  if (ric) ric(warm, { timeout: 2500 });
+  else setTimeout(warm, 1200);
+}
+
 export default function Header({ page, onPageChange, onQuickSearch, onSuggest }) {
   const [keyword, setKeyword] = React.useState("");
   const [suggestions, setSuggestions] = React.useState([]);

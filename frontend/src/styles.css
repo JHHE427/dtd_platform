@@ -6631,17 +6631,35 @@ html { scroll-behavior: smooth; }
 
 /* Sticky table headers inside scrollable result wrappers. The parent
    `.result-table-wrap` already has `max-height + overflow-y:auto`, so a
-   z-indexed sticky thead gives long tables a persistent header. */
-.db-panel .result-table-wrap thead th,
-.analysis-result-wrap thead th,
-.result-table-wrap thead th {
+   z-indexed sticky thead gives long tables a persistent header.
+   Excludes `.prediction-result-table` which owns a bespoke gradient sticky
+   design; overriding it caused visible bleed-through of body rows. */
+.db-panel .result-table-wrap thead th:not(.prediction-result-table th),
+.analysis-result-wrap thead th:not(.prediction-result-table th),
+.result-table-wrap thead th:not(.prediction-result-table th) {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: saturate(1.2) blur(8px);
-  -webkit-backdrop-filter: saturate(1.2) blur(8px);
-  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow:
+    inset 0 -1px 0 rgba(15, 23, 42, 0.08),
+    0 6px 10px -6px rgba(15, 23, 42, 0.08);
+}
+
+/* Strengthen the prediction table's own sticky header so nothing bleeds
+   through the glass gradient, and allow long column labels like
+   "RETAINED METHODS" to wrap instead of truncating mid-word. */
+.prediction-result-table th {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f6f8fb 100%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+.prediction-result-table th:nth-child(1) {
+  background: #fbfcfe !important;
 }
 
 /* Row hover — subtle but useful for dense tables. Scoped so it won't
@@ -6733,6 +6751,67 @@ button:disabled,
   }
   .result-table-wrap { max-height: none !important; overflow: visible !important; }
   thead th { position: static !important; }
+}
+
+/* -------- Global micro-animations (2026-04-21 addendum) -------- */
+
+/* Page transition: fade+lift each top-level page shell when it mounts.
+   Scoped to the actual page roots so the header/nav don't re-animate. */
+@keyframes dtd-page-in {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.home-page,
+.analysis-page,
+.db-panel,
+.help-page {
+  animation: dtd-page-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Card lift — unify the hover treatment across the main card types that
+   didn't already have one. Existing transforms win via specificity. */
+.stat-card,
+.home-panel-card,
+.quick-access-card {
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+/* Nav tab underline slide — purely visual, doesn't alter layout. */
+.nav .nav-btn { position: relative; }
+.nav .nav-btn::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #0071e3, #5aa6ff);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.nav .nav-btn.is-active::after,
+.nav .nav-btn[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+/* Toast slide-fade in (existing class already has opacity+translate
+   transitions — this adds the initial-mount keyframe). */
+@keyframes dtd-toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast { animation: dtd-toast-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* Honor reduced-motion for all additions above. */
+@media (prefers-reduced-motion: reduce) {
+  .home-page, .analysis-page, .db-panel, .help-page,
+  .toast { animation: none !important; }
+  .nav .nav-btn::after { transition: none !important; }
 }
 
 /* End of UI polish 2026-04-21 */
