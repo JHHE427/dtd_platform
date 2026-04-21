@@ -58,6 +58,68 @@ function SectionToggle({ collapsed, onToggle, label }) {
   );
 }
 
+const NODE_TYPE_CFG = {
+  Drug:    { grad: "linear-gradient(135deg,#3B82F6 0%,#2563EB 100%)", accent: "#2563EB" },
+  Target:  { grad: "linear-gradient(135deg,#F59E0B 0%,#D97706 100%)", accent: "#D97706" },
+  Disease: { grad: "linear-gradient(135deg,#EF4444 0%,#DC2626 100%)", accent: "#DC2626" },
+  ncRNA:   { grad: "linear-gradient(135deg,#14B8A6 0%,#0D9488 100%)", accent: "#0D9488" },
+};
+
+function NodeDetailHeader({ node }) {
+  const cfg = NODE_TYPE_CFG[node?.node_type] || { grad: "linear-gradient(135deg,#94a3b8,#64748b)", accent: "#64748b" };
+  return (
+    <div className="node-detail-header" style={{ background: cfg.grad }}>
+      <span className="nd-type-badge">{node?.node_type}</span>
+      <strong className="nd-name">{node?.display_name || node?.label}</strong>
+      <div className="nd-id">{node?.id}</div>
+    </div>
+  );
+}
+
+function NodeDetailSkeleton() {
+  return (
+    <div className="nd-skeleton" aria-label="Loading" aria-busy="true">
+      <div className="nd-skel-line" style={{ width: "62%", height: 15 }} />
+      <div className="nd-skel-line" style={{ width: "40%", height: 11, marginTop: 8 }} />
+      <div style={{ marginTop: 22, display: "grid", gap: 9 }}>
+        <div className="nd-skel-line" style={{ width: "100%", height: 11 }} />
+        <div className="nd-skel-line" style={{ width: "87%", height: 11 }} />
+        <div className="nd-skel-line" style={{ width: "71%", height: 11 }} />
+        <div className="nd-skel-line" style={{ width: "55%", height: 11 }} />
+      </div>
+    </div>
+  );
+}
+
+function NodeDetailEmpty({ isOverview, items }) {
+  return (
+    <div className="nd-empty">
+      <svg className="nd-empty-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <circle cx="24" cy="24" r="21" stroke="#CBD5E1" strokeWidth="1.5" />
+        <circle cx="24" cy="20" r="7" stroke="#CBD5E1" strokeWidth="1.5" />
+        <path d="M11 40c0-7.18 5.82-13 13-13s13 5.82 13 13" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      <div className="nd-empty-eyebrow">{isOverview ? "Full network overview" : "No node selected"}</div>
+      <strong className="nd-empty-title">
+        {isOverview ? "Select a local node to inspect details." : "Click any node to explore its details."}
+      </strong>
+      <p className="nd-empty-hint">
+        Chemistry, sequence, disease links, and evidence layers will appear here.
+      </p>
+      {items?.length ? (
+        <div className="nd-empty-grid">
+          {items.slice(0, 2).map((item) => (
+            <div className="nd-empty-metric" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function AnalysisPage({
   graph,
   centerNode,
@@ -112,6 +174,15 @@ export default function AnalysisPage({
   onLayoutModeChange
 }) {
   const isOverviewMode = !detail?.node;
+  const [pendingDetailId, setPendingDetailId] = React.useState(null);
+  React.useEffect(() => {
+    if (detail?.node?.id) setPendingDetailId(null);
+  }, [detail?.node?.id]);
+  const isDetailLoading = Boolean(pendingDetailId && pendingDetailId !== detail?.node?.id);
+  const internalNodeClick = React.useCallback(async (id) => {
+    setPendingDetailId(id);
+    await onNodeClick(id);
+  }, [onNodeClick]);
   const [structureModalOpen, setStructureModalOpen] = React.useState(false);
   const [sequenceCopied, setSequenceCopied] = React.useState(false);
   const [resultSort, setResultSort] = React.useState({ key: "support_score", direction: "desc" });
@@ -884,7 +955,7 @@ export default function AnalysisPage({
               graph={graph}
               centerId={centerNode}
               searchText={graphSearchText}
-              onNodeClick={onNodeClick}
+              onNodeClick={internalNodeClick}
               onNodeDoubleClick={onNodeDoubleClick}
               onNodeHover={onHoverNodeChange}
               fitSignal={fitSignal}
@@ -974,13 +1045,13 @@ export default function AnalysisPage({
         </section>
 
         <aside className={`side-column ${detail?.node ? "" : "is-empty"}`}>
-          <section className="card panel-pad rise-in">
-            <h3>Record Details</h3>
-            <div key={`selected-${detailKey}`} className="card-swap">
-              {detail?.node ? (
+          <section className="card node-detail-panel rise-in">
+            {(detail?.node && !isDetailLoading) && <NodeDetailHeader node={detail.node} />}
+            <div key={`selected-${detailKey}`} className={`node-detail-body card-swap${detail?.node ? "" : " is-empty-state"}`}>
+              {isDetailLoading ? (
+                <NodeDetailSkeleton />
+              ) : detail?.node ? (
                 <>
-                  <div className="item-title">{detail.node.display_name || detail.node.label}</div>
-                  <div className="item-meta">{detail.node.node_type} | {detail.node.id}</div>
                   {detail.node.node_type === "Drug" ? (
                     <div className="annot-box">
                       <div className="annot-title">SMILES</div>
@@ -1031,7 +1102,7 @@ export default function AnalysisPage({
                           <div className="annot-title annot-subtitle">{relatedContext.primary_label || "Cross-associated diseases"}</div>
                           <div className="context-chip-grid">
                             {(relatedContext.primary || []).map((item) => (
-                              <button key={item.neighbor_id} className="context-chip-card" type="button" onClick={() => onNodeClick(item.neighbor_id)}>
+                              <button key={item.neighbor_id} className="context-chip-card" type="button" onClick={() => internalNodeClick(item.neighbor_id)}>
                                 <strong>{item.neighbor_label}</strong>
                                 <span>{item.link_count} links</span>
                               </button>
@@ -1107,7 +1178,7 @@ export default function AnalysisPage({
                           <div className="annot-title annot-subtitle">{relatedContext.primary_label || "Cross-associated diseases"}</div>
                           <div className="context-chip-grid">
                             {(relatedContext.primary || []).map((item) => (
-                              <button key={item.neighbor_id} className="context-chip-card" type="button" onClick={() => onNodeClick(item.neighbor_id)}>
+                              <button key={item.neighbor_id} className="context-chip-card" type="button" onClick={() => internalNodeClick(item.neighbor_id)}>
                                 <strong>{item.neighbor_label}</strong>
                                 <span>{item.link_count} links</span>
                               </button>
@@ -1192,23 +1263,11 @@ export default function AnalysisPage({
                   ) : null}
                 </>
               ) : (
-                <div className="analysis-selection-empty">
-                  <div className="analysis-selection-empty__eyebrow">{isWholeGraph ? "Full network overview loaded" : "No node selected"}</div>
-                  <strong>{isWholeGraph ? "Select a local node to inspect details." : "Choose a node to inspect details."}</strong>
-                  <p>
-                    Click the graph or a result row to open chemistry, sequence, disease links, and evidence context.
-                  </p>
-                  <div className="analysis-selection-empty__grid">
-                    {selectionOverviewItems.slice(0, 2).map((item) => (
-                      <div className="analysis-selection-empty__metric" key={item.label}>
-                        <span>{item.label}</span>
-                        <strong>{item.value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <NodeDetailEmpty isOverview={isOverviewMode} items={selectionOverviewItems} />
               )}
-              {detail?.node ? <div className="list compact">{renderEdgeStats(detail?.edge_stats)}</div> : null}
+              {(detail?.node && !isDetailLoading) ? (
+                <div className="list compact">{renderEdgeStats(detail?.edge_stats)}</div>
+              ) : null}
             </div>
           </section>
 
