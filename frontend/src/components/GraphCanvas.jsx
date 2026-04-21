@@ -246,6 +246,7 @@ export default function GraphCanvas({
   const mouseRef = React.useRef({ x: 0, y: 0 });
   const zoomRef = React.useRef(1);
   const labelLayoutRef = React.useRef({ frameBucket: -1, boxes: [], counts: { focus: 0, pinned: 0, important: 0, normal: 0 } });
+  const pulseRAFRef = React.useRef(null);
   const [size, setSize] = React.useState({ w: 1000, h: 620 });
   const [hoverId, setHoverId] = React.useState("");
   const [selectedId, setSelectedId] = React.useState("");
@@ -516,6 +517,24 @@ export default function GraphCanvas({
     }
   }, [fitSignal]);
 
+  // Keep canvas refreshing for pulse animation on selected + center node.
+  React.useEffect(() => {
+    const stop = () => {
+      if (pulseRAFRef.current) {
+        cancelAnimationFrame(pulseRAFRef.current);
+        pulseRAFRef.current = null;
+      }
+    };
+    const active = selectedId || centerId;
+    if (!active) { stop(); return; }
+    const loop = () => {
+      if (fgRef.current?.refresh) fgRef.current.refresh();
+      pulseRAFRef.current = requestAnimationFrame(loop);
+    };
+    pulseRAFRef.current = requestAnimationFrame(loop);
+    return stop;
+  }, [selectedId, centerId]);
+
   const needle = (searchText || "").trim().toLowerCase();
   const sampled = (graph?.edges?.length || 0) > (graphData?.links?.length || 0);
 
@@ -598,24 +617,53 @@ export default function GraphCanvas({
 
           const isActive = isHover || isSelected || node.id === centerId;
 
-          // Halo for active nodes
-          if (isActive) {
+          // Selected node: animated pulse ring using performance.now()
+          if (isSelected || node.id === centerId) {
+            const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 420);
+            const ringR = r + 5 + pulse * 4;
+            const ringAlpha = 0.18 + pulse * 0.22;
             ctx.beginPath();
-            ctx.arc(node.x, node.y, r + (node.id === centerId ? 6 : 4), 0, 2 * Math.PI);
-            ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, 0.22)`;
+            ctx.arc(node.x, node.y, ringR, 0, 2 * Math.PI);
+            ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${ringAlpha})`;
+            ctx.lineWidth = 2.5 - pulse * 0.8;
+            ctx.stroke();
+            // Second tighter ring for center node
+            if (node.id === centerId) {
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, ringR + 5, 0, 2 * Math.PI);
+              ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${ringAlpha * 0.45})`;
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            }
+          }
+
+          // Soft halo glow for hover
+          if (isHover && !isSelected) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, r + 5, 0, 2 * Math.PI);
+            ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, 0.18)`;
             ctx.fill();
           }
 
-          // Main body (Clean modern flat look, extremely fast)
+          // Main body
           ctx.beginPath();
           ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
           ctx.fillStyle = baseNodeColor;
           ctx.fill();
 
-          // Stroke
-          ctx.lineWidth = isActive || isHit ? 2 : 1;
-          ctx.strokeStyle = isActive || isHit ? "#111827" : "#ffffff";
-          ctx.stroke();
+          // Stroke — thicker white ring for selected, dark for active
+          if (isSelected || node.id === centerId) {
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = "#ffffff";
+            ctx.stroke();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, 0.9)`;
+            ctx.stroke();
+          } else {
+            ctx.lineWidth = isHover || isHit ? 2 : 1;
+            ctx.strokeStyle = isHover || isHit ? "#111827" : "#ffffff";
+            ctx.stroke();
+          }
 
           // Type marks
           if (node.node_type === "Disease") {

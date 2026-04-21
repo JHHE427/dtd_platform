@@ -7007,21 +7007,43 @@ button.primary:active:not(:disabled) {
   background: linear-gradient(180deg, #3B82F6, #7C3AED);
 }
 
-/* ── 10. Node Detail Panel sidebar ─────────────────────────────────────── */
+/* ── 10. Side column — stable scrollable column ─────────────────────────── */
+.side-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  width: 400px !important;
+  flex-shrink: 0 !important;
+  position: sticky !important;
+  top: 84px !important;
+  align-self: start !important;
+  max-height: calc(100vh - 100px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 0 !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.1) transparent;
+}
+
+/* ── Node Detail Panel sidebar ───────────────────────────────────────────── */
 .node-detail-panel {
-  overflow: hidden;
   padding: 0 !important;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-global) !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08) !important;
+  flex-shrink: 0;
 }
 
 .node-detail-header {
   padding: 16px 16px 14px;
-  border-radius: calc(var(--radius-global) - 0px) calc(var(--radius-global) - 0px) 0 0;
+  border-radius: var(--radius-global) var(--radius-global) 0 0;
   animation: nd-header-in 280ms var(--ease-brand) both;
+  flex-shrink: 0;
 }
 @keyframes nd-header-in {
-  from { opacity: 0; transform: translateY(-8px); }
+  from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -7046,6 +7068,7 @@ button.primary:active:not(:disabled) {
   line-height: 1.3;
   letter-spacing: -0.01em;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  word-break: break-word;
 }
 
 .nd-id {
@@ -7054,13 +7077,32 @@ button.primary:active:not(:disabled) {
   font-size: 11px;
   font-family: "SF Mono", "Fira Mono", monospace;
   letter-spacing: 0.02em;
+  word-break: break-all;
 }
 
 .node-detail-body {
   padding: 14px;
-  flex: 1;
-  overflow-y: auto;
+  background: #ffffff;
+  overflow: visible;
   transition: opacity 200ms var(--ease-brand);
+}
+
+/* SMILES and long chemical strings should wrap, not break containers */
+.smiles-box,
+.annot-text.smiles-box,
+pre.smiles-box {
+  word-break: break-all !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: break-word !important;
+  max-width: 100%;
+}
+
+/* Sequence box stays scrollable horizontally */
+.seq-box {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+  word-break: normal;
 }
 
 /* ── 11. Skeleton screen ─────────────────────────────────────────────────── */
