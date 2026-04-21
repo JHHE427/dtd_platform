@@ -931,8 +931,11 @@ export default function App() {
                 }}
                 onExportSubgraph={exportSubgraph}
                 onNodeClick={async (id) => {
-                  await loadDetail(id, { withNeighbors: true });
                   setCenterNode(id);
+                  await Promise.all([
+                    loadDetail(id, { withNeighbors: true }),
+                    loadGraph(id),
+                  ]);
                 }}
                 onNodeDoubleClick={async (id) => {
                   await loadDetail(id, { withNeighbors: true });
