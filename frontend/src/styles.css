@@ -6601,3 +6601,138 @@ ul {
   max-height: 480px;
   overflow-y: auto;
 }
+
+
+/* =========================================================================
+   UI polish 2026-04-21 — additive refinements (no existing rules modified)
+   Scope: global micro-interactions, table stickiness, numeric rhythm,
+   toast + chip + card feedback, a11y touches. All rules below are additive
+   and can be safely removed as a single block if ever needed.
+   ========================================================================= */
+
+/* Smooth scroll & better native feel — existing @media (prefers-reduced-motion)
+   already disables scroll-behavior, so this is safe. */
+html { scroll-behavior: smooth; }
+
+/* Selection colour aligned to brand blue, replaces default greyish-blue. */
+::selection { background: rgba(0, 113, 227, 0.22); color: #0b1a33; }
+
+/* Tabular numerics for stat counters and table cells — prevents digits
+   from jittering during live updates and aligns columns of numbers. */
+.stat-card .stat-value,
+.home-stats .stat-value,
+.result-table td,
+.db-panel .result-table-wrap td,
+.neighbor-list td,
+.kv-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Sticky table headers inside scrollable result wrappers. The parent
+   `.result-table-wrap` already has `max-height + overflow-y:auto`, so a
+   z-indexed sticky thead gives long tables a persistent header. */
+.db-panel .result-table-wrap thead th,
+.analysis-result-wrap thead th,
+.result-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: saturate(1.2) blur(8px);
+  -webkit-backdrop-filter: saturate(1.2) blur(8px);
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.08);
+}
+
+/* Row hover — subtle but useful for dense tables. Scoped so it won't
+   clobber the existing selected-row highlight. */
+.db-panel .result-table-wrap tbody tr:hover:not(.is-selected),
+.analysis-result-wrap tbody tr:hover:not(.is-selected),
+.result-table-wrap tbody tr:hover:not(.is-selected) {
+  background: rgba(0, 113, 227, 0.045);
+}
+
+/* Chip hover lift — the base .chip rule doesn't define a transition. */
+.chip {
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+.chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 23, 42, 0.14);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+}
+.chip:active { transform: translateY(0); }
+
+/* Tactile press on primary action buttons — only when the user actively
+   presses; no effect on hover so existing hover treatments are preserved. */
+button:active:not(:disabled) { transform: translateY(0.5px) scale(0.995); }
+
+/* Disabled state consistency — muted but not invisible. */
+button:disabled,
+[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Toast polish — stacked offset + longer fade-in with gentle translateY.
+   Multiple toasts remain single at a time (component logic) but this is
+   ready for the future. */
+.toast {
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+/* Home stat card hover — the element has a :hover rule already, this just
+   strengthens focus-visible for keyboard users. */
+.stat-card:focus-visible,
+.home-panel-card:focus-visible,
+.quick-access-card:focus-visible {
+  outline: 2px solid rgba(0, 113, 227, 0.55);
+  outline-offset: 3px;
+  border-radius: inherit;
+}
+
+/* Help page readability — cap paragraph width so long prose doesn't run
+   corner-to-corner on wide monitors. */
+.help-page p,
+.help-page li { max-width: 72ch; }
+.help-page h2 + p,
+.help-page h3 + p { margin-top: 6px; }
+
+/* Prevent layout shift on SVG-heavy hero graphics — they were missing an
+   aspect-ratio hint, so the initial paint could reflow once the SVG
+   loaded. */
+.hero-network-motif__svg,
+.help-svg { aspect-ratio: 560 / 260; }
+
+/* Reduce aggressive skeleton shimmer for users who prefer reduced motion
+   (the existing @media rule disables animations globally, but the shimmer
+   uses `animation` + `transform`; we also drop the transform). */
+@media (prefers-reduced-motion: reduce) {
+  .page-loading-shell__hero::after,
+  .page-loading-shell__card::after,
+  .page-loading-shell__panel::after {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* Print stylesheet — investigators sometimes print result tables. */
+@media print {
+  body { background: #fff; }
+  .header, .toast, .quick-search, .nav,
+  .hero-network-motif, .hero-ai-strip { display: none !important; }
+  .main-wrap { max-width: 100%; padding: 0; }
+  .card, .home-panel-card, .db-panel, .analysis-layout {
+    box-shadow: none !important;
+    border-color: rgba(15, 23, 42, 0.25) !important;
+    break-inside: avoid;
+  }
+  .result-table-wrap { max-height: none !important; overflow: visible !important; }
+  thead th { position: static !important; }
+}
+
+/* End of UI polish 2026-04-21 */
