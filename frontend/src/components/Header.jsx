@@ -1,5 +1,20 @@
 import React from "react";
 
+const pagePrefetchers = {
+  home: () => import("./HomePage"),
+  analysis: () => import("./AnalysisPage"),
+  database: () => import("./DatabasePage"),
+  help: () => import("./HelpPage"),
+};
+const prefetched = new Set();
+function prefetchPage(tab) {
+  if (prefetched.has(tab)) return;
+  const load = pagePrefetchers[tab];
+  if (!load) return;
+  prefetched.add(tab);
+  load().catch(() => prefetched.delete(tab));
+}
+
 export default function Header({ page, onPageChange, onQuickSearch, onSuggest }) {
   const [keyword, setKeyword] = React.useState("");
   const [suggestions, setSuggestions] = React.useState([]);
@@ -108,6 +123,8 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
               key={tab}
               className={`nav-btn ${page === tab ? "is-active" : ""}`}
               onClick={() => onPageChange(tab)}
+              onMouseEnter={() => prefetchPage(tab)}
+              onFocus={() => prefetchPage(tab)}
             >
               {tab[0].toUpperCase() + tab.slice(1)}
             </button>

@@ -2391,9 +2391,7 @@ button.primary:hover,
 }
 
 .result-table td .result-link-btn,
-.prediction-result-table td:nth-child(1) .result-link-btn,
-.prediction-result-table td:nth-child(2) .result-link-btn,
-.prediction-result-table td:nth-child(3) .result-link-btn {
+.prediction-result-table td:nth-child(1) .result-link-btn {
   width: 100%;
 }
 
@@ -3561,7 +3559,7 @@ button.primary:hover,
   left: 10px;
   right: 10px;
   top: 10px;
-  z-index: 20;
+  z-index: 999;
   border: 1px solid rgba(255, 255, 255, 0.56);
   border-radius: 16px;
   background:
@@ -4914,29 +4912,7 @@ button.primary:hover,
   backdrop-filter: blur(22px) saturate(1.14);
 }
 
-.prediction-result-table th:nth-child(2),
-.prediction-result-table td:nth-child(2) {
-  position: sticky;
-  left: 88px;
-  z-index: 3;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 1px 0 0 rgba(15, 23, 42, 0.04), 18px 0 24px rgba(15, 23, 42, 0.02);
-  backdrop-filter: blur(22px) saturate(1.14);
-}
-
-.prediction-result-table th:nth-child(3),
-.prediction-result-table td:nth-child(3) {
-  position: sticky;
-  left: 280px;
-  z-index: 3;
-  background: rgba(251, 252, 254, 0.9);
-  box-shadow: 1px 0 0 rgba(15, 23, 42, 0.04), 18px 0 24px rgba(15, 23, 42, 0.018);
-  backdrop-filter: blur(22px) saturate(1.14);
-}
-
-.prediction-result-table tbody tr:hover td:nth-child(1),
-.prediction-result-table tbody tr:hover td:nth-child(2),
-.prediction-result-table tbody tr:hover td:nth-child(3) {
+.prediction-result-table tbody tr:hover td:nth-child(1) {
   background: rgba(255, 255, 255, 0.98);
 }
 
@@ -5322,7 +5298,7 @@ button.primary:hover,
   position: absolute;
   left: 0;
   top: calc(100% + 8px);
-  z-index: 20;
+  z-index: 999;
   width: 320px;
   padding: 14px;
   border-radius: 16px;
@@ -6100,8 +6076,7 @@ ul {
 .online-analysis-banner,
 .online-analysis-preset,
 .analysis-seven-model-card,
-.seven-model-chip-card,
-.seven-model-hover-panel {
+.seven-model-chip-card {
   position: relative;
   overflow: hidden;
 }
@@ -6293,19 +6268,13 @@ ul {
 }
 
 .prediction-result-table th:nth-child(1),
-.prediction-result-table td:nth-child(1),
-.prediction-result-table th:nth-child(2),
-.prediction-result-table td:nth-child(2),
-.prediction-result-table th:nth-child(3),
-.prediction-result-table td:nth-child(3) {
+.prediction-result-table td:nth-child(1) {
   background:
     linear-gradient(180deg, rgba(255,255,255,0.92), rgba(247,249,252,0.76)),
     radial-gradient(circle at 14% 0%, rgba(255,255,255,0.36), rgba(255,255,255,0));
 }
 
-.prediction-result-table tbody tr:hover td:nth-child(1),
-.prediction-result-table tbody tr:hover td:nth-child(2),
-.prediction-result-table tbody tr:hover td:nth-child(3) {
+.prediction-result-table tbody tr:hover td:nth-child(1) {
   background:
     linear-gradient(180deg, rgba(255,255,255,0.98), rgba(252,253,255,0.9)),
     radial-gradient(circle at 14% 0%, rgba(255,255,255,0.24), rgba(255,255,255,0));

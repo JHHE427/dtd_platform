@@ -8,3 +8,5 @@ frontend/dist/
 .env
 admin1
 *.sqlite
+.Rhistory
+.pytest_cache/
