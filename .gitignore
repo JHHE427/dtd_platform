@@ -10,3 +10,5 @@ admin1
 *.sqlite
 .Rhistory
 .pytest_cache/
+*.png
+*.patch
