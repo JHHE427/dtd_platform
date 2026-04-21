@@ -1653,11 +1653,11 @@ export default function AnalysisPage({
                 <div className="comparison-card">
                   <div className="annot-title">Target Overlap</div>
                   <div className="item-meta">
-                    shared {comparison.target_overlap.shared_count} / {comparison.left.display_name || comparison.left.label} {comparison.target_overlap.left_count} / {comparison.right.display_name || comparison.right.label} {comparison.target_overlap.right_count}
+                    shared {comparison.target_overlap?.shared_count} / {comparison.left?.display_name || comparison.left?.label} {comparison.target_overlap?.left_count} / {comparison.right?.display_name || comparison.right?.label} {comparison.target_overlap?.right_count}
                   </div>
-                  <div className="item-meta">jaccard={comparison.target_overlap.jaccard}</div>
+                  <div className="item-meta">jaccard={comparison.target_overlap?.jaccard}</div>
                   <div className="source-chip-wrap">
-                    {(comparison.target_overlap.shared_examples || []).map((item) => (
+                    {(comparison.target_overlap?.shared_examples || []).map((item) => (
                       <button className="source-chip source-chip-button" key={item.id} onClick={() => onCompareJump(item.id)}>
                         {item.label}
                       </button>
@@ -1667,11 +1667,11 @@ export default function AnalysisPage({
                 <div className="comparison-card">
                   <div className="annot-title">Disease Overlap</div>
                   <div className="item-meta">
-                    shared {comparison.disease_overlap.shared_count} / {comparison.left.display_name || comparison.left.label} {comparison.disease_overlap.left_count} / {comparison.right.display_name || comparison.right.label} {comparison.disease_overlap.right_count}
+                    shared {comparison.disease_overlap?.shared_count} / {comparison.left?.display_name || comparison.left?.label} {comparison.disease_overlap?.left_count} / {comparison.right?.display_name || comparison.right?.label} {comparison.disease_overlap?.right_count}
                   </div>
-                  <div className="item-meta">jaccard={comparison.disease_overlap.jaccard}</div>
+                  <div className="item-meta">jaccard={comparison.disease_overlap?.jaccard}</div>
                   <div className="source-chip-wrap">
-                    {(comparison.disease_overlap.shared_examples || []).map((item) => (
+                    {(comparison.disease_overlap?.shared_examples || []).map((item) => (
                       <button className="source-chip source-chip-button" key={item.id} onClick={() => onCompareJump(item.id)}>
                         {item.label}
                       </button>

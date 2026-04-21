@@ -2816,15 +2816,12 @@ export default function DatabasePage({
               <thead>
                 <tr>
                   <th><button className="table-sort-btn" onClick={() => togglePredictionSort("result_rank")}>Rank {sortIcon("result_rank")}</button></th>
-                  <th><button className="table-sort-btn" onClick={() => togglePredictionSort("Drug_Label")}>Drug {sortIcon("Drug_Label")}</button></th>
-                  <th>Drug ID</th>
-                    <th><button className="table-sort-btn" onClick={() => togglePredictionSort("Target_Label")}>Target {sortIcon("Target_Label")}</button></th>
-                    <th>Target ID</th>
-                    <th><button className="table-sort-btn" onClick={() => togglePredictionSort("Disease_Label")}>Disease {sortIcon("Disease_Label")}</button></th>
-                    <th>Disease ID</th>
-                    <th>Gene</th>
-                    <th><button className="table-sort-btn" onClick={() => togglePredictionSort("n_algo_pass")}>Retained methods {sortIcon("n_algo_pass")}</button></th>
-                    <th><button className="table-sort-btn" onClick={() => togglePredictionSort("Total_Votes_Optional7")}>7-model votes {sortIcon("Total_Votes_Optional7")}</button></th>
+                  <th><button className="table-sort-btn" onClick={() => togglePredictionSort("Drug_Label")}>Drug (ID) {sortIcon("Drug_Label")}</button></th>
+                  <th><button className="table-sort-btn" onClick={() => togglePredictionSort("Target_Label")}>Target (ID) {sortIcon("Target_Label")}</button></th>
+                  <th><button className="table-sort-btn" onClick={() => togglePredictionSort("Disease_Label")}>Disease (ID) {sortIcon("Disease_Label")}</button></th>
+                  <th>Gene</th>
+                  <th><button className="table-sort-btn" onClick={() => togglePredictionSort("n_algo_pass")}>Retained methods {sortIcon("n_algo_pass")}</button></th>
+                  <th><button className="table-sort-btn" onClick={() => togglePredictionSort("Total_Votes_Optional7")}>7-model votes {sortIcon("Total_Votes_Optional7")}</button></th>
                   <th>Core evidence</th>
                   <th>AI models</th>
                   <th><button className="table-sort-btn" onClick={() => togglePredictionSort("TXGNN_score")}>TXGNN score {sortIcon("TXGNN_score")}</button></th>
@@ -2841,12 +2838,18 @@ export default function DatabasePage({
                     className={selectedPrediction?.Drug_ID === row.Drug_ID && selectedPrediction?.Target_ID === row.Target_ID && selectedPrediction?.Disease_ID === row.Disease_ID ? "is-row-selected" : ""}
                   >
                     <td>{row.result_rank ?? "-"}</td>
-                    <td>{row.Drug_Label || row.Drug_Name || row.Drug_ID}</td>
-                    <td>{row.Drug_ID}</td>
-                    <td>{row.Target_Label || row.Target_Name || row.Target_ID}</td>
-                    <td>{row.Target_ID}</td>
-                    <td>{row.Disease_Label || row.Ensemble_Disease_Name}</td>
-                    <td>{row.Disease_ID || `DIS::${row.Ensemble_Disease_Name}`}</td>
+                    <td>
+                      <div><strong>{row.Drug_Label || row.Drug_Name || row.Drug_ID}</strong></div>
+                      <div className="muted" style={{fontSize: "11px", marginTop: "2px"}}>{row.Drug_ID}</div>
+                    </td>
+                    <td>
+                      <div><strong>{row.Target_Label || row.Target_Name || row.Target_ID}</strong></div>
+                      <div className="muted" style={{fontSize: "11px", marginTop: "2px"}}>{row.Target_ID}</div>
+                    </td>
+                    <td>
+                      <div><strong>{row.Disease_Label || row.Ensemble_Disease_Name}</strong></div>
+                      <div className="muted" style={{fontSize: "11px", marginTop: "2px"}}>{row.Disease_ID || `DIS::${row.Ensemble_Disease_Name}`}</div>
+                    </td>
                     <td>{row.gene_name || "-"}</td>
                     <td>{renderCoreSupportMeter(row.n_algo_pass)}</td>
                     <td>{renderVoteMeter(row.Total_Votes_Optional7)}</td>

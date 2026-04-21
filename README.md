@@ -42,7 +42,7 @@ npm install
 npm run build
 ```
 
-3. 启动服务（默认读取 `/Users/jhhe/Documents/dtdplat/dtd_network.sqlite`）
+3. 启动服务（默认读取 `/Users/jhhe/Documents/Playground/dtd_vote2_formal_build/dtd_network_vote2_formal.sqlite`）
 
 ```bash
 cd /Users/jhhe/Documents/Playground/dtd_platform
@@ -60,7 +60,7 @@ uvicorn app:app --host 0.0.0.0 --port 8787 --reload
 示例：
 
 ```bash
-DTD_DB_PATH=/Users/jhhe/Documents/dtdplat/dtd_network.sqlite uvicorn app:app --port 8787 --reload
+DTD_DB_PATH=/Users/jhhe/Documents/Playground/dtd_vote2_formal_build/dtd_network_vote2_formal.sqlite uvicorn app:app --port 8787 --reload
 ```
 
 ## 前端开发模式（可选）

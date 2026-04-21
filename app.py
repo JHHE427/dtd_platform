@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 STRUCTURE_DIR = STATIC_DIR / "structures"
 BRAND_ICON = STATIC_DIR / "brand-icon.svg"
-DEFAULT_DB_PATH = "/Users/jhhe/Documents/Playground/dtd_vote2_formal_build/dtd_network_vote2_formal.sqlite"
+DEFAULT_DB_PATH = BASE_DIR / "dtd_network_vote2_formal.sqlite"
 DB_PATH = Path(os.environ.get("DTD_DB_PATH", DEFAULT_DB_PATH)).expanduser()
 DEFAULT_ORIGINS = "http://127.0.0.1:8787,http://localhost:8787"
 DEFAULT_SEVEN_MODEL_FILENAME = "Candidates_withNames_andDisease_TXGNN.csv"
@@ -72,6 +72,8 @@ def parse_cors_origins() -> tuple[list[str], bool]:
 class AssetCacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         resp = await call_next(request)
+        if resp is None:
+            return Response(status_code=404)
         path = request.url.path
         resp.headers.setdefault("X-Content-Type-Options", "nosniff")
         resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
@@ -81,7 +83,45 @@ class AssetCacheMiddleware(BaseHTTPMiddleware):
             resp.headers["Cache-Control"] = "no-cache"
         return resp
 
-app = FastAPI(title="Disease Network Atlas", version="1.0.0")
+from contextlib import asynccontextmanager
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+def _apply_db_pragmas_once() -> None:
+    """Set file-level pragmas (WAL) on startup via a writable connection."""
+    if not DB_PATH.exists():
+        return
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.commit()
+        finally:
+            conn.close()
+    except sqlite3.OperationalError:
+        pass
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    _apply_db_pragmas_once()
+    # Asynchronously preload static massive CSV files on boot
+    loop = asyncio.get_running_loop()
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        f1 = loop.run_in_executor(executor, load_seven_model_lookup)
+        f2 = loop.run_in_executor(executor, load_ncrna_drug_summary)
+        f3 = loop.run_in_executor(executor, load_ttd_summary)
+        f4 = loop.run_in_executor(executor, load_released_dti_audit)
+        f5 = loop.run_in_executor(executor, load_released_disease_summary)
+        f6 = loop.run_in_executor(executor, load_ttd_overlap_rows)
+        f7 = loop.run_in_executor(executor, load_ncrna_drug_evidence_rows)
+        f8 = loop.run_in_executor(executor, load_ncrna_drug_edge_rows)
+        f9 = loop.run_in_executor(executor, load_ncrna_id_lookup)
+        await asyncio.gather(f1, f2, f3, f4, f5, f6, f7, f8, f9)
+    yield
+
+app = FastAPI(title="Disease Network Atlas", version="1.0.0", lifespan=lifespan)
 origins, allow_credentials = parse_cors_origins()
 app.add_middleware(
     CORSMiddleware,
@@ -104,9 +144,24 @@ def sqlite_operational_error_handler(_, exc: sqlite3.OperationalError):
 def get_conn() -> sqlite3.Connection:
     if not DB_PATH.exists():
         raise HTTPException(status_code=500, detail=f"Database not found: {DB_PATH}")
-    conn = sqlite3.connect(DB_PATH)
+    # Read-only URI avoids accidental writes and allows safer concurrent access.
+    uri = f"file:{DB_PATH}?mode=ro"
+    conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    # Per-connection pragmas tuned for read-heavy analytics workload.
+    conn.execute("PRAGMA cache_size=-200000")   # ~200MB page cache
+    conn.execute("PRAGMA temp_store=MEMORY")
+    conn.execute("PRAGMA mmap_size=268435456")  # 256MB
     return conn
+
+
+def db_dep() -> Any:
+    """FastAPI dependency yielding a sqlite connection bound to the request."""
+    conn = get_conn()
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def normalize_list(values: str | None) -> list[str]:
@@ -1960,7 +2015,7 @@ def meta_research_summary() -> dict[str, Any]:
             {
                 "dataset": "High-confidence prediction set",
                 "table": "src_highconfidence_expand_vote4_top50_tx07",
-                "description": "Multi-model predicted Drug-Disease and Target-Disease candidates.",
+                "description": "Multi-model vote>=2 candidates used for predicted Drug-Disease, Target-Disease, and synchronized formal Drug-Target edges.",
             },
         ]
         for item in source_tables:
@@ -1984,6 +2039,31 @@ def meta_research_summary() -> dict[str, Any]:
                     "rows": ttd_overview["ttd_drug_target_moa_rows"] + ttd_overview["ttd_drug_disease_rows"] + ttd_overview["ttd_target_disease_rows"],
                 }
             )
+        for derived_table, dataset, description in [
+            (
+                "ncrna_disease_candidates",
+                "ncRNA phenotype disease expansion",
+                "Filtered ncRNA phenotype terms promoted into disease nodes and ncRNA-Disease evidence.",
+            ),
+            (
+                "opentargets_target_disease_matches",
+                "OpenTargets target-disease expansion",
+                "High-score OpenTargets associations mapped through Ensembl-UniProt-target and ontology labels.",
+            ),
+        ]:
+            try:
+                rows = conn.execute(f"SELECT COUNT(*) FROM {derived_table}").fetchone()[0]
+            except sqlite3.OperationalError:
+                rows = 0
+            if rows:
+                source_tables.append(
+                    {
+                        "dataset": dataset,
+                        "table": derived_table,
+                        "description": description,
+                        "rows": rows,
+                    }
+                )
 
         src_prediction_cols = {
             row["name"]
@@ -4614,36 +4694,43 @@ def graph(
             extra_filter, extra_params = category_type_filter()
             next_frontier: set[str] = set()
 
-            for fid in frontier_list:
+            # Single batched IN-query per hop instead of one query per frontier node.
+            ph = ",".join(["?"] * len(frontier_list))
+            fetch_cap = max(limit * 4, per_node_cap * len(frontier_list) * 2)
+            rows = conn.execute(
+                f"""
+                SELECT source, target, edge_category, edge_type, evidence_source,
+                       weight, display_color, support_score, remark
+                FROM network_edges e
+                WHERE (e.source IN ({ph}) OR e.target IN ({ph}))
+                {extra_filter}
+                ORDER BY weight DESC, support_score DESC
+                LIMIT ?
+                """,
+                [*frontier_list, *frontier_list, *extra_params, fetch_cap],
+            ).fetchall()
+
+            per_node_count: dict[str, int] = {fid: 0 for fid in frontier_list}
+            for e in rows:
                 if len(edge_map) >= limit:
                     break
-                rows = conn.execute(
-                    f"""
-                    SELECT source, target, edge_category, edge_type, evidence_source,
-                           weight, display_color, support_score, remark
-                    FROM network_edges e
-                    WHERE (e.source = ? OR e.target = ?)
-                    {extra_filter}
-                    ORDER BY weight DESC, support_score DESC
-                    LIMIT ?
-                    """,
-                    [fid, fid, *extra_params, per_node_cap],
-                ).fetchall()
-
-                for e in rows:
-                    key = (e["source"], e["target"], e["edge_category"], e["edge_type"])
-                    if key in edge_map:
-                        continue
-                    edge_map[key] = dict(e)
-                    s, t = e["source"], e["target"]
-                    if s not in node_ids:
-                        next_frontier.add(s)
-                    if t not in node_ids:
-                        next_frontier.add(t)
-                    node_ids.add(s)
-                    node_ids.add(t)
-                    if len(edge_map) >= limit:
-                        break
+                key = (e["source"], e["target"], e["edge_category"], e["edge_type"])
+                if key in edge_map:
+                    continue
+                s, t = e["source"], e["target"]
+                # Which frontier endpoint owns this edge (both may be in frontier).
+                owner = s if s in per_node_count else t if t in per_node_count else None
+                if owner is not None and per_node_count[owner] >= per_node_cap:
+                    continue
+                if owner is not None:
+                    per_node_count[owner] += 1
+                edge_map[key] = dict(e)
+                if s not in node_ids:
+                    next_frontier.add(s)
+                if t not in node_ids:
+                    next_frontier.add(t)
+                node_ids.add(s)
+                node_ids.add(t)
 
             frontier = next_frontier - visited_frontier
             visited_frontier |= frontier
