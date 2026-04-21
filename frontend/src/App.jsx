@@ -766,11 +766,20 @@ export default function App() {
     const nextCenter = pickDefaultAnalysisCenter(researchSummary);
     if (!nextCenter) return;
     setCenterNode(nextCenter);
-    if (page === "analysis") {
-      loadDetail(nextCenter, { withNeighbors: true });
-      loadGraph(nextCenter);
-    }
-  }, [centerNode, loadDetail, loadGraph, page, researchSummary]);
+    loadDetail(nextCenter, { withNeighbors: true });
+    loadGraph(nextCenter);
+  }, [centerNode, loadDetail, loadGraph, researchSummary]);
+
+  // Ensure the Analysis page always has a graph rendered when visited.
+  // Covers the case where the user lands on Analysis before the default
+  // center was picked, or after having cleared the graph via filters.
+  React.useEffect(() => {
+    if (page !== "analysis") return;
+    if (!centerNode) return;
+    if ((graph?.nodes?.length || 0) > 0) return;
+    if (graphLoading) return;
+    loadGraph(centerNode);
+  }, [page, centerNode, graph?.nodes?.length, graphLoading, loadGraph]);
 
   React.useEffect(() => {
     if (!centerNode) return;
