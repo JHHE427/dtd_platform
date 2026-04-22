@@ -2994,7 +2994,7 @@ button.primary:hover,
 
 .analysis-layout {
   display: grid;
-  grid-template-columns: minmax(0, 860px) 340px;
+  grid-template-columns: minmax(0, 860px) 400px;
   justify-content: center;
   gap: 14px;
   min-height: calc(100vh - 220px);
@@ -7262,5 +7262,12 @@ pre.smiles-box {
   .nd-skel-line,
   .kpi-card { animation: none !important; transition: none !important; }
 }
+
+/* ── 16. Node-detail header overlay fix ─────────────────────────────────── */
+/* .card::before paints a white highlight over the whole card;
+   suppress it on node-detail-panel so the colored type header shows through. */
+.node-detail-panel::before { display: none !important; }
+.node-detail-header { position: relative; z-index: 2; }
+.node-detail-body   { position: relative; z-index: 1; }
 
 /* End of Design System Upgrade 2026-04-21 */
