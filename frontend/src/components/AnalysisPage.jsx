@@ -1001,17 +1001,18 @@ export default function AnalysisPage({
             ) : null}
           </div>
 
-          <section className={`analysis-results-panel ${collapsedSections.currentResults ? "is-collapsed" : ""}`}>
-            <div className="card-head">
-              <h3>Current Network Results</h3>
-              {!collapsedSections.currentResults ? <div className="muted">Top visible relationships in the current network view. Click column labels to sort the current result set.</div> : null}
-            </div>
-            <SectionToggle
-              collapsed={collapsedSections.currentResults}
-              onToggle={() => setCollapsedSections((prev) => ({ ...prev, currentResults: !prev.currentResults }))}
-              label="current network results"
-            />
-            {!collapsedSections.currentResults ? <div className="result-table-wrap analysis-result-wrap">
+          <div className="canvas-results-bar">
+            <span className="canvas-results-bar__title">Current Network Results</span>
+            <button
+              type="button"
+              className="canvas-results-bar__toggle"
+              onClick={() => setCollapsedSections((prev) => ({ ...prev, currentResults: !prev.currentResults }))}
+            >
+              {collapsedSections.currentResults ? "Show ▾" : "Hide ▴"}
+            </button>
+          </div>
+          {!collapsedSections.currentResults ? (
+            <div className="result-table-wrap analysis-result-wrap">
               <table className="result-table edge-result-table analysis-result-table">
                 <thead>
                   <tr>
@@ -1040,8 +1041,8 @@ export default function AnalysisPage({
                   )}
                 </tbody>
               </table>
-            </div> : null}
-          </section>
+            </div>
+          ) : null}
         </section>
 
         <aside className={`side-column ${detail?.node ? "" : "is-empty"}`}>

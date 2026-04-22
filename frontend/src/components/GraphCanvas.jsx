@@ -539,6 +539,7 @@ export default function GraphCanvas({
   const sampled = (graph?.edges?.length || 0) > (graphData?.links?.length || 0);
 
   return (
+    <div className="graph-canvas-frame">
     <div
       ref={shellRef}
       className="graph-canvas-shell"
@@ -604,13 +605,9 @@ export default function GraphCanvas({
             ctx.arc(node.x, node.y, Math.max(2.4, r * 0.92), 0, 2 * Math.PI);
             ctx.fillStyle = baseNodeColor;
             ctx.fill();
-            if (node.node_type === "Disease") {
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, Math.max(3.2, r + 1.4), 0, 2 * Math.PI);
-              ctx.strokeStyle = "rgba(255,255,255,0.4)";
-              ctx.lineWidth = 1;
-              ctx.stroke();
-            }
+            ctx.lineWidth = node.node_type === "Disease" ? 1.2 : 0.8;
+            ctx.strokeStyle = "rgba(255,255,255,0.5)";
+            ctx.stroke();
             ctx.restore();
             return;
           }
@@ -841,7 +838,7 @@ export default function GraphCanvas({
           const curZoom = zoomRef.current;
           const zoomAlpha = 0.62 + fadeBetween(curZoom, 0.95, 1.85) * 0.34;
           const supportBoost = l.predictedSupportTier === "high" ? 1.18 : l.predictedSupportTier === "medium" ? 1.08 : 1;
-          const alphaBase = directlyTouchesFocus ? 0.94 : neighborBand ? 0.58 : inFocus ? 0.38 : focusId ? 0.035 : 0.18;
+          const alphaBase = directlyTouchesFocus ? 0.94 : neighborBand ? 0.58 : inFocus ? 0.36 : focusId ? 0.03 : 0.20;
           const alpha = alphaBase * zoomAlpha * supportBoost * categoryBoost;
           const zoomWidthBoost = fadeBetween(curZoom, 1.05, 2.1) * 0.42;
           const widthBase = directlyTouchesFocus ? 1.1 : neighborBand ? 0.92 : inFocus ? 0.8 : 0.58;
@@ -966,10 +963,13 @@ export default function GraphCanvas({
         <span><i className="line kp" />Known+Predicted</span>
         <span><i className="ring-mark" />Evidence Ring</span>
       </div>
-      <div className="graph-hint">
-        Wheel zoom · drag canvas pan · select node · double click expand
-        {sampled ? ` · ${densityMode} · displaying ${graphData.links.length}/${graph.edges.length} edges` : ` · ${densityMode}`}
-      </div>
+    </div>
+    <div className="canvas-statusbar">
+      <span className="canvas-statusbar__hint">Wheel zoom · drag to pan · click to select · double-click expand</span>
+      <span className="canvas-statusbar__tag">
+        {sampled ? `${densityMode} · ${graphData.links.length}/${graph.edges.length} edges` : densityMode}
+      </span>
+    </div>
     </div>
   );
 }
