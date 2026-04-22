@@ -695,11 +695,11 @@ export default function GraphCanvas({
             drawArc(ev.Predicted, "#fb923c");
             drawArc(ev["Known+Predicted"], "#8b5cf6");
           }
-          const zoomShowAll = scale >= 2.1;
-            const zoomShowPinned = scale >= 1.05 && (node.importance || 0) >= 16;
-            const zoomShowImportant = scale >= 1.3 && (node.importance || 0) >= 10;
-            const zoomShowMedium = scale >= 1.6 && (node.importance || 0) >= 6;
-            const zoomShowWide = scale >= 2.05 && (node.importance || 0) >= 3;
+          const zoomShowAll = scale >= 1.7;
+            const zoomShowPinned = scale >= 0.9 && (node.importance || 0) >= 12;
+            const zoomShowImportant = scale >= 1.1 && (node.importance || 0) >= 7;
+            const zoomShowMedium = scale >= 1.3 && (node.importance || 0) >= 4;
+            const zoomShowWide = scale >= 1.7 && (node.importance || 0) >= 2;
           const shouldShowLabel =
             isHover ||
             isSelected ||
@@ -725,12 +725,12 @@ export default function GraphCanvas({
               labelTier === "focus"
                 ? 1
                 : labelTier === "pinned"
-                  ? fadeBetween(scale, 0.9, 1.2)
+                  ? fadeBetween(scale, 0.75, 1.0)
                   : labelTier === "important"
-                    ? fadeBetween(scale, 1.05, 1.55)
+                    ? fadeBetween(scale, 0.9, 1.25)
                     : zoomShowAll
                       ? 1
-                      : fadeBetween(scale, 1.45, 2.15);
+                      : fadeBetween(scale, 1.1, 1.7);
             const fsBase = labelTier === "focus" ? 12.6 : labelTier === "pinned" ? 12 : labelTier === "important" ? 11.2 : 10.6;
             const fs = Math.max(8.5, fsBase / Math.max(scale, 0.8));
             const fontWeight = labelTier === "normal" ? 600 : 700;
