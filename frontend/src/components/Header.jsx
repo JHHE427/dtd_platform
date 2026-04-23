@@ -141,6 +141,10 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
               {tab[0].toUpperCase() + tab.slice(1)}
             </button>
           ))}
+          <span className="system-status" title="Live Data Source">
+            <span className="system-status__dot" aria-hidden="true" />
+            Live Data Source
+          </span>
         </nav>
 
         <div className="quick-search" ref={boxRef}>
