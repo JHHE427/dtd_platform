@@ -175,6 +175,19 @@ function labelAnchors(node, radius) {
   });
 }
 
+function compactLabel(text, tier) {
+  const source = String(text || "");
+  const max =
+    tier === "focus"
+      ? 42
+      : tier === "pinned"
+        ? 34
+        : tier === "important"
+          ? 28
+          : 22;
+  return source.length > max ? `${source.slice(0, max - 1)}…` : source;
+}
+
 function clamp01(value) {
   return Math.max(0, Math.min(1, value));
 }
@@ -247,9 +260,11 @@ export default function GraphCanvas({
   const zoomRef = React.useRef(1);
   const labelLayoutRef = React.useRef({ frameBucket: -1, boxes: [], counts: { focus: 0, pinned: 0, important: 0, normal: 0 } });
   const pulseRAFRef = React.useRef(null);
+  const firstGraphRef = React.useRef(true);
   const [size, setSize] = React.useState({ w: 1000, h: 620 });
   const [hoverId, setHoverId] = React.useState("");
   const [selectedId, setSelectedId] = React.useState("");
+  const [transitionState, setTransitionState] = React.useState({ active: false, token: 0 });
 
   React.useEffect(() => {
     const el = shellRef.current;
@@ -424,18 +439,38 @@ export default function GraphCanvas({
     return map;
   }, [graphData]);
 
+  const graphSignature = React.useMemo(() => {
+    const nodes = graphData.nodes || [];
+    const links = graphData.links || [];
+    return `${centerId || ""}|${nodes.length}|${links.length}|${nodes.slice(0, 10).map((n) => n.id).join(",")}`;
+  }, [centerId, graphData.nodes, graphData.links]);
+
+  React.useEffect(() => {
+    if (!graphSignature) return undefined;
+    if (firstGraphRef.current) {
+      firstGraphRef.current = false;
+      setTransitionState((prev) => ({ active: false, token: prev.token + 1 }));
+      return undefined;
+    }
+    setTransitionState((prev) => ({ active: true, token: prev.token + 1 }));
+    const timer = window.setTimeout(() => {
+      setTransitionState((prev) => ({ ...prev, active: false }));
+    }, 560);
+    return () => window.clearTimeout(timer);
+  }, [graphSignature]);
+
   React.useEffect(() => {
     if (!fgRef.current) return;
     const densityForces = {
-      sparse: { charge: -92, collision: 0.78, xStrength: 0.024, yStrength: 0.024 },
-      balanced: { charge: -126, collision: 0.84, xStrength: 0.026, yStrength: 0.026 },
-      dense: { charge: -160, collision: 0.9, xStrength: 0.028, yStrength: 0.028 }
-    }[densityMode] || { charge: -126, collision: 0.84, xStrength: 0.026, yStrength: 0.026 };
+      sparse: { charge: -108, collision: 1.1, xStrength: 0.022, yStrength: 0.022 },
+      balanced: { charge: -148, collision: 1.22, xStrength: 0.025, yStrength: 0.025 },
+      dense: { charge: -188, collision: 1.36, xStrength: 0.028, yStrength: 0.028 }
+    }[densityMode] || { charge: -148, collision: 1.22, xStrength: 0.025, yStrength: 0.025 };
     const layoutForces = {
-      organic: { center: 0.03, drift: 0.68, collision: 0.72, radial: 0.58, fitMs: 180, settleMs: 150 },
-      clustered: { center: 0.028, drift: 0.72, collision: 0.76, radial: 0.52, fitMs: 190, settleMs: 160 },
-      constellation: { center: 0.024, drift: 0.78, collision: 0.82, radial: 0.48, fitMs: 210, settleMs: 180 }
-    }[layoutMode] || { center: 0.028, drift: 0.72, collision: 0.76, radial: 0.56, fitMs: 190, settleMs: 160 };
+      organic: { center: 0.028, drift: 0.72, collision: 1.06, radial: 0.64, fitMs: 220, settleMs: 170 },
+      clustered: { center: 0.026, drift: 0.76, collision: 1.12, radial: 0.58, fitMs: 230, settleMs: 180 },
+      constellation: { center: 0.022, drift: 0.82, collision: 1.18, radial: 0.52, fitMs: 250, settleMs: 200 }
+    }[layoutMode] || { center: 0.026, drift: 0.76, collision: 1.12, radial: 0.6, fitMs: 230, settleMs: 180 };
     fgRef.current.d3Force("link").distance((l) => {
       const base =
         l.edge_category === "Drug-Target"
@@ -458,8 +493,9 @@ export default function GraphCanvas({
       "collision",
       forceCollide((node) => {
         const importance = Math.max(1, Number(node.importance) || 1);
-        return 6 + Math.sqrt(importance) * densityForces.collision * layoutForces.collision + (node.node_type === "Disease" ? 3.4 : 1.8);
-      }).iterations(ultraDenseMode ? 1 : performanceMode ? 1 : 2)
+        const typePadding = node.node_type === "Disease" ? 7 : node.node_type === "ncRNA" ? 5.8 : 5.2;
+        return 10 + Math.sqrt(importance) * 2.35 * densityForces.collision * layoutForces.collision + typePadding;
+      }).iterations(ultraDenseMode ? 2 : performanceMode ? 2 : 3)
     );
     fgRef.current.d3Force(
       "type-x",
@@ -539,7 +575,7 @@ export default function GraphCanvas({
   const sampled = (graph?.edges?.length || 0) > (graphData?.links?.length || 0);
 
   return (
-    <div className="graph-canvas-frame">
+    <div className={`graph-canvas-frame ${transitionState.active ? "is-transitioning" : ""}`}>
     <div
       ref={shellRef}
       className="graph-canvas-shell"
@@ -557,10 +593,10 @@ export default function GraphCanvas({
         backgroundColor="rgba(0,0,0,0)"
         nodeRelSize={3.4}
         warmupTicks={1}
-        cooldownTime={180}
-        cooldownTicks={12}
-        d3AlphaDecay={0.22}
-        d3VelocityDecay={0.64}
+        cooldownTime={360}
+        cooldownTicks={20}
+        d3AlphaDecay={0.13}
+        d3VelocityDecay={0.54}
         onZoom={({ k }) => { zoomRef.current = k; }}
         linkCurvature={(l) => (ultraDenseMode ? 0 : (l.curve || 0))}
         linkDirectionalArrowLength={0}
@@ -708,9 +744,9 @@ export default function GraphCanvas({
             zoomShowMedium ||
             zoomShowWide;
           if (shouldShowLabel) {
-            const text = node.display_name || node.label || node.id;
             const pinned = zoomShowPinned && !isHover && !isSelected && node.id !== centerId && !isHit;
             const labelTier = isHover || isSelected || node.id === centerId || isHit ? "focus" : pinned ? "pinned" : (node.importance || 0) >= 8 ? "important" : "normal";
+            const text = compactLabel(node.display_name || node.label || node.id, labelTier);
             const priority = isHover || isSelected || node.id === centerId || isHit || pinned;
             const budget = labelBudget(scale, densityMode);
             const counts = labelLayoutRef.current.counts || { focus: 0, pinned: 0, important: 0, normal: 0 };
@@ -952,6 +988,7 @@ export default function GraphCanvas({
           }
         }}
       />
+      <div key={transitionState.token} className="graph-switch-ripple" aria-hidden="true" />
       <div className="graph-legend-inline">
         <div className="graph-legend-inline__title">Disease-centered network</div>
         <span><i className="dot drug" />Drug</span>

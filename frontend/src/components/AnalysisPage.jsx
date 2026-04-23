@@ -96,6 +96,168 @@ function NodeDetailSkeleton() {
   );
 }
 
+function normalizeAtom(token) {
+  const bare = String(token || "").replace(/[^A-Za-z]/g, "");
+  if (!bare) return "C";
+  if (bare.length >= 2 && bare[0] === bare[0].toUpperCase() && bare[1] === bare[1].toLowerCase()) return bare.slice(0, 2);
+  return bare[0].toUpperCase();
+}
+
+function atomColor(atom) {
+  if (atom === "O") return "#ef4444";
+  if (atom === "N") return "#2563eb";
+  if (atom === "S") return "#f59e0b";
+  if (atom === "P") return "#8b5cf6";
+  if (atom === "F" || atom === "Cl" || atom === "Br" || atom === "I") return "#14b8a6";
+  return "#334155";
+}
+
+function buildSmilesSketch(smiles) {
+  const source = String(smiles || "").trim();
+  if (!source) return { atoms: [], bonds: [], viewBox: "0 0 320 160" };
+  const atoms = [];
+  const bonds = [];
+  const ringMap = new Map();
+  const stack = [];
+  let last = -1;
+  let pendingBond = 1;
+  let branchSeed = 0;
+  const addAtom = (symbol) => {
+    const parent = atoms[last];
+    const depth = stack.length;
+    const idx = atoms.length;
+    const phase = idx % 6;
+    const step = 38;
+    const angle = parent ? (phase % 2 ? -0.42 : 0.42) + depth * 0.42 + (branchSeed % 3) * 0.18 : 0;
+    const atom = {
+      id: idx,
+      symbol: normalizeAtom(symbol),
+      x: parent ? parent.x + Math.cos(angle) * step : 24,
+      y: parent ? parent.y + Math.sin(angle) * step : 78
+    };
+    atoms.push(atom);
+    if (last >= 0) bonds.push({ source: last, target: idx, order: pendingBond });
+    last = idx;
+    pendingBond = 1;
+  };
+  for (let i = 0; i < source.length && atoms.length < 72; i += 1) {
+    const ch = source[i];
+    if (ch === "=") { pendingBond = 2; continue; }
+    if (ch === "#") { pendingBond = 3; continue; }
+    if (ch === "-") { pendingBond = 1; continue; }
+    if (ch === "(") { stack.push(last); branchSeed += 1; continue; }
+    if (ch === ")") { last = stack.pop() ?? last; continue; }
+    if (ch === ".") { last = -1; continue; }
+    if (/\d/.test(ch)) {
+      if (last >= 0) {
+        if (ringMap.has(ch)) {
+          const prev = ringMap.get(ch);
+          if (prev !== last) bonds.push({ source: prev, target: last, order: pendingBond });
+          ringMap.delete(ch);
+          pendingBond = 1;
+        } else {
+          ringMap.set(ch, last);
+        }
+      }
+      continue;
+    }
+    if (ch === "[") {
+      const close = source.indexOf("]", i + 1);
+      if (close > i) {
+        addAtom(source.slice(i + 1, close));
+        i = close;
+      }
+      continue;
+    }
+    if (/[A-Z]/.test(ch)) {
+      const next = source[i + 1];
+      if (next && /[a-z]/.test(next) && ["Cl", "Br"].includes(ch + next)) {
+        addAtom(ch + next);
+        i += 1;
+      } else {
+        addAtom(ch);
+      }
+      continue;
+    }
+    if (/[cnops]/.test(ch)) addAtom(ch);
+  }
+  if (!atoms.length) return { atoms: [], bonds: [], viewBox: "0 0 320 160" };
+  const minX = Math.min(...atoms.map((a) => a.x));
+  const maxX = Math.max(...atoms.map((a) => a.x));
+  const minY = Math.min(...atoms.map((a) => a.y));
+  const maxY = Math.max(...atoms.map((a) => a.y));
+  const pad = 34;
+  return {
+    atoms,
+    bonds,
+    viewBox: `${minX - pad} ${minY - pad} ${Math.max(180, maxX - minX + pad * 2)} ${Math.max(128, maxY - minY + pad * 2)}`
+  };
+}
+
+function SmilesStructureSvg({ smiles, label }) {
+  const sketch = React.useMemo(() => buildSmilesSketch(smiles), [smiles]);
+  if (!smiles || !sketch.atoms.length) return null;
+  return (
+    <div className="smiles-render-card">
+      <div className="smiles-render-head">
+        <strong>2D SMILES structure</strong>
+        <span>{label || "dynamic vector preview"}</span>
+      </div>
+      <svg className="smiles-render-svg" viewBox={sketch.viewBox} role="img" aria-label="SMILES-derived 2D structure">
+        {sketch.bonds.map((bond, idx) => {
+          const a = sketch.atoms[bond.source];
+          const b = sketch.atoms[bond.target];
+          if (!a || !b) return null;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const len = Math.max(1, Math.hypot(dx, dy));
+          const offX = (-dy / len) * 3.4;
+          const offY = (dx / len) * 3.4;
+          const offsets = bond.order === 3 ? [-1, 0, 1] : bond.order === 2 ? [-0.65, 0.65] : [0];
+          return offsets.map((off) => (
+            <line
+              key={`${idx}-${off}`}
+              x1={a.x + offX * off}
+              y1={a.y + offY * off}
+              x2={b.x + offX * off}
+              y2={b.y + offY * off}
+              stroke="rgba(51,65,85,0.78)"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+          ));
+        })}
+        {sketch.atoms.map((atom) => {
+          const isCarbon = atom.symbol === "C";
+          const color = atomColor(atom.symbol);
+          return (
+            <g key={atom.id} transform={`translate(${atom.x} ${atom.y})`}>
+              <circle r={isCarbon ? 5.4 : 8.2} fill={isCarbon ? "rgba(255,255,255,0.96)" : color} stroke={color} strokeWidth="1.4" />
+              {!isCarbon ? <text textAnchor="middle" dominantBaseline="central" fontSize="8.4" fontWeight="800" fill="#fff">{atom.symbol}</text> : null}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function ScoreBar({ value, label, invert = false, compact = false }) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return <span className="score-bar-empty">NA</span>;
+  const bounded = Math.max(0, Math.min(1, numeric));
+  const fill = invert ? 1 - bounded : bounded;
+  return (
+    <span className={`score-bar ${compact ? "is-compact" : ""}`} style={{ "--score-pct": `${Math.max(3, fill * 100)}%` }}>
+      <span className="score-bar__meta">
+        {label ? <em>{label}</em> : null}
+        <strong>{numeric.toFixed(3)}</strong>
+      </span>
+      <span className="score-bar__track"><i /></span>
+    </span>
+  );
+}
+
 function NodeDetailEmpty({ isOverview, items }) {
   return (
     <div className="nd-empty">
@@ -1036,7 +1198,7 @@ export default function AnalysisPage({
                       <td>{edge.target_label || edge.target}</td>
                       <td>{edge.edge_category}</td>
                       <td><span className={`db-badge ${edgeTypeBadgeClass(edge.edge_type)}`}>{edge.edge_type}</span></td>
-                      <td>{edge.support_score ?? "NA"}</td>
+                      <td><ScoreBar value={edge.support_score} compact /></td>
                       <td>{edge.remark || "-"}</td>
                     </tr>
                   )) : (
@@ -1060,6 +1222,7 @@ export default function AnalysisPage({
                 <>
                   {detail.node.node_type === "Drug" ? (
                     <div className="annot-box">
+                      <SmilesStructureSvg smiles={smiles} label={detail.node.display_name || detail.node.label} />
                       <div className="annot-title">SMILES</div>
                       <pre className="annot-text smiles-box">{smiles || "SMILES not available"}</pre>
                       {!smiles ? <div className="annot-reason">{drugMissingSmilesReason}</div> : null}
@@ -1481,7 +1644,7 @@ export default function AnalysisPage({
                     <div className={`algo-evidence-card model-${item.key} ${item.count > 0 ? "is-on" : "is-off"}`} key={`ai-summary-${item.label}`}>
                       <div className="algo-evidence-head"><span>{item.label}</span><strong>{item.count} rows</strong></div>
                       <div className="algo-evidence-meta">Visible prediction support</div>
-                      <div className="algo-evidence-value">{item.avg != null ? item.avg : "-"}</div>
+                      <div className="algo-evidence-value">{item.avg != null ? <ScoreBar value={item.avg} compact /> : "-"}</div>
                     </div>
                   ))}
                 </div>
@@ -1553,7 +1716,10 @@ export default function AnalysisPage({
                             {renderVoteMeter(row.seven_model_total_votes)}
                           </div>
                         </div>
-                        <div className="mechanism-link-meta">TXGNN score={row.TXGNN_score ?? "-"} · ENR FDR={row.ENR_FDR ?? "-"}</div>
+                        <div className="mechanism-score-grid">
+                          <ScoreBar value={row.TXGNN_score} label="TXGNN" />
+                          <ScoreBar value={row.ENR_FDR} label="ENR FDR" invert />
+                        </div>
                         <div className="mechanism-link-meta">{((row.seven_model_supporting_models || []).join(", ")) || "no explicit per-model list"}</div>
                         <div className="algo-evidence-grid compact seven-model-score-grid">
                           {SEVEN_DTI_MODEL_META.map((item) => {
@@ -1563,7 +1729,7 @@ export default function AnalysisPage({
                               <div className={`algo-evidence-card model-${item.key} ${score != null || supported ? "is-on" : "is-off"}`} key={item.label}>
                                 <div className="algo-evidence-head"><span>{item.label}</span><strong>{score != null ? "Scored" : "NA"}</strong></div>
                                 <div className="algo-evidence-meta">Raw DTI model output</div>
-                                <div className="algo-evidence-value">{score != null ? score : "-"}</div>
+                                <div className="algo-evidence-value">{score != null ? <ScoreBar value={score} compact /> : "-"}</div>
                               </div>
                             );
                           })}
