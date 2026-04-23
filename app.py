@@ -2013,9 +2013,9 @@ def meta_research_summary() -> dict[str, Any]:
                 "description": "CTD-based Target-Disease evidence including exact and substring matching.",
             },
             {
-                "dataset": "High-confidence prediction set",
+                "dataset": "Formal expanded prediction set",
                 "table": "src_highconfidence_expand_vote4_top50_tx07",
-                "description": "Multi-model vote>=2 candidates used for predicted Drug-Disease, Target-Disease, and synchronized formal Drug-Target edges.",
+                "description": "Formal prediction rows after vote>=2 release plus resultsdti TXGNN disease-candidate expansion; used for predicted Drug-Disease, Target-Disease, and synchronized Drug-Target edges.",
             },
         ]
         for item in source_tables:
@@ -2040,6 +2040,11 @@ def meta_research_summary() -> dict[str, Any]:
                 }
             )
         for derived_table, dataset, description in [
+            (
+                "src_expanded_dti_candidates_txgnn",
+                "resultsdti TXGNN disease-candidate expansion",
+                "Seven-model DTI candidates with TXGNN disease assignment; new drug-target-disease keys are promoted into the formal prediction layer with full audit status.",
+            ),
             (
                 "ncrna_disease_candidates",
                 "ncRNA phenotype disease expansion",
