@@ -51,7 +51,12 @@ function renderEdgeStats(items) {
 function SectionToggle({ collapsed, onToggle, label }) {
   return (
     <div className="page-section-toggle-row">
-      <button type="button" className="page-section-toggle" onClick={onToggle} aria-expanded={!collapsed}>
+      <button
+        type="button"
+        className={`page-section-toggle ${collapsed ? "is-collapsed" : ""}`}
+        onClick={onToggle}
+        aria-expanded={!collapsed}
+      >
         <strong>{collapsed ? "Show" : "Hide"} {label}</strong>
       </button>
     </div>
@@ -59,16 +64,16 @@ function SectionToggle({ collapsed, onToggle, label }) {
 }
 
 const NODE_TYPE_CFG = {
-  Drug:    { grad: "linear-gradient(135deg,#3B82F6 0%,#2563EB 100%)", accent: "#2563EB" },
-  Target:  { grad: "linear-gradient(135deg,#F59E0B 0%,#D97706 100%)", accent: "#D97706" },
-  Disease: { grad: "linear-gradient(135deg,#EF4444 0%,#DC2626 100%)", accent: "#DC2626" },
-  ncRNA:   { grad: "linear-gradient(135deg,#14B8A6 0%,#0D9488 100%)", accent: "#0D9488" },
+  Drug:    { grad: "linear-gradient(90deg, rgba(37,99,235,0.94) 0%, rgba(37,99,235,0.52) 58%, transparent 100%)", accent: "#2563EB" },
+  Target:  { grad: "linear-gradient(90deg, rgba(217,119,6,0.94) 0%, rgba(245,158,11,0.5) 58%, transparent 100%)", accent: "#D97706" },
+  Disease: { grad: "linear-gradient(90deg, rgba(220,38,38,0.94) 0%, rgba(239,68,68,0.5) 58%, transparent 100%)", accent: "#DC2626" },
+  ncRNA:   { grad: "linear-gradient(90deg, rgba(13,148,136,0.94) 0%, rgba(20,184,166,0.5) 58%, transparent 100%)", accent: "#0D9488" },
 };
 
 function NodeDetailHeader({ node }) {
-  const cfg = NODE_TYPE_CFG[node?.node_type] || { grad: "linear-gradient(135deg,#94a3b8,#64748b)", accent: "#64748b" };
+  const cfg = NODE_TYPE_CFG[node?.node_type] || { grad: "linear-gradient(90deg, rgba(100,116,139,0.92) 0%, rgba(148,163,184,0.5) 58%, transparent 100%)", accent: "#64748b" };
   return (
-    <div className="node-detail-header" style={{ background: cfg.grad }}>
+    <div className="node-detail-header" style={{ background: cfg.grad, "--node-accent": cfg.accent }}>
       <span className="nd-type-badge">{node?.node_type}</span>
       <strong className="nd-name">{node?.display_name || node?.label}</strong>
       <div className="nd-id">{node?.id}</div>

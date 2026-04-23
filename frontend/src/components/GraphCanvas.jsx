@@ -282,10 +282,10 @@ export default function GraphCanvas({
     let keepLinks = allLinks;
 
     const densityCfg = {
-      sparse: { triggerEdges: 220, triggerNodes: 140, topNodes: 64, topEdges: 96 },
-      balanced: { triggerEdges: 420, triggerNodes: 260, topNodes: 104, topEdges: 160 },
-      dense: { triggerEdges: 700, triggerNodes: 420, topNodes: 180, topEdges: 280 }
-    }[densityMode] || { triggerEdges: 760, triggerNodes: 520, topNodes: 300, topEdges: 520 };
+      sparse: { triggerEdges: 260, triggerNodes: 170, topNodes: 80, topEdges: 120 },
+      balanced: { triggerEdges: 600, triggerNodes: 360, topNodes: 160, topEdges: 240 },
+      dense: { triggerEdges: 1000, triggerNodes: 620, topNodes: 260, topEdges: 420 }
+    }[densityMode] || { triggerEdges: 1000, triggerNodes: 700, topNodes: 320, topEdges: 520 };
 
     // For very dense graphs, render a readable center-prioritized local subgraph.
     if (allLinks.length > densityCfg.triggerEdges || allNodes.length > densityCfg.triggerNodes) {
@@ -967,7 +967,9 @@ export default function GraphCanvas({
     <div className="canvas-statusbar">
       <span className="canvas-statusbar__hint">Wheel zoom · drag to pan · click to select · double-click expand</span>
       <span className="canvas-statusbar__tag">
-        {sampled ? `${densityMode} · ${graphData.links.length}/${graph.edges.length} edges` : densityMode}
+        {sampled
+          ? `${densityMode} · ${graphData.nodes.length}/${graph.nodes.length} nodes · ${graphData.links.length}/${graph.edges.length} edges`
+          : `${densityMode} · ${graph.nodes.length} nodes · ${graph.edges.length} edges`}
       </span>
     </div>
     </div>

@@ -23,7 +23,7 @@ function pickDefaultAnalysisCenter(summary) {
 function getDefaultGraphControls(isWholeGraph = false) {
   return {
     depth: 2,
-    limit: isWholeGraph ? 80 : 150,
+    limit: isWholeGraph ? 120 : 300,
     categories: [...DEFAULT_GRAPH_CATEGORIES],
     types: [...DEFAULT_GRAPH_TYPES],
   };
@@ -49,7 +49,7 @@ function getInitialAnalysisConfig() {
     centerNode: center || "",
     graphMode: mode === "full" ? "full" : "core",
     depth: Number.isFinite(depth) && depth >= 1 && depth <= 2 ? depth : 2,
-    limit: Number.isFinite(limit) && limit >= 50 && limit <= 240 ? limit : defaultControls.limit,
+    limit: Number.isFinite(limit) && limit >= 50 && limit <= 2500 ? limit : defaultControls.limit,
     categories: categories ? categories.split(",").filter(Boolean) : defaultControls.categories,
     types: types ? types.split(",").filter(Boolean) : defaultControls.types,
     densityMode: density === "sparse" || density === "dense" || density === "balanced" ? density : (isWholeGraph ? "sparse" : "balanced"),
@@ -897,7 +897,7 @@ export default function App() {
                 onResetFilters={async () => {
                   const next = getDefaultGraphControls(false);
                   setGraphMode("core");
-                  setDensityMode("sparse");
+                  setDensityMode("balanced");
                   setGraphControls(next);
                   await loadGraph(centerNode, next);
                   showToast("ok", "Network filters restored to default settings");
@@ -905,7 +905,7 @@ export default function App() {
                 onDenseGraph={async () => {
                   const next = {
                     depth: 2,
-                    limit: 220,
+                    limit: 500,
                     categories: [...DEFAULT_GRAPH_CATEGORIES],
                     types: [...DEFAULT_GRAPH_TYPES]
                   };
@@ -923,7 +923,7 @@ export default function App() {
                   }
                   const next = getDefaultGraphControls(false);
                   setGraphMode("core");
-                  setDensityMode("sparse");
+                  setDensityMode("balanced");
                   setGraphControls(next);
                   await loadDetail(nextCenter, { withNeighbors: true });
                   await loadGraph(nextCenter, next);
