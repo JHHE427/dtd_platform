@@ -1,0 +1,24 @@
+{
+  "db_path": "/Users/jhhe/Documents/Playground/dtd_vote2_formal_build/dtd_network_vote2_formal.sqlite",
+  "results_csv": "/Users/jhhe/Downloads/resultsdti/Candidates_withNames_andDisease_TXGNN.csv",
+  "backup_path": "/Users/jhhe/Documents/Playground/dtd_vote2_formal_build/backup_before_resultsdti_expand_20260423_105406/dtd_network_vote2_formal.sqlite",
+  "candidate_rows": 9912,
+  "status_counts": {
+    "already_present": 5597,
+    "added_to_formal": 4315
+  },
+  "inserted_formal_rows": 4315,
+  "inserted_nodes": {
+    "Drug": 0,
+    "Target": 0,
+    "Disease": 0
+  },
+  "inserted_edges": {
+    "Drug-Target|Predicted": 4303,
+    "Drug-Disease|Predicted": 47,
+    "Target-Disease|Predicted": 3817
+  },
+  "formal_rows_after": 10960,
+  "network_nodes_after": 29175,
+  "network_edges_after": 109631
+}
