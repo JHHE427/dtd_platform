@@ -6,9 +6,9 @@ export default function HelpPage() {
       <div className="help-wrap">
         <div className="help-hero card">
         <div className="help-hero-text">
-            <h2>Disease Network Atlas Documentation</h2>
+            <h2>DiseaseMind Documentation</h2>
             <p className="muted">
-              This guide describes the released disease-centered drug, target, disease, and ncRNA
+              This guide describes the DiseaseMind disease-centered drug, target, disease, and ncRNA
               network atlas, its structured result tables, and the supported network-analysis workflow.
             </p>
             <div className="help-badges">
@@ -143,7 +143,7 @@ export default function HelpPage() {
           <article className="card panel-pad">
             <h3>Release Notes</h3>
             <ul>
-              <li>The disease network atlas home page provides entry to the released network analysis and result tables</li>
+              <li>The DiseaseMind home page provides entry to the released network analysis and result tables</li>
               <li>The database view provides sortable result records, support metrics, and linked record access</li>
               <li>Exports are available for current network views and structured result tables</li>
             </ul>

@@ -595,8 +595,8 @@ export default function AnalysisPage({
     <section className="page is-active analysis-page">
       <div className="analysis-header">
         <div>
-          <h2>AI-Powered Disease Network Analysis</h2>
-          <div className="analysis-subtitle">Analyze an AI-powered disease network release with retained prediction evidence, curated knowledge layers, and query-specific result subsets.</div>
+          <h2>DiseaseMind Network Analysis</h2>
+          <div className="analysis-subtitle">Analyze a disease-centered AI network release with retained prediction evidence, curated knowledge layers, and query-specific result subsets.</div>
         </div>
         <div className="toolbar">
           <select value={densityMode} onChange={(e) => onDensityModeChange(e.target.value)}>

@@ -51,6 +51,533 @@ function HomeTableToggle({ collapsed, onToggle, label = "Detailed tables" }) {
   );
 }
 
+function HeroFlatNetworkVisual() {
+  return (
+    <svg viewBox="0 0 720 420" className="hero-flat-visual" aria-hidden="true">
+      <defs>
+        <linearGradient id="flatPanelFade" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#f7fbff" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="720" height="420" rx="28" fill="url(#flatPanelFade)" />
+      <g className="flat-grid">
+        <path d="M56 82H664" />
+        <path d="M56 154H664" />
+        <path d="M56 226H664" />
+        <path d="M56 298H664" />
+        <path d="M128 44V364" />
+        <path d="M256 44V364" />
+        <path d="M384 44V364" />
+        <path d="M512 44V364" />
+      </g>
+      <g className="flat-panel flat-panel-a">
+        <rect x="52" y="54" width="168" height="78" rx="18" />
+        <circle cx="88" cy="93" r="14" />
+        <path d="M116 84H184" />
+        <path d="M116 102H168" />
+      </g>
+      <g className="flat-panel flat-panel-b">
+        <rect x="488" y="52" width="176" height="86" rx="18" />
+        <path d="M524 96C546 70 578 72 590 94C600 112 628 116 646 86" />
+        <circle cx="524" cy="96" r="7" />
+        <circle cx="590" cy="94" r="7" />
+        <circle cx="646" cy="86" r="7" />
+      </g>
+      <g className="flat-edges">
+        <path d="M152 238C238 178 306 168 370 212" />
+        <path d="M168 286C248 266 312 238 370 212" />
+        <path d="M370 212C456 152 538 168 594 246" />
+        <path d="M370 212C454 248 496 296 566 314" />
+        <path d="M370 212C330 136 292 96 244 82" />
+        <path d="M370 212C420 114 474 88 548 96" />
+        <path d="M216 334C268 286 316 256 370 212" />
+        <path d="M370 212C430 220 478 224 530 212" />
+      </g>
+      <g className="flat-ai-streams">
+        <path d="M100 366C194 322 278 278 370 212" />
+        <path d="M126 368C214 326 292 278 370 212" />
+        <path d="M152 368C234 328 306 280 370 212" />
+        <path d="M178 366C250 326 318 280 370 212" />
+        <path d="M204 362C268 324 330 278 370 212" />
+        <path d="M230 356C288 320 342 276 370 212" />
+        <path d="M256 346C306 312 354 268 370 212" />
+      </g>
+      <g className="flat-node-group">
+        <circle className="flat-node drug" cx="152" cy="238" r="17" />
+        <circle className="flat-node drug" cx="168" cy="286" r="12" />
+        <circle className="flat-node drug" cx="216" cy="334" r="13" />
+        <circle className="flat-node target" cx="244" cy="82" r="14" />
+        <circle className="flat-node target" cx="548" cy="96" r="13" />
+        <circle className="flat-node target" cx="594" cy="246" r="15" />
+        <circle className="flat-node ncrna" cx="530" cy="212" r="12" />
+        <circle className="flat-node ncrna" cx="566" cy="314" r="11" />
+        <circle className="flat-node disease" cx="370" cy="212" r="30" />
+        <circle className="flat-node disease-ring" cx="370" cy="212" r="44" />
+      </g>
+      <g className="flat-molecule" transform="translate(486 278)">
+        <path d="M18 28L48 12L80 28L80 64L48 82L18 64Z" />
+        <path d="M48 12V42L80 64" />
+        <path d="M18 64L48 42" />
+        <circle cx="18" cy="28" r="5" />
+        <circle cx="80" cy="28" r="5" />
+        <circle cx="48" cy="82" r="5" />
+      </g>
+    </svg>
+  );
+}
+
+function SevenModelMiniVisual() {
+  return (
+    <svg viewBox="0 0 260 150" className="home-mini-visual home-mini-visual-models" aria-hidden="true">
+      <rect x="12" y="12" width="236" height="126" rx="18" />
+      {[0, 1, 2, 3, 4, 5, 6].map((item) => (
+        <path key={item} d={`M38 ${34 + item * 14}C86 ${34 + item * 14} 104 74 132 75C162 76 174 ${70 - item * 5} 222 64`} />
+      ))}
+      {[0, 1, 2, 3, 4, 5, 6].map((item) => (
+        <circle key={item} className={`mini-dot dot-${item}`} cx="38" cy={34 + item * 14} r="5" />
+      ))}
+      <circle className="mini-core" cx="132" cy="75" r="18" />
+      <circle className="mini-core-ring" cx="132" cy="75" r="29" />
+      <rect className="mini-output" x="196" y="48" width="34" height="34" rx="10" />
+      <path className="mini-output-line" d="M202 92H232" />
+      <path className="mini-output-line" d="M202 106H224" />
+    </svg>
+  );
+}
+
+function EvidenceLayerMiniVisual() {
+  return (
+    <svg viewBox="0 0 260 150" className="home-mini-visual home-mini-visual-layers" aria-hidden="true">
+      <rect x="12" y="12" width="236" height="126" rx="18" />
+      <rect className="mini-layer layer-1" x="46" y="34" width="168" height="20" rx="10" />
+      <rect className="mini-layer layer-2" x="34" y="62" width="192" height="20" rx="10" />
+      <rect className="mini-layer layer-3" x="54" y="90" width="152" height="20" rx="10" />
+      <path className="mini-layer-link" d="M84 54V62" />
+      <path className="mini-layer-link" d="M132 82V90" />
+      <path className="mini-layer-link" d="M184 54V62" />
+      <circle className="mini-layer-dot drug" cx="72" cy="72" r="6" />
+      <circle className="mini-layer-dot target" cx="132" cy="44" r="6" />
+      <circle className="mini-layer-dot disease" cx="178" cy="100" r="6" />
+      <circle className="mini-layer-dot ncrna" cx="204" cy="72" r="6" />
+    </svg>
+  );
+}
+
+function DiseaseMapMiniVisual() {
+  return (
+    <svg viewBox="0 0 260 150" className="home-mini-visual home-mini-visual-map" aria-hidden="true">
+      <rect x="12" y="12" width="236" height="126" rx="18" />
+      <g className="mini-map-edges">
+        <path d="M126 74C96 44 66 44 48 62" />
+        <path d="M126 74C102 100 74 110 50 98" />
+        <path d="M126 74C150 46 180 38 212 52" />
+        <path d="M126 74C154 88 178 100 220 98" />
+        <path d="M126 74C134 104 126 118 110 126" />
+        <path d="M126 74C118 48 124 34 142 26" />
+      </g>
+      <circle className="mini-map-node disease" cx="126" cy="74" r="20" />
+      <circle className="mini-map-node disease-ring" cx="126" cy="74" r="32" />
+      <circle className="mini-map-node drug" cx="48" cy="62" r="8" />
+      <circle className="mini-map-node drug" cx="50" cy="98" r="7" />
+      <circle className="mini-map-node target" cx="212" cy="52" r="8" />
+      <circle className="mini-map-node target" cx="220" cy="98" r="7" />
+      <circle className="mini-map-node ncrna" cx="110" cy="126" r="7" />
+      <circle className="mini-map-node target" cx="142" cy="26" r="6" />
+    </svg>
+  );
+}
+
+function ReleaseDatabaseMiniVisual() {
+  return (
+    <svg viewBox="0 0 260 150" className="home-mini-visual home-mini-visual-db" aria-hidden="true">
+      <rect x="12" y="12" width="236" height="126" rx="18" />
+      <g className="mini-db-table">
+        <rect x="38" y="34" width="78" height="82" rx="12" />
+        <path d="M50 54H104" />
+        <path d="M50 74H104" />
+        <path d="M50 94H88" />
+      </g>
+      <path className="mini-db-arrow" d="M124 76H154" />
+      <path className="mini-db-arrow-head" d="M148 68L156 76L148 84" />
+      <g className="mini-db-api">
+        <rect x="166" y="38" width="56" height="72" rx="14" />
+        <circle cx="194" cy="62" r="9" />
+        <path d="M180 84H208" />
+        <path d="M184 98H204" />
+      </g>
+    </svg>
+  );
+}
+
+function MoleculeFigureVisual() {
+  return (
+    <svg viewBox="0 0 360 172" className="home-atlas-visual home-atlas-visual-molecule" aria-hidden="true">
+      <rect x="12" y="12" width="336" height="148" rx="24" />
+      <g className="atlas-soft-grid">
+        <path d="M42 48H318" />
+        <path d="M42 86H318" />
+        <path d="M42 124H318" />
+        <path d="M80 32V142" />
+        <path d="M150 32V142" />
+        <path d="M220 32V142" />
+        <path d="M290 32V142" />
+      </g>
+      <g className="atlas-molecule-core">
+        <path d="M98 70L132 50L168 70V110L132 130L98 110Z" />
+        <path d="M168 70L204 50L238 70V110L204 130L168 110" />
+        <path d="M132 50V32" />
+        <path d="M238 70L270 52" />
+        <path d="M204 130V150" />
+        <circle className="atom drug" cx="132" cy="50" r="8" />
+        <circle className="atom target" cx="204" cy="50" r="8" />
+        <circle className="atom disease" cx="270" cy="52" r="8" />
+        <circle className="atom ncrna" cx="204" cy="130" r="8" />
+      </g>
+      <g className="atlas-score-bars">
+        <rect x="42" y="136" width="34" height="6" rx="3" />
+        <rect x="42" y="124" width="56" height="6" rx="3" />
+        <rect x="42" y="112" width="44" height="6" rx="3" />
+      </g>
+    </svg>
+  );
+}
+
+function TargetProteinFigureVisual() {
+  return (
+    <svg viewBox="0 0 360 172" className="home-atlas-visual home-atlas-visual-protein" aria-hidden="true">
+      <rect x="12" y="12" width="336" height="148" rx="24" />
+      <g className="protein-ribbon">
+        <path d="M58 112C88 54 128 54 154 96C178 134 220 128 236 82C252 34 296 48 316 86" />
+        <path d="M58 112C90 88 122 92 154 96C190 100 206 104 236 82C264 62 288 66 316 86" />
+      </g>
+      <g className="protein-sites">
+        <circle className="site site-a" cx="154" cy="96" r="14" />
+        <circle className="site site-b" cx="236" cy="82" r="13" />
+        <circle className="site site-c" cx="92" cy="82" r="9" />
+      </g>
+      <g className="sequence-bars">
+        <rect x="50" y="132" width="42" height="7" rx="4" />
+        <rect x="102" y="132" width="28" height="7" rx="4" />
+        <rect x="140" y="132" width="64" height="7" rx="4" />
+        <rect x="214" y="132" width="38" height="7" rx="4" />
+        <rect x="262" y="132" width="48" height="7" rx="4" />
+      </g>
+      <path className="target-crosslink" d="M154 96L236 82" />
+    </svg>
+  );
+}
+
+function DiseaseHeatmapFigureVisual() {
+  const rows = [
+    [2, 3, 4, 2, 1, 3, 4],
+    [1, 2, 5, 4, 2, 1, 3],
+    [3, 4, 5, 5, 4, 3, 2],
+    [2, 2, 3, 4, 5, 4, 3],
+    [1, 3, 2, 3, 4, 5, 4],
+  ];
+  return (
+    <svg viewBox="0 0 360 172" className="home-atlas-visual home-atlas-visual-heatmap" aria-hidden="true">
+      <rect x="12" y="12" width="336" height="148" rx="24" />
+      <g className="heatmap-cells">
+        {rows.map((row, rowIndex) =>
+          row.map((value, colIndex) => (
+            <rect
+              key={`${rowIndex}-${colIndex}`}
+              className={`heat heat-${value}`}
+              x={64 + colIndex * 28}
+              y={38 + rowIndex * 22}
+              width="20"
+              height="14"
+              rx="5"
+            />
+          ))
+        )}
+      </g>
+      <g className="heatmap-side-network">
+        <path d="M262 62C284 46 306 48 320 68" />
+        <path d="M262 62C284 78 300 92 320 110" />
+        <path d="M262 62C270 92 260 114 240 128" />
+        <circle className="disease" cx="262" cy="62" r="15" />
+        <circle className="drug" cx="320" cy="68" r="8" />
+        <circle className="target" cx="320" cy="110" r="8" />
+        <circle className="ncrna" cx="240" cy="128" r="7" />
+      </g>
+      <path className="heatmap-axis" d="M54 32V148H230" />
+    </svg>
+  );
+}
+
+function TtdValidationFigureVisual() {
+  return (
+    <svg viewBox="0 0 360 172" className="home-atlas-visual home-atlas-visual-ttd" aria-hidden="true">
+      <rect x="12" y="12" width="336" height="148" rx="24" />
+      <g className="ttd-badge">
+        <rect x="40" y="44" width="78" height="84" rx="18" />
+        <circle cx="79" cy="78" r="16" />
+        <path d="M58 106H100" />
+        <path d="M64 118H94" />
+      </g>
+      <g className="ttd-flow">
+        <path d="M128 86H166" />
+        <path d="M160 78L168 86L160 94" />
+        <rect x="180" y="44" width="46" height="84" rx="14" />
+        <rect x="246" y="44" width="46" height="84" rx="14" />
+        <path d="M226 86H246" />
+        <circle className="drug" cx="203" cy="66" r="8" />
+        <circle className="target" cx="203" cy="106" r="8" />
+        <circle className="disease" cx="269" cy="86" r="14" />
+      </g>
+      <g className="ttd-checks">
+        <path d="M306 58L313 65L326 50" />
+        <path d="M306 88L313 95L326 80" />
+        <path d="M306 118L313 125L326 110" />
+      </g>
+    </svg>
+  );
+}
+
+function NcrnaLinkFigureVisual() {
+  return (
+    <svg viewBox="0 0 360 172" className="home-atlas-visual home-atlas-visual-rna" aria-hidden="true">
+      <rect x="12" y="12" width="336" height="148" rx="24" />
+      <path className="rna-thread" d="M58 92C82 42 124 42 140 90C154 132 198 130 214 84C232 30 286 50 306 92" />
+      <g className="rna-base-pairs">
+        <path d="M78 68H116" />
+        <path d="M86 86H132" />
+        <path d="M158 112H196" />
+        <path d="M224 72H280" />
+        <path d="M236 94H304" />
+      </g>
+      <g className="rna-network">
+        <path d="M140 90L212 84" />
+        <path d="M212 84L268 124" />
+        <path d="M140 90L94 126" />
+        <circle className="ncrna" cx="140" cy="90" r="15" />
+        <circle className="drug" cx="94" cy="126" r="9" />
+        <circle className="target" cx="212" cy="84" r="10" />
+        <circle className="disease" cx="268" cy="124" r="12" />
+      </g>
+    </svg>
+  );
+}
+
+function PipelineFunnelFigureVisual() {
+  return (
+    <svg viewBox="0 0 360 172" className="home-atlas-visual home-atlas-visual-pipeline" aria-hidden="true">
+      <rect x="12" y="12" width="336" height="148" rx="24" />
+      <g className="pipeline-funnel">
+        <path d="M52 42H308L276 72H84Z" />
+        <path d="M84 78H276L248 106H112Z" />
+        <path d="M112 112H248L220 140H140Z" />
+      </g>
+      <g className="pipeline-models">
+        <circle cx="68" cy="58" r="5" />
+        <circle cx="90" cy="58" r="5" />
+        <circle cx="112" cy="58" r="5" />
+        <circle cx="134" cy="58" r="5" />
+        <circle cx="156" cy="58" r="5" />
+        <circle cx="178" cy="58" r="5" />
+        <circle cx="200" cy="58" r="5" />
+      </g>
+      <g className="pipeline-output">
+        <circle className="disease" cx="180" cy="126" r="13" />
+        <circle className="ring" cx="180" cy="126" r="22" />
+        <path d="M202 126H250" />
+        <path d="M250 126L242 118" />
+        <path d="M250 126L242 134" />
+      </g>
+    </svg>
+  );
+}
+
+function ReleaseStoryboardVisual() {
+  return (
+    <svg viewBox="0 0 760 230" className="home-storyboard-visual" aria-hidden="true">
+      <rect className="storyboard-bg" x="8" y="8" width="744" height="214" rx="30" />
+      <g className="storyboard-grid">
+        <path d="M54 58H706" />
+        <path d="M54 116H706" />
+        <path d="M54 174H706" />
+        <path d="M152 34V198" />
+        <path d="M304 34V198" />
+        <path d="M456 34V198" />
+        <path d="M608 34V198" />
+      </g>
+      <g className="storyboard-links">
+        <path d="M118 116C184 66 238 66 304 116" />
+        <path d="M304 116C374 164 424 164 494 116" />
+        <path d="M494 116C562 66 612 70 682 116" />
+        <path d="M118 116C238 164 376 166 682 116" />
+      </g>
+      <g className="storyboard-stage stage-models">
+        <rect x="46" y="66" width="142" height="100" rx="22" />
+        {[0, 1, 2, 3, 4, 5, 6].map((item) => (
+          <circle key={item} cx={72 + item * 16} cy={100 + (item % 2) * 24} r="6" />
+        ))}
+        <circle className="stage-core" cx="150" cy="116" r="16" />
+      </g>
+      <g className="storyboard-stage stage-evidence">
+        <rect x="236" y="54" width="150" height="124" rx="22" />
+        <rect className="layer layer-a" x="264" y="78" width="94" height="15" rx="8" />
+        <rect className="layer layer-b" x="256" y="108" width="110" height="15" rx="8" />
+        <rect className="layer layer-c" x="272" y="138" width="78" height="15" rx="8" />
+      </g>
+      <g className="storyboard-stage stage-disease">
+        <rect x="436" y="50" width="150" height="132" rx="24" />
+        <path d="M510 116C486 92 462 94 452 112" />
+        <path d="M510 116C536 90 560 94 572 112" />
+        <path d="M510 116C486 142 464 148 448 134" />
+        <path d="M510 116C538 142 562 148 580 132" />
+        <circle className="disease" cx="510" cy="116" r="24" />
+        <circle className="ring" cx="510" cy="116" r="36" />
+        <circle className="drug" cx="452" cy="112" r="8" />
+        <circle className="target" cx="572" cy="112" r="8" />
+        <circle className="ncrna" cx="448" cy="134" r="7" />
+        <circle className="target" cx="580" cy="132" r="7" />
+      </g>
+      <g className="storyboard-stage stage-release">
+        <rect x="628" y="66" width="86" height="100" rx="22" />
+        <path d="M650 96H692" />
+        <path d="M650 116H692" />
+        <path d="M650 136H680" />
+        <circle className="api-dot" cx="671" cy="78" r="7" />
+      </g>
+      <g className="storyboard-pulses">
+        <circle cx="304" cy="116" r="4" />
+        <circle cx="494" cy="116" r="4" />
+        <circle cx="682" cy="116" r="4" />
+      </g>
+    </svg>
+  );
+}
+
+function AdvancedEvidenceConsoleVisual() {
+  const heatmap = [
+    [2, 4, 5, 3, 2, 5, 4, 3],
+    [1, 3, 4, 5, 4, 3, 5, 2],
+    [3, 5, 5, 4, 2, 4, 3, 5],
+    [2, 4, 3, 5, 5, 4, 2, 4],
+    [4, 5, 4, 3, 5, 2, 3, 4],
+  ];
+  return (
+    <svg viewBox="0 0 980 360" className="home-evidence-console-visual" aria-hidden="true">
+      <defs>
+        <linearGradient id="consoleHalo" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#f4f8ff" />
+        </linearGradient>
+      </defs>
+      <rect className="console-shell" x="10" y="10" width="960" height="340" rx="34" fill="url(#consoleHalo)" />
+      <g className="console-grid">
+        {[70, 120, 170, 220, 270, 320].map((y) => <path key={`h-${y}`} d={`M48 ${y}H932`} />)}
+        {[150, 300, 450, 600, 750, 900].map((x) => <path key={`v-${x}`} d={`M${x} 42V318`} />)}
+      </g>
+
+      <g className="console-model-matrix">
+        <rect x="48" y="50" width="230" height="260" rx="24" />
+        {[0, 1, 2, 3, 4, 5, 6].map((row) => (
+          <g key={row} className="model-row">
+            <circle cx="78" cy={82 + row * 29} r="7" />
+            {[0, 1, 2, 3, 4, 5].map((col) => (
+              <rect
+                key={`${row}-${col}`}
+                className={`model-cell cell-${((row + col) % 5) + 1}`}
+                x={106 + col * 24}
+                y={75 + row * 29}
+                width="16"
+                height="14"
+                rx="5"
+              />
+            ))}
+            <path d={`M106 ${101 + row * 29}H236`} />
+          </g>
+        ))}
+      </g>
+
+      <g className="console-core-network">
+        <rect x="316" y="42" width="350" height="276" rx="30" />
+        <g className="network-rings">
+          <circle cx="491" cy="180" r="112" />
+          <circle cx="491" cy="180" r="78" />
+          <circle cx="491" cy="180" r="44" />
+        </g>
+        <g className="network-links">
+          <path d="M491 180C448 130 400 118 362 142" />
+          <path d="M491 180C434 190 386 220 360 266" />
+          <path d="M491 180C536 116 588 96 630 128" />
+          <path d="M491 180C548 190 594 224 632 270" />
+          <path d="M491 180C468 102 484 72 530 58" />
+          <path d="M491 180C506 254 484 294 438 306" />
+          <path d="M362 142C420 78 532 58 630 128" />
+          <path d="M360 266C430 316 548 316 632 270" />
+        </g>
+        <g className="network-nodes">
+          <circle className="disease-main" cx="491" cy="180" r="28" />
+          <circle className="disease-ring" cx="491" cy="180" r="43" />
+          <circle className="drug" cx="362" cy="142" r="12" />
+          <circle className="drug" cx="360" cy="266" r="10" />
+          <circle className="target" cx="630" cy="128" r="12" />
+          <circle className="target" cx="632" cy="270" r="10" />
+          <circle className="ncrna" cx="530" cy="58" r="10" />
+          <circle className="ncrna" cx="438" cy="306" r="9" />
+          <circle className="drug" cx="430" cy="96" r="7" />
+          <circle className="target" cx="574" cy="88" r="7" />
+          <circle className="disease-small" cx="404" cy="238" r="8" />
+          <circle className="disease-small" cx="584" cy="230" r="8" />
+        </g>
+      </g>
+
+      <g className="console-score-panel">
+        <rect x="704" y="50" width="226" height="260" rx="24" />
+        <g className="score-heatmap">
+          {heatmap.map((row, rowIndex) =>
+            row.map((value, colIndex) => (
+              <rect
+                key={`${rowIndex}-${colIndex}`}
+                className={`heat-${value}`}
+                x={732 + colIndex * 20}
+                y={78 + rowIndex * 22}
+                width="14"
+                height="14"
+                rx="4"
+              />
+            ))
+          )}
+        </g>
+        <g className="score-bars">
+          <rect className="bar-bg" x="730" y="210" width="160" height="9" rx="5" />
+          <rect className="bar-a" x="730" y="210" width="132" height="9" rx="5" />
+          <rect className="bar-bg" x="730" y="236" width="160" height="9" rx="5" />
+          <rect className="bar-b" x="730" y="236" width="104" height="9" rx="5" />
+          <rect className="bar-bg" x="730" y="262" width="160" height="9" rx="5" />
+          <rect className="bar-c" x="730" y="262" width="142" height="9" rx="5" />
+        </g>
+        <g className="score-orbits">
+          <circle cx="888" cy="108" r="14" />
+          <circle cx="888" cy="108" r="28" />
+          <path d="M860 108H832" />
+          <path d="M888 136V166" />
+        </g>
+      </g>
+
+      <g className="console-evidence-rails">
+        <path d="M278 98C306 98 306 98 316 98" />
+        <path d="M278 180C306 180 306 180 316 180" />
+        <path d="M278 262C306 262 306 262 316 262" />
+        <path d="M666 116C692 116 692 116 704 116" />
+        <path d="M666 180C692 180 692 180 704 180" />
+        <path d="M666 244C692 244 692 244 704 244" />
+      </g>
+      <g className="console-data-tokens">
+        {[0, 1, 2, 3, 4, 5].map((item) => (
+          <circle key={item} cx={296 + item * 62} cy="334" r={item % 2 ? 5 : 7} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
 export default function HomePage({ stats, researchSummary, onAnalyze, onOpenDatabase }) {
   const [keyword, setKeyword] = React.useState("");
   const [collapsedTables, setCollapsedTables] = React.useState({
@@ -381,74 +908,123 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   const consensusTotal = Number(supportTierOverview?.high_consensus_rows || highConsensusCases.length || 0);
   const approvedResultTotal = Number(approvedValidation?.retained_final || approvedDrugDeepResults.length || 0);
   const coveredDiseases = Number(researchSummary?.overview?.diseases || nodeMap.Disease || 0);
+  const visualCards = [
+    {
+      title: "Seven-model consensus",
+      body: "DTI scores converge into retained disease-network candidates.",
+      visual: <SevenModelMiniVisual />,
+    },
+    {
+      title: "Evidence layer fusion",
+      body: "DrugBank, CTD, TTD, OpenTargets, and ncRNA evidence are harmonized.",
+      visual: <EvidenceLayerMiniVisual />,
+    },
+    {
+      title: "Disease-centered graph",
+      body: "Local subnetworks expose drug, target, disease, and ncRNA context.",
+      visual: <DiseaseMapMiniVisual />,
+    },
+    {
+      title: "Formal release database",
+      body: "Curated tables feed stable API records and platform views.",
+      visual: <ReleaseDatabaseMiniVisual />,
+    },
+  ];
+  const atlasVisualCards = [
+    {
+      title: "Chemical structure layer",
+      metric: `${(nodeMap.Drug || 0).toLocaleString()} drug nodes`,
+      body: "SMILES, molecular formula, and structure-ready annotations are surfaced for drug records.",
+      visual: <MoleculeFigureVisual />,
+    },
+    {
+      title: "Target protein context",
+      metric: `${(nodeMap.Target || 0).toLocaleString()} target nodes`,
+      body: "Protein and gene records retain identifiers, sequence context, and disease cross-links.",
+      visual: <TargetProteinFigureVisual />,
+    },
+    {
+      title: "Disease evidence heatmap",
+      metric: `${coveredDiseases.toLocaleString()} diseases`,
+      body: "Disease nodes are emphasized as the central interpretation layer for platform review.",
+      visual: <DiseaseHeatmapFigureVisual />,
+    },
+    {
+      title: "TTD validation layer",
+      metric: `${Number(ttdOverview?.ttd_supported_released_rows || 0).toLocaleString()} supported rows`,
+      body: "Therapeutic Target Database mappings provide external target-drug-disease validation.",
+      visual: <TtdValidationFigureVisual />,
+    },
+    {
+      title: "ncRNA bridge evidence",
+      metric: `${Number(ncrnaLinkedOverview?.released_row_count || ncrnaOverview?.human_evidence_rows || 0).toLocaleString()} linked rows`,
+      body: "Curated ncRNA-drug evidence is connected back to disease-centered released results.",
+      visual: <NcrnaLinkFigureVisual />,
+    },
+    {
+      title: "AI release funnel",
+      metric: `${dtiModelCoverage.length || sevenDtiModels.length} DTI models`,
+      body: "Seven model outputs are filtered into compact, queryable, release-grade network records.",
+      visual: <PipelineFunnelFigureVisual />,
+    },
+  ];
+  const consoleMetricRows = [
+    {
+      label: "Released AI rows",
+      value: releasedPredictionTotal,
+      note: "formal prediction layer",
+    },
+    {
+      label: "High-consensus rows",
+      value: consensusTotal,
+      note: "multi-method support",
+    },
+    {
+      label: "TTD supported",
+      value: Number(ttdOverview?.ttd_supported_released_rows || 0),
+      note: "external validation",
+    },
+    {
+      label: "ncRNA-linked",
+      value: Number(ncrnaLinkedOverview?.released_row_count || ncrnaOverview?.human_evidence_rows || 0),
+      note: "multimodal bridge",
+    },
+  ];
+  const consoleMetricMax = Math.max(1, ...consoleMetricRows.map((item) => item.value || 0));
 
   return (
     <section className="page is-active home-page">
       <div className="hero">
-        <div className="hero-pill">AI-Driven Formal Release</div>
-        <h1>
-          AI Disease Network
-          <span>Atlas</span>
-        </h1>
-        <p>
-          Explore an AI-driven disease network release that unifies seven deep learning DTI models, retained prediction rows, and curated evidence across drug, target, disease, and ncRNA layers.
-        </p>
-        <div className="hero-network-motif" aria-hidden="true">
-          <svg viewBox="0 0 520 180" className="hero-network-motif__svg" role="img">
-            <defs>
-              <linearGradient id="heroArcMain" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#7bb7ff" stopOpacity="0.6" />
-                <stop offset="100%" stopColor="#42d2c2" stopOpacity="0.62" />
-              </linearGradient>
-              <linearGradient id="heroArcWarm" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#ffb45f" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#ff7e79" stopOpacity="0.54" />
-              </linearGradient>
-              <radialGradient id="heroCoreFill" cx="50%" cy="46%" r="58%">
-                <stop offset="0%" stopColor="#ff8b82" />
-                <stop offset="100%" stopColor="#ef4444" />
-              </radialGradient>
-              <filter id="heroSoftGlow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="3.2" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            <ellipse cx="258" cy="92" rx="132" ry="44" fill="rgba(239,68,68,0.05)" />
-            <path d="M58 118C108 72 170 66 258 90C332 110 392 102 460 60" stroke="url(#heroArcMain)" strokeWidth="3.4" fill="none" strokeLinecap="round" />
-            <path d="M70 135C143 123 183 72 258 90C322 105 379 129 445 116" stroke="rgba(186,198,214,0.8)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-            <path d="M109 56C156 86 213 92 258 90C313 88 365 65 417 43" stroke="rgba(130,187,255,0.88)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-            <path d="M94 92C150 108 202 106 258 90C320 73 382 70 431 86" stroke="url(#heroArcWarm)" strokeWidth="2.1" fill="none" strokeLinecap="round" strokeDasharray="5 8" />
-            <circle cx="258" cy="90" r="18.5" fill="url(#heroCoreFill)" filter="url(#heroSoftGlow)" />
-            <circle cx="258" cy="90" r="29" fill="none" stroke="rgba(239,68,68,0.22)" strokeWidth="5" />
-            <circle cx="258" cy="90" r="37" fill="none" stroke="rgba(255,255,255,0.32)" strokeWidth="1.4" />
-            <circle cx="72" cy="132" r="11" fill="#2f7fff" />
-            <circle cx="110" cy="58" r="9" fill="#818cf8" />
-            <circle cx="444" cy="118" r="10" fill="#fbbf24" />
-            <circle cx="460" cy="60" r="10" fill="#2dd4bf" />
-            <circle cx="392" cy="102" r="7" fill="#5bc9ff" />
-            <circle cx="182" cy="70" r="7" fill="#4ade80" />
-            <circle cx="208" cy="116" r="4.6" fill="rgba(255,255,255,0.94)" />
-            <circle cx="312" cy="62" r="4.2" fill="rgba(255,255,255,0.9)" />
-          </svg>
-        </div>
-        <div className="hero-search">
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onAnalyze(keyword)}
-            placeholder="Search by DrugBank ID, target ID, disease name, ncRNA name, or alias..."
-          />
-          <button onClick={() => onAnalyze(keyword)}>Access Network Analysis</button>
-        </div>
-        <div className="hero-ai-strip">
-          <span className="ai-brand-chip">7 deep models</span>
-          {topDtiModel ? <span className="ai-brand-chip">top {topDtiModel.model}</span> : null}
-          {topDtiModel?.avg_score != null ? <span className="ai-brand-chip">avg {topDtiModel.avg_score}</span> : null}
-          {topDtiPair ? <span className="ai-brand-chip">{topDtiPair.pair_label}</span> : null}
-          {topDtiPattern ? <span className="ai-brand-chip">{topDtiPattern.pattern_label}</span> : null}
+        <div className="hero-top-grid">
+          <div className="hero-copy">
+            <div className="hero-pill">DiseaseMind Formal Release</div>
+            <h1>
+              DiseaseMind
+              <span>AI Disease Network Atlas</span>
+            </h1>
+            <p>
+              Explore a disease-centered AI network release that unifies seven deep learning DTI models, retained prediction rows, and curated evidence across drug, target, disease, and ncRNA layers.
+            </p>
+            <div className="hero-search">
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && onAnalyze(keyword)}
+                placeholder="Search by DrugBank ID, target ID, disease name, ncRNA name, or alias..."
+              />
+              <button onClick={() => onAnalyze(keyword)}>Access Network Analysis</button>
+            </div>
+            <div className="hero-ai-strip">
+              <span className="ai-brand-chip">7 deep models</span>
+              {topDtiModel ? <span className="ai-brand-chip">top {topDtiModel.model}</span> : null}
+              {topDtiModel?.avg_score != null ? <span className="ai-brand-chip">avg {topDtiModel.avg_score}</span> : null}
+              {topDtiPair ? <span className="ai-brand-chip">{topDtiPair.pair_label}</span> : null}
+              {topDtiPattern ? <span className="ai-brand-chip">{topDtiPattern.pattern_label}</span> : null}
+            </div>
+          </div>
+          <figure className="hero-ai-visual">
+            <HeroFlatNetworkVisual />
+          </figure>
         </div>
         <div className="home-stats">
           <article className="stat-card">
@@ -472,6 +1048,85 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="stat-value">{edgeTotal}</div>
           </article>
         </div>
+        <div className="home-visual-grid">
+          {visualCards.map((item) => (
+            <article className="home-visual-card" key={item.title}>
+              {item.visual}
+              <div className="home-visual-card-copy">
+                <strong>{item.title}</strong>
+                <span>{item.body}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+        <section className="home-storyboard-panel" aria-label="Release workflow storyboard">
+          <div className="home-storyboard-copy">
+            <span>Release Storyboard</span>
+            <strong>DiseaseMind evidence flow</strong>
+            <p>
+              Seven DTI models, curated evidence, disease-centered expansion, and stable database records are presented as one closed release workflow.
+            </p>
+          </div>
+          <ReleaseStoryboardVisual />
+          <div className="home-storyboard-metrics">
+            <span><strong>{(dtiModelCoverage.length || sevenDtiModels.length).toLocaleString()}</strong><em>DTI models</em></span>
+            <span><strong>{releasedPredictionTotal.toLocaleString()}</strong><em>prediction rows</em></span>
+            <span><strong>{releasedDiseaseLinkedTotal.toLocaleString()}</strong><em>disease-linked</em></span>
+            <span><strong>{edgeTotal.toLocaleString()}</strong><em>network edges</em></span>
+          </div>
+        </section>
+        <section className="home-evidence-console" aria-label="AI evidence console">
+          <div className="home-evidence-console-head">
+            <div>
+              <span>AI Evidence Console</span>
+              <strong>Multimodal scoring cockpit for formal disease-network release</strong>
+              <p>
+                A denser systems view that combines seven-model vote structure, disease-centered graph topology, heatmap-style AI confidence, external TTD support, and ncRNA evidence.
+              </p>
+            </div>
+            <button type="button" onClick={() => onAnalyze(keyword)}>Inspect in network</button>
+          </div>
+          <div className="home-evidence-console-body">
+            <AdvancedEvidenceConsoleVisual />
+            <div className="home-evidence-console-metrics">
+              {consoleMetricRows.map((item) => (
+                <article
+                  className="console-metric-card"
+                  key={item.label}
+                  style={{ "--bar-pct": `${Math.max(8, Math.min(100, Math.round(((item.value || 0) / consoleMetricMax) * 100)))}%` }}
+                >
+                  <div>
+                    <strong>{(item.value || 0).toLocaleString()}</strong>
+                    <span>{item.label}</span>
+                  </div>
+                  <em>{item.note}</em>
+                  <i aria-hidden="true" />
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="home-atlas-gallery" aria-label="Visual overview of the formal disease network release">
+          <div className="home-atlas-gallery-head">
+            <div>
+              <strong>Visual Atlas Overview</strong>
+              <span>Compact flat illustrations of the main data layers and released AI workflow.</span>
+            </div>
+            <button type="button" onClick={() => onOpenDatabase?.("nodes")}>Open full database</button>
+          </div>
+          <div className="home-atlas-gallery-grid">
+            {atlasVisualCards.map((item) => (
+              <article className="home-atlas-card" key={item.title}>
+                {item.visual}
+                <div className="home-atlas-card-copy">
+                  <span className="home-atlas-card-metric">{item.metric}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.body}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
         <section className="home-result-scale-card">
           <div className="home-result-scale-head">
             <strong>Release Result Scale</strong>

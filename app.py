@@ -121,7 +121,7 @@ async def lifespan(app: FastAPI):
         await asyncio.gather(f1, f2, f3, f4, f5, f6, f7, f8, f9)
     yield
 
-app = FastAPI(title="Disease Network Atlas", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="DiseaseMind", version="1.0.0", lifespan=lifespan)
 origins, allow_credentials = parse_cors_origins()
 app.add_middleware(
     CORSMiddleware,

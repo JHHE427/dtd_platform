@@ -86,46 +86,31 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
       <div className="header-inner">
         <button className="brand" onClick={() => onPageChange("home")}>
           <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 64 64" className="brand-logo" role="img">
+            <svg viewBox="0 0 64 64" className="brand-logo" role="img" aria-label="DiseaseMind">
               <defs>
-                <linearGradient id="atlas-ring" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#8ec5ff" />
-                  <stop offset="100%" stopColor="#49d4c4" />
+                <linearGradient id="dm-brain" x1="12" y1="10" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#eff6ff" />
+                  <stop offset="100%" stopColor="#ecfdf5" />
                 </linearGradient>
-                <radialGradient id="atlas-core" cx="50%" cy="42%" r="58%">
-                  <stop offset="0%" stopColor="#ff8c82" />
-                  <stop offset="100%" stopColor="#ef4444" />
-                </radialGradient>
-                <linearGradient id="atlas-link" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#cfe5ff" />
-                  <stop offset="100%" stopColor="#8bd6ce" />
-                </linearGradient>
-                <filter id="atlas-glow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="2.4" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
               </defs>
-              <circle cx="32" cy="32" r="24" fill="none" stroke="url(#atlas-ring)" strokeWidth="2.5" />
-              <circle cx="32" cy="32" r="19.2" fill="none" stroke="rgba(255,255,255,0.48)" strokeWidth="1.3" />
-              <path d="M16.5 41.5C23 32.5 28.8 29 32 32.2C35.7 35.6 41.1 30 47.6 22.8" fill="none" stroke="url(#atlas-link)" strokeWidth="2.7" strokeLinecap="round" />
-              <path d="M18 20.8C23.8 18.6 28.2 19.2 33 23.3C37.8 27.2 42.2 26.6 49 23" fill="none" stroke="rgba(20,184,166,0.86)" strokeWidth="2" strokeLinecap="round" />
-              <path d="M18.8 47C24.5 40.2 30.2 35 36.6 36.3C41.4 37.2 44.8 41 48 46" fill="none" stroke="rgba(148,163,184,0.72)" strokeWidth="2.1" strokeLinecap="round" />
-              <circle cx="32" cy="32" r="8.2" fill="url(#atlas-core)" filter="url(#atlas-glow)" />
-              <circle cx="32" cy="32" r="12.6" fill="none" stroke="rgba(239,68,68,0.24)" strokeWidth="2.6" />
-              <circle cx="17.8" cy="41.8" r="5" fill="#2f7fff" />
-              <circle cx="47.4" cy="22.8" r="4.7" fill="#2dd4bf" />
-              <circle cx="48" cy="46.2" r="5" fill="#fbbf24" />
-              <circle cx="19.2" cy="21" r="3.8" fill="#818cf8" />
-              <circle cx="27.8" cy="16.8" r="1.6" fill="rgba(255,255,255,0.82)" />
+              <path d="M13 30C7.8 21.8 15.1 10.5 26 12.3C32.8 7.1 44 9.1 48.2 18.4C56.9 20.1 61.2 30.1 56.8 38.5C59.8 47 52.4 54 43.8 52.6C38 57.3 28.3 55.6 24 49.5C15.7 49.5 10.2 42 12.4 34.6Z" fill="url(#dm-brain)" stroke="#8ec5ff" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M34.6 33L20.6 24.6M34.6 33L46.4 22M34.6 33L49.4 34.6M34.6 33L43 47M34.6 33L24.2 45.8M34.6 33L18.6 37" fill="none" stroke="#60a5fa" strokeWidth="1.8" strokeLinecap="round" opacity="0.66" />
+              <path d="M20.6 24.6L46.4 22M49.4 34.6L43 47M24.2 45.8L18.6 37" fill="none" stroke="#14b8a6" strokeWidth="1.1" strokeLinecap="round" opacity="0.36" />
+              <circle cx="20.6" cy="24.6" r="3.5" fill="#3b82f6" />
+              <circle cx="46.4" cy="22" r="3.5" fill="#f59e0b" />
+              <circle cx="49.4" cy="34.6" r="3.5" fill="#3b82f6" />
+              <circle cx="43" cy="47" r="3.5" fill="#f59e0b" />
+              <circle cx="24.2" cy="45.8" r="3.5" fill="#3b82f6" />
+              <circle cx="18.6" cy="37" r="3.5" fill="#14b8a6" />
+              <circle cx="34.6" cy="33" r="7" fill="#ef4444" />
+              <circle cx="34.6" cy="33" r="4.3" fill="#fca5a5" />
+              <circle cx="34.6" cy="33" r="2" fill="#dc2626" />
             </svg>
           </span>
           <span className="brand-text">
-            <strong>Disease Network</strong>
-            <span>Atlas</span>
-            <em>Drug · Target · ncRNA</em>
+            <strong>DiseaseMind</strong>
+            <span>AI Network Atlas</span>
+            <em>Drug · Target · Disease · Mind</em>
           </span>
         </button>
 
