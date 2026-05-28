@@ -6,10 +6,10 @@ export default function HelpPage() {
       <div className="help-wrap">
         <div className="help-hero card">
         <div className="help-hero-text">
-            <h2>DiseaseMind Documentation</h2>
+            <h2>DiseaseMind User Guide</h2>
             <p className="muted">
-              This guide describes the DiseaseMind disease-centered drug, target, disease, and ncRNA
-              network atlas, its structured result tables, and the supported network-analysis workflow.
+              This guide describes the DiseaseMind Drug · Target · Disease · Mind system, its structured
+              result tables, and the supported disease-centered network-analysis workflow.
             </p>
             <div className="help-badges">
               <span className="chip">Drug</span>

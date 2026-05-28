@@ -101,7 +101,7 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
               <circle cx="49.4" cy="34.6" r="3.5" fill="#3b82f6" />
               <circle cx="43" cy="47" r="3.5" fill="#f59e0b" />
               <circle cx="24.2" cy="45.8" r="3.5" fill="#3b82f6" />
-              <circle cx="18.6" cy="37" r="3.5" fill="#14b8a6" />
+              <circle cx="18.6" cy="37" r="3.5" fill="#f59e0b" />
               <circle cx="34.6" cy="33" r="7" fill="#ef4444" />
               <circle cx="34.6" cy="33" r="4.3" fill="#fca5a5" />
               <circle cx="34.6" cy="33" r="2" fill="#dc2626" />
@@ -109,8 +109,8 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
           </span>
           <span className="brand-text">
             <strong>DiseaseMind</strong>
-            <span>AI Network Atlas</span>
-            <em>Drug · Target · Disease · Mind</em>
+            <span>Drug · Target · Disease · Mind</span>
+            <em>Disease-centered AI system</em>
           </span>
         </button>
 

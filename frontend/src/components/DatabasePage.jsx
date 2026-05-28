@@ -481,7 +481,7 @@ export default function DatabasePage({
       <div className="analysis-header page-head">
         <div>
           <h2>DiseaseMind Database</h2>
-          <div className="analysis-subtitle">Browse released nodes, edges, evidence, and prediction tables.</div>
+          <div className="analysis-subtitle">Browse DiseaseMind drug, target, disease, ncRNA, evidence, and prediction tables in one release database.</div>
         </div>
         <div className="toolbar">
           <button className="btn-quiet" onClick={onExportNodes}>Export Nodes</button>

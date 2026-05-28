@@ -51,78 +51,72 @@ function HomeTableToggle({ collapsed, onToggle, label = "Detailed tables" }) {
   );
 }
 
-function HeroFlatNetworkVisual() {
+function DiseaseMindBrandVisual() {
   return (
-    <svg viewBox="0 0 720 420" className="hero-flat-visual" aria-hidden="true">
+    <svg viewBox="0 0 720 420" className="hero-brand-visual" role="img" aria-labelledby="dmHeroTitle dmHeroDesc">
+      <title id="dmHeroTitle">DiseaseMind primary logo and variants</title>
+      <desc id="dmHeroDesc">A brain-shaped disease-centered drug-target network mark with the DiseaseMind wordmark and tagline.</desc>
       <defs>
-        <linearGradient id="flatPanelFade" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="dmHeroPanel" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" />
           <stop offset="100%" stopColor="#f7fbff" />
         </linearGradient>
+        <linearGradient id="dmHeroBrain" x1="72" y1="70" x2="248" y2="246" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#eff6ff" />
+          <stop offset="100%" stopColor="#ecfdf5" />
+        </linearGradient>
       </defs>
-      <rect x="0" y="0" width="720" height="420" rx="28" fill="url(#flatPanelFade)" />
-      <g className="flat-grid">
-        <path d="M56 82H664" />
-        <path d="M56 154H664" />
-        <path d="M56 226H664" />
-        <path d="M56 298H664" />
-        <path d="M128 44V364" />
-        <path d="M256 44V364" />
-        <path d="M384 44V364" />
-        <path d="M512 44V364" />
+      <rect x="0" y="0" width="720" height="420" rx="28" fill="url(#dmHeroPanel)" />
+      <g className="dm-hero-grid">
+        <path d="M58 86H662" />
+        <path d="M58 184H662" />
+        <path d="M58 282H662" />
+        <path d="M164 42V374" />
+        <path d="M326 42V374" />
+        <path d="M488 42V374" />
       </g>
-      <g className="flat-panel flat-panel-a">
-        <rect x="52" y="54" width="168" height="78" rx="18" />
-        <circle cx="88" cy="93" r="14" />
-        <path d="M116 84H184" />
-        <path d="M116 102H168" />
+
+      <g className="dm-primary-mark">
+        <path d="M104 166C82 132 114 84 160 92C188 70 236 78 254 118C291 124 309 167 290 203C303 238 271 268 236 262C212 282 169 274 151 248C115 248 92 216 104 184Z" fill="url(#dmHeroBrain)" stroke="#8ec5ff" strokeWidth="3.2" strokeLinejoin="round" />
+        <path d="M199 180L138 142M199 180L249 130M199 180L264 186M199 180L235 242M199 180L157 238M199 180L126 198" fill="none" stroke="#60a5fa" strokeWidth="2.6" strokeLinecap="round" opacity="0.62" />
+        <path d="M138 142L249 130M264 186L235 242M157 238L126 198" fill="none" stroke="#14b8a6" strokeWidth="1.7" strokeLinecap="round" opacity="0.36" />
+        <circle cx="138" cy="142" r="9" fill="#3b82f6" />
+        <circle cx="249" cy="130" r="9" fill="#f59e0b" />
+        <circle cx="264" cy="186" r="9" fill="#3b82f6" />
+        <circle cx="235" cy="242" r="9" fill="#f59e0b" />
+        <circle cx="157" cy="238" r="9" fill="#3b82f6" />
+        <circle cx="126" cy="198" r="9" fill="#f59e0b" />
+        <circle cx="199" cy="180" r="22" fill="#ef4444" />
+        <circle cx="199" cy="180" r="14" fill="#fca5a5" />
+        <circle cx="199" cy="180" r="6" fill="#dc2626" />
       </g>
-      <g className="flat-panel flat-panel-b">
-        <rect x="488" y="52" width="176" height="86" rx="18" />
-        <path d="M524 96C546 70 578 72 590 94C600 112 628 116 646 86" />
-        <circle cx="524" cy="96" r="7" />
-        <circle cx="590" cy="94" r="7" />
-        <circle cx="646" cy="86" r="7" />
+
+      <g className="dm-primary-wordmark">
+        <text x="332" y="142" className="dm-wordmark">DiseaseMind</text>
+        <line x1="334" y1="168" x2="607" y2="168" />
+        <text x="335" y="197" className="dm-tagline">DRUG · TARGET · DISEASE · MIND</text>
+        <text x="336" y="236" className="dm-brand-copy">Disease-centered AI interpretation.</text>
       </g>
-      <g className="flat-edges">
-        <path d="M152 238C238 178 306 168 370 212" />
-        <path d="M168 286C248 266 312 238 370 212" />
-        <path d="M370 212C456 152 538 168 594 246" />
-        <path d="M370 212C454 248 496 296 566 314" />
-        <path d="M370 212C330 136 292 96 244 82" />
-        <path d="M370 212C420 114 474 88 548 96" />
-        <path d="M216 334C268 286 316 256 370 212" />
-        <path d="M370 212C430 220 478 224 530 212" />
+
+      <g className="dm-brand-legend" transform="translate(78 316)">
+        <g>
+          <circle cx="0" cy="0" r="7" fill="#3b82f6" />
+          <text x="16" y="5">Drug</text>
+        </g>
+        <g transform="translate(108 0)">
+          <circle cx="0" cy="0" r="7" fill="#f59e0b" />
+          <text x="16" y="5">Target</text>
+        </g>
+        <g transform="translate(226 0)">
+          <circle cx="0" cy="0" r="9" fill="#ef4444" />
+          <text x="18" y="5">Disease core</text>
+        </g>
+        <g transform="translate(380 0)">
+          <circle cx="0" cy="0" r="7" fill="#14b8a6" />
+          <text x="16" y="5">Mind network</text>
+        </g>
       </g>
-      <g className="flat-ai-streams">
-        <path d="M100 366C194 322 278 278 370 212" />
-        <path d="M126 368C214 326 292 278 370 212" />
-        <path d="M152 368C234 328 306 280 370 212" />
-        <path d="M178 366C250 326 318 280 370 212" />
-        <path d="M204 362C268 324 330 278 370 212" />
-        <path d="M230 356C288 320 342 276 370 212" />
-        <path d="M256 346C306 312 354 268 370 212" />
-      </g>
-      <g className="flat-node-group">
-        <circle className="flat-node drug" cx="152" cy="238" r="17" />
-        <circle className="flat-node drug" cx="168" cy="286" r="12" />
-        <circle className="flat-node drug" cx="216" cy="334" r="13" />
-        <circle className="flat-node target" cx="244" cy="82" r="14" />
-        <circle className="flat-node target" cx="548" cy="96" r="13" />
-        <circle className="flat-node target" cx="594" cy="246" r="15" />
-        <circle className="flat-node ncrna" cx="530" cy="212" r="12" />
-        <circle className="flat-node ncrna" cx="566" cy="314" r="11" />
-        <circle className="flat-node disease" cx="370" cy="212" r="30" />
-        <circle className="flat-node disease-ring" cx="370" cy="212" r="44" />
-      </g>
-      <g className="flat-molecule" transform="translate(486 278)">
-        <path d="M18 28L48 12L80 28L80 64L48 82L18 64Z" />
-        <path d="M48 12V42L80 64" />
-        <path d="M18 64L48 42" />
-        <circle cx="18" cy="28" r="5" />
-        <circle cx="80" cy="28" r="5" />
-        <circle cx="48" cy="82" r="5" />
-      </g>
+
     </svg>
   );
 }
@@ -891,16 +885,16 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   ].filter(Boolean);
   const featureCards = [
     {
-      title: "Released Evidence Layers",
-      body: "Curated known associations and retained prediction rows are organized into a unified release-facing evidence structure."
+      title: "DiseaseMind Evidence Layers",
+      body: "Curated known associations and retained prediction rows are organized around the DiseaseMind drug-target-disease interpretation model."
     },
     {
-      title: "Network Query and Analysis",
-      body: "The released disease network supports graph navigation, local expansion, node inspection, and subnetwork comparison within the network analysis view."
+      title: "DiseaseMind Query and Analysis",
+      body: "DiseaseMind supports graph navigation, local expansion, node inspection, and subnetwork comparison within the network analysis view."
     },
     {
-      title: "Structured Record Annotations",
-      body: "Chemical structures, SMILES, target sequences, ontology terms, summaries, and evidence context are presented within structured network records."
+      title: "Structured DiseaseMind Records",
+      body: "Chemical structures, SMILES, target sequences, ontology terms, summaries, and evidence context are presented within structured DiseaseMind records."
     }
   ];
   const releasedPredictionTotal = Number(predictionSummary?.total_rows || predictionResultTotal || 0);
@@ -910,23 +904,23 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   const coveredDiseases = Number(researchSummary?.overview?.diseases || nodeMap.Disease || 0);
   const visualCards = [
     {
-      title: "Seven-model consensus",
-      body: "DTI scores converge into retained disease-network candidates.",
+      title: "AI mind consensus",
+      body: "Seven DTI models converge into retained DiseaseMind candidates.",
       visual: <SevenModelMiniVisual />,
     },
     {
-      title: "Evidence layer fusion",
+      title: "Drug-target evidence fusion",
       body: "DrugBank, CTD, TTD, OpenTargets, and ncRNA evidence are harmonized.",
       visual: <EvidenceLayerMiniVisual />,
     },
     {
-      title: "Disease-centered graph",
+      title: "Disease-centered mind graph",
       body: "Local subnetworks expose drug, target, disease, and ncRNA context.",
       visual: <DiseaseMapMiniVisual />,
     },
     {
-      title: "Formal release database",
-      body: "Curated tables feed stable API records and platform views.",
+      title: "DiseaseMind database",
+      body: "Curated tables feed stable DiseaseMind API records and views.",
       visual: <ReleaseDatabaseMiniVisual />,
     },
   ];
@@ -997,13 +991,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       <div className="hero">
         <div className="hero-top-grid">
           <div className="hero-copy">
-            <div className="hero-pill">DiseaseMind Formal Release</div>
+            <div className="hero-pill">DRUG · TARGET · DISEASE · MIND</div>
             <h1>
               DiseaseMind
-              <span>AI Disease Network Atlas</span>
+              <span>Drug · Target · Disease · Mind</span>
             </h1>
             <p>
-              Explore a disease-centered AI network release that unifies seven deep learning DTI models, retained prediction rows, and curated evidence across drug, target, disease, and ncRNA layers.
+              DiseaseMind turns drug, target, disease, and ncRNA evidence into a disease-centered AI interpretation system, unifying seven DTI models, retained prediction rows, and curated knowledge in one queryable release.
             </p>
             <div className="hero-search">
               <input
@@ -1015,7 +1009,9 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               <button onClick={() => onAnalyze(keyword)}>Access Network Analysis</button>
             </div>
             <div className="hero-ai-strip">
-              <span className="ai-brand-chip">7 deep models</span>
+              <span className="ai-brand-chip">Disease core</span>
+              <span className="ai-brand-chip">drug-target orbit</span>
+              <span className="ai-brand-chip">AI mind layer</span>
               {topDtiModel ? <span className="ai-brand-chip">top {topDtiModel.model}</span> : null}
               {topDtiModel?.avg_score != null ? <span className="ai-brand-chip">avg {topDtiModel.avg_score}</span> : null}
               {topDtiPair ? <span className="ai-brand-chip">{topDtiPair.pair_label}</span> : null}
@@ -1023,7 +1019,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
           </div>
           <figure className="hero-ai-visual">
-            <HeroFlatNetworkVisual />
+            <DiseaseMindBrandVisual />
           </figure>
         </div>
         <div className="home-stats">
@@ -1059,12 +1055,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </article>
           ))}
         </div>
-        <section className="home-storyboard-panel" aria-label="Release workflow storyboard">
+        <section className="home-storyboard-panel" aria-label="DiseaseMind workflow storyboard">
           <div className="home-storyboard-copy">
-            <span>Release Storyboard</span>
-            <strong>DiseaseMind evidence flow</strong>
+            <span>Brand Storyboard</span>
+            <strong>DiseaseMind evidence mind</strong>
             <p>
-              Seven DTI models, curated evidence, disease-centered expansion, and stable database records are presented as one closed release workflow.
+              Seven DTI models, curated evidence, disease-centered expansion, and stable database records are organized around the DiseaseMind brand logic.
             </p>
           </div>
           <ReleaseStoryboardVisual />
@@ -1079,9 +1075,9 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <div className="home-evidence-console-head">
             <div>
               <span>AI Evidence Console</span>
-              <strong>Multimodal scoring cockpit for formal disease-network release</strong>
+              <strong>DiseaseMind scoring cockpit for the disease-network release</strong>
               <p>
-                A denser systems view that combines seven-model vote structure, disease-centered graph topology, heatmap-style AI confidence, external TTD support, and ncRNA evidence.
+                A denser systems view that combines DiseaseMind's seven-model vote structure, disease-centered graph topology, heatmap-style AI confidence, external TTD support, and ncRNA evidence.
               </p>
             </div>
             <button type="button" onClick={() => onAnalyze(keyword)}>Inspect in network</button>
@@ -1106,11 +1102,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
           </div>
         </section>
-        <section className="home-atlas-gallery" aria-label="Visual overview of the formal disease network release">
+        <section className="home-atlas-gallery" aria-label="DiseaseMind visual overview">
           <div className="home-atlas-gallery-head">
             <div>
-              <strong>Visual Atlas Overview</strong>
-              <span>Compact flat illustrations of the main data layers and released AI workflow.</span>
+              <strong>DiseaseMind Visual System</strong>
+              <span>Compact flat illustrations of the main data layers and DiseaseMind AI workflow.</span>
             </div>
             <button type="button" onClick={() => onOpenDatabase?.("nodes")}>Open full database</button>
           </div>
@@ -1219,8 +1215,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
 
         <section className="home-panel-card home-panel-wide ai-brand-panel">
           <div className="home-panel-head">
-            <h3>Disease AI Intelligence Layer</h3>
-            <div className="home-panel-subtitle">Seven deep learning DTI models provide raw pair scores and vote support for the disease-centered release.</div>
+            <h3>DiseaseMind Intelligence Layer</h3>
+            <div className="home-panel-subtitle">Seven deep learning DTI models provide raw pair scores and vote support for DiseaseMind's disease-centered release.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.aiBrandPanel}

@@ -1,6 +1,6 @@
 # DiseaseMind Platform
 
-正式版 DiseaseMind 前端平台（非 demo），直接连接 SQLite 数据库 `dtd_network.sqlite`。
+正式版 DiseaseMind（Drug · Target · Disease · Mind）前端平台（非 demo），直接连接 SQLite 数据库 `dtd_network.sqlite`。
 当前前端已升级为 React 组件架构，画面与交互向 `dtdatlas` 风格对齐。
 
 ## 功能

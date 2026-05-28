@@ -225,9 +225,12 @@ body {
 
 .brand-text span {
   margin-top: 2px;
-  font-size: 20px;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+  white-space: nowrap;
   -webkit-background-clip: initial;
   -webkit-text-fill-color: initial;
 }
@@ -536,6 +539,55 @@ button.primary:hover,
   height: 100%;
 }
 
+.hero-brand-visual {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-brand-visual .dm-hero-grid path {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.14);
+  stroke-width: 1;
+}
+
+.hero-brand-visual .dm-primary-mark circle {
+  stroke: #ffffff;
+  stroke-width: 3.5;
+}
+
+.hero-brand-visual .dm-wordmark {
+  fill: #111827;
+  font-size: 50px;
+  font-weight: 620;
+  letter-spacing: -0.03em;
+}
+
+.hero-brand-visual .dm-primary-wordmark line {
+  stroke: #2563eb;
+  stroke-width: 1.6;
+}
+
+.hero-brand-visual .dm-tagline {
+  fill: #334155;
+  font-size: 13px;
+  font-weight: 760;
+  letter-spacing: 0.22em;
+}
+
+.hero-brand-visual .dm-brand-copy {
+  fill: #64748b;
+  font-size: 15px;
+  font-weight: 520;
+  letter-spacing: 0;
+}
+
+.hero-brand-visual .dm-brand-legend text {
+  fill: #475569;
+  font-size: 13px;
+  font-weight: 720;
+}
+
 .hero-flat-visual .flat-grid path {
   fill: none;
   stroke: rgba(148, 163, 184, 0.14);
@@ -714,9 +766,15 @@ button.primary:hover,
 
 .hero h1 span {
   display: block;
-  background: linear-gradient(90deg, #111827, #334155 56%, #475569);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: clamp(21px, 3vw, 34px);
+  line-height: 1.12;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #334155;
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: #334155;
+  text-shadow: none;
 }
 
 .hero p {
@@ -7339,6 +7397,33 @@ ul {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .header-inner {
+    overflow: hidden;
+  }
+
+  .nav {
+    max-width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .system-status {
+    display: none;
+  }
+
+  .hero h1 span {
+    font-size: clamp(19px, 7vw, 28px);
+  }
+
+  .hero-ai-strip .ai-brand-chip {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
 }
 
 .toast {
@@ -9018,6 +9103,12 @@ pre.smiles-box {
   background: #22c55e;
   box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.58);
   animation: statusBreath 1.8s ease-in-out infinite;
+}
+
+@media (max-width: 700px) {
+  .system-status {
+    display: none !important;
+  }
 }
 
 @keyframes statusBreath {
