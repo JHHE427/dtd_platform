@@ -15,7 +15,7 @@ const ONLINE_ANALYSIS_PRESETS = [
   {
     key: "broad",
     title: "Broad query",
-    note: "Retain most released rows for an initial analytical pass.",
+    note: "Retain most evidence rows for an initial analytical pass.",
     patch: { min_algo_pass: 1, min_votes: 0, txgnn_pass: "", enr_pass: "", rwr_pass: "", limit: 20 },
   },
   {
@@ -27,7 +27,7 @@ const ONLINE_ANALYSIS_PRESETS = [
   {
     key: "consensus",
     title: "Consensus-only",
-    note: "Restrict to rows retained by all released methods and strong seven-model support.",
+    note: "Restrict to rows retained by all evidence methods and strong seven-model support.",
     patch: { min_algo_pass: 3, min_votes: 4, txgnn_pass: "", enr_pass: "", rwr_pass: "", limit: 12 },
   },
   {
@@ -456,7 +456,7 @@ export default function AnalysisPage({
   const drugStructureReason = !structureUrl
     ? "No structure image is currently available for this drug record."
     : structureIsPlaceholder
-      ? "A placeholder structure is shown because no resolved public small-molecule structure was available for this drug record."
+      ? "A reference structure is shown because no resolved public small-molecule structure was available for this drug record."
       : "";
   const uniprotMissingReason = uniprot
     ? ""
@@ -640,7 +640,7 @@ export default function AnalysisPage({
       <section className="card panel-pad online-analysis-panel">
         <div className="card-head">
           <h3>Online Analysis</h3>
-          <div className="muted">Run a filtered query around a released drug, target, disease, or ncRNA node.</div>
+          <div className="muted">Run a filtered query around a DiseaseMind drug, target, disease, or ncRNA record.</div>
         </div>
         <SectionToggle
           collapsed={collapsedSections.onlineAnalysis}
@@ -652,9 +652,9 @@ export default function AnalysisPage({
         <div className="online-analysis-banner">
           <div>
             <strong>Dynamic result generation</strong>
-            <span>Apply thresholds and return a compact released-result subset.</span>
+            <span>Apply thresholds and return a compact evidence-result subset.</span>
           </div>
-          <span className="online-analysis-banner-tag">Released network only</span>
+          <span className="online-analysis-banner-tag">DiseaseMind network only</span>
         </div>
         <div className="online-analysis-presets">
           {ONLINE_ANALYSIS_PRESETS.map((preset) => (
@@ -691,7 +691,7 @@ export default function AnalysisPage({
             </select>
           </label>
           <label>
-            Min Released Support
+            Min Evidence Support
             <select
               value={onlineAnalysisState?.min_algo_pass ?? 2}
               onChange={(e) => onOnlineAnalysisStateChange({ min_algo_pass: Number(e.target.value) })}
@@ -779,7 +779,7 @@ export default function AnalysisPage({
           <>
             <div className="online-analysis-active-filters">
               <span className="source-chip">focus {onlineAnalysisResult.focus_type}</span>
-              <span className="source-chip">released support ≥ {onlineAnalysisState?.min_algo_pass || 0}/3</span>
+              <span className="source-chip">evidence support {">="} {onlineAnalysisState?.min_algo_pass || 0}/3</span>
               <span className="source-chip">7-model votes ≥ {onlineAnalysisState?.min_votes || 0}/7</span>
               {onlineAnalysisState?.ncrna_type ? <span className="source-chip">ncRNA type {onlineAnalysisState.ncrna_type}</span> : null}
               {onlineAnalysisState?.txgnn_pass ? <span className="source-chip">TXGNN passed</span> : null}
@@ -793,7 +793,7 @@ export default function AnalysisPage({
                 <div className="item-meta">{onlineAnalysisResult.focus_type} · {onlineAnalysisResult.focus_id}</div>
               </div>
               <div className="kpi-card">
-                <div className="kpi-label">Released Rows</div>
+                <div className="kpi-label">Evidence Rows</div>
                 <div className="kpi-value">{onlineSummary?.total_rows ?? 0}</div>
               </div>
               <div className="kpi-card">
@@ -809,7 +809,7 @@ export default function AnalysisPage({
             <div className="online-analysis-grid">
               <section className="card panel-pad">
                 <div className="card-head">
-                  <h3>Released Method Distribution</h3>
+                  <h3>Evidence Method Distribution</h3>
                   <div className="muted">Support patterns after applying the current analysis thresholds.</div>
                 </div>
                 <div className="list compact">
@@ -818,7 +818,7 @@ export default function AnalysisPage({
                       <div className="item-title">{item.support_pattern_label}</div>
                       <div className="item-meta">{item.count} rows</div>
                     </div>
-                  )) : <div className="muted">No released rows satisfy the current thresholds.</div>}
+                  )) : <div className="muted">No evidence rows satisfy the current thresholds.</div>}
                 </div>
               </section>
               <section className="card panel-pad">
@@ -839,7 +839,7 @@ export default function AnalysisPage({
             <section className="analysis-results-panel online-analysis-results">
               <div className="card-head">
                 <h3>Online Analysis Results</h3>
-                <div className="muted">Top released prediction rows ranked within the current query-specific analysis subset.</div>
+                <div className="muted">Top prediction rows ranked within the current query-specific analysis subset.</div>
               </div>
               <div className="result-table-wrap analysis-result-wrap">
                 <table className="result-table edge-result-table analysis-result-table">
@@ -871,7 +871,7 @@ export default function AnalysisPage({
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={9}>Run online analysis to generate a query-specific released result subset.</td>
+                        <td colSpan={9}>Run online analysis to generate a query-specific evidence result subset.</td>
                       </tr>
                     )}
                   </tbody>
@@ -880,7 +880,7 @@ export default function AnalysisPage({
             </section>
           </>
         ) : (
-          <div className="muted">Use the current center or enter any released Drug, Target, Disease, or ncRNA identifier to generate a query-specific analysis subset.</div>
+          <div className="muted">Use the current center or enter any DiseaseMind Drug, Target, Disease, or ncRNA identifier to generate a query-specific analysis subset.</div>
         )}
           </>
         ) : null}
@@ -1099,7 +1099,7 @@ export default function AnalysisPage({
           <div className="legend legend-network">
             <div className="legend-network-head">
               <strong>AI-powered disease network legend</strong>
-              <span>Disease is the primary interpretation layer; released AI model evidence and curated knowledge layers distribute around it.</span>
+              <span>Disease is the primary interpretation layer; AI model evidence and curated knowledge layers distribute around it.</span>
             </div>
             <div className="legend-network-grid">
               <span className="legend-network-item is-disease-core"><i className="dot disease" />Disease core</span>
@@ -1111,7 +1111,7 @@ export default function AnalysisPage({
               <span className="legend-network-item"><i className="line kp" />Known + predicted overlap</span>
             </div>
             <div className="legend-network-note">
-              <span>ncRNA-Drug, ncRNA-Target, and ncRNA-Disease are included as formal known-association layers.</span>
+              <span>ncRNA-Drug, ncRNA-Target, and ncRNA-Disease are included as curated known-association layers.</span>
             </div>
           </div>
           </>
@@ -1155,7 +1155,7 @@ export default function AnalysisPage({
                 {hoverMatchesDetail && algorithmEvidence.available ? (
                   <div className="hover-support-block">
                     <div className="hover-support-row">
-                      <span className="hover-support-label">Released support</span>
+                      <span className="hover-support-label">Evidence support</span>
                       {renderCoreSupportMeter(algorithmEvidence.max_n_algo_pass)}
                     </div>
                     <div className="hover-support-row">
@@ -1203,7 +1203,7 @@ export default function AnalysisPage({
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={6}>No released relationships are visible in the current network view.</td>
+                      <td colSpan={6}>No evidence relationships are visible in the current network view.</td>
                     </tr>
                   )}
                 </tbody>
@@ -1368,7 +1368,7 @@ export default function AnalysisPage({
                       ) : null}
                       {ann.text_description ? (
                         <>
-                          <div className="annot-title annot-subtitle">Release Summary</div>
+                          <div className="annot-title annot-subtitle">Evidence Summary</div>
                           <div className="annot-text">{ann.text_description}</div>
                         </>
                       ) : null}
@@ -1410,8 +1410,8 @@ export default function AnalysisPage({
                     <div className="annot-box">
                       <div className="annot-title">ncRNA Class</div>
                       <div className="annot-text">{ann.ontology_terms || "ncRNA"}</div>
-                      <div className="annot-title annot-subtitle">Release Layer</div>
-                      <div className="annot-text">Known ncRNA-drug evidence retained as a formal known-only release module.</div>
+                      <div className="annot-title annot-subtitle">Evidence Layer</div>
+                      <div className="annot-text">Known ncRNA-drug evidence retained as a trusted known-evidence module.</div>
                       {ncrnaEvidence.available ? (
                         <>
                           <div className="annot-title annot-subtitle">Curated Summary</div>
@@ -1527,17 +1527,17 @@ export default function AnalysisPage({
           </section>
 
           <section className={`card panel-pad rise-in delay-1 analysis-collapse-card ${collapsedSections.ncrnaLinked ? "is-collapsed" : ""}`}>
-            <h3>ncRNA-Linked Released Results</h3>
+            <h3>ncRNA-Linked Evidence Results</h3>
             <SectionToggle
               collapsed={collapsedSections.ncrnaLinked}
               onToggle={() => setCollapsedSections((prev) => ({ ...prev, ncrnaLinked: !prev.ncrnaLinked }))}
-              label="ncRNA-linked released results"
+              label="ncRNA-linked evidence results"
             />
             {!collapsedSections.ncrnaLinked ? (ncrnaLinkedResults.available ? (
               <>
                 <div className="support-meter-row">
                   <div className="support-meter-card">
-                    <span>Released rows</span>
+                    <span>Evidence rows</span>
                     <strong>{ncrnaLinkedResults.row_count}</strong>
                   </div>
                   <div className="support-meter-card">
@@ -1559,7 +1559,7 @@ export default function AnalysisPage({
                   {ncrnaLinkedResults.top_fda_label ? <span className="source-chip">top FDA label {ncrnaLinkedResults.top_fda_label}</span> : null}
                 </div>
                 <div className="mechanism-section">
-                  <div className="annot-title">Top Linked Released Rows</div>
+                  <div className="annot-title">Top Linked Evidence Rows</div>
                   <div className="mechanism-links">
                     {(ncrnaLinkedResults.top_rows || []).map((row, idx) => (
                       <div className="mechanism-link-card" key={`${row.drug_id}-${row.target_id}-${row.disease_id}-${idx}`}>
@@ -1575,7 +1575,7 @@ export default function AnalysisPage({
                         <div className="mechanism-link-meta">linked ncRNAs={row.linked_ncrna_count || 0} · relation={row.top_relation_category || "NA"}</div>
                         <div className="support-meter-row">
                           <div className="support-meter-card">
-                            <span>Released method support</span>
+                            <span>Evidence method support</span>
                             {renderCoreSupportMeter(row.n_algo_pass)}
                           </div>
                           <div className="support-meter-card">
@@ -1598,7 +1598,7 @@ export default function AnalysisPage({
                 </div>
               </>
             ) : (
-              <div className="empty-state">No released-result overlap is currently available between the selected record and the curated ncRNA-drug layer.</div>
+              <div className="empty-state">No evidence-result overlap is currently available between the selected record and the curated ncRNA-drug layer.</div>
             )) : null}
           </section>
 
@@ -1665,7 +1665,7 @@ export default function AnalysisPage({
               <>
                 <div className="algo-evidence-summary">
                   <span className="ai-brand-chip">rows {algorithmEvidence.row_count}</span>
-                  <span className="ai-brand-chip">released {algorithmEvidence.max_n_algo_pass ?? 0}/3</span>
+                  <span className="ai-brand-chip">evidence {algorithmEvidence.max_n_algo_pass ?? 0}/3</span>
                   <span className="ai-brand-chip">avg vote {algorithmEvidence.avg_total_votes ?? 0}/7</span>
                   <span className="ai-brand-chip">max vote {algorithmEvidence.max_total_votes ?? 0}/7</span>
                 </div>
@@ -1708,7 +1708,7 @@ export default function AnalysisPage({
                         </div>
                         <div className="support-meter-row">
                           <div className="support-meter-card">
-                            <span>Released method support</span>
+                            <span>Evidence method support</span>
                             {renderCoreSupportMeter(row.n_algo_pass)}
                           </div>
                           <div className="support-meter-card">
@@ -1755,7 +1755,7 @@ export default function AnalysisPage({
               <>
                 <div className="support-meter-row">
                   <div className="support-meter-card">
-                    <span>TTD-linked released rows</span>
+                    <span>TTD-linked evidence rows</span>
                     <strong>{ttdEvidence.row_count}</strong>
                   </div>
                   <div className="support-meter-card">
@@ -1780,7 +1780,7 @@ export default function AnalysisPage({
                   ))}
                 </div>
                 <div className="mechanism-section">
-                  <div className="annot-title">Top TTD-Supported Released Rows</div>
+                  <div className="annot-title">Top TTD-Supported Evidence Rows</div>
                   <div className="mechanism-links">
                     {(ttdEvidence.top_rows || []).map((row, idx) => (
                       <div className="mechanism-link-card" key={`${row.drug_id}-${row.target_id}-${row.disease_id}-${idx}`}>
@@ -1793,7 +1793,7 @@ export default function AnalysisPage({
                         </div>
                         <div className="support-meter-row">
                           <div className="support-meter-card">
-                            <span>Released method support</span>
+                            <span>Evidence method support</span>
                             {renderCoreSupportMeter(row.n_algo_pass)}
                           </div>
                           <div className="support-meter-card">

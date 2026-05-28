@@ -70,7 +70,7 @@ export default function HelpPage() {
               <div className="step-num">1</div>
               <div className="step-body">
                 <div className="step-title">Query a Record</div>
-                <div className="muted">Use quick search or a released node identifier to define the analysis center.</div>
+                <div className="muted">Use quick search or a DiseaseMind record identifier to define the analysis center.</div>
               </div>
             </div>
             <div className="help-step">
@@ -141,9 +141,9 @@ export default function HelpPage() {
             </ul>
           </article>
           <article className="card panel-pad">
-            <h3>Release Notes</h3>
+            <h3>Platform Notes</h3>
             <ul>
-              <li>The DiseaseMind home page provides entry to the released network analysis and result tables</li>
+              <li>The DiseaseMind home page provides entry to network analysis and evidence result tables</li>
               <li>The database view provides sortable result records, support metrics, and linked record access</li>
               <li>Exports are available for current network views and structured result tables</li>
             </ul>

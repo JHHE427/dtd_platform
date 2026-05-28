@@ -449,8 +449,8 @@ def load_released_dti_audit() -> dict[str, Any]:
         "reference_release_pairs": int(data.get("reference_release_pairs") or data.get("old_release_pairs") or 0),
         "additional_released_pairs": int(data.get("additional_released_pairs") or data.get("new_pairs_not_in_merged") or 0),
         "coverage_note": (
-            "The current formal release uses the broadened DTI intake together with curated drug-disease and target-disease alignment "
-            "to define the released disease-linked network now used across the atlas."
+            "The current DiseaseMind evidence set uses the broadened DTI intake together with curated drug-disease and target-disease alignment "
+            "to define the disease-linked network used across the platform."
         ),
     }
 
@@ -504,7 +504,7 @@ def load_released_dti_ttd_summary() -> dict[str, Any]:
         "top_supported_pair_targets": data.get("top_supported_pair_targets") or [],
         "top_supported_release_drugs": data.get("top_supported_release_drugs") or [],
         "coverage_note": (
-            "TTD support is reported for the current formal release through pair-level target-drug support, disease-linked overlap, "
+            "TTD support is reported for the current DiseaseMind evidence set through pair-level target-drug support, disease-linked overlap, "
             "and target-centric mode-of-action annotation."
         ),
     }
@@ -556,10 +556,10 @@ def load_released_disease_summary() -> dict[str, Any]:
         "top_targets": data.get("top_targets") or [],
         "top_diseases": data.get("top_diseases") or [],
         "coverage_note": (
-            "Released disease-linked rows are retained when the broadened DTI intake is supported by curated disease context "
-            "and carried into the current formal release."
+            "Disease-linked evidence rows are retained when the broadened DTI intake is supported by curated disease context "
+            "and carried into the current DiseaseMind evidence set."
         ),
-        "source_note": data.get("source_note") or "Curated disease-linked release layer",
+        "source_note": data.get("source_note") or "Curated disease-linked evidence layer",
     }
 
 
@@ -1294,7 +1294,7 @@ def build_multimodal_profile(
                 "key": "description",
                 "label": "Curated Layer",
                 "available": True,
-                "detail": "Known ncRNA-drug evidence retained as a formal release module.",
+                "detail": "Known ncRNA-drug evidence retained as a trusted evidence module.",
             },
         ]
     else:
@@ -2000,7 +2000,7 @@ def meta_research_summary() -> dict[str, Any]:
             {
                 "dataset": "Drug-Target merged layer",
                 "table": "src_dti_layer_known_predicted_merged_tx07",
-                "description": "Integrated known and predicted DTI layer used for formal Drug-Target edges.",
+                "description": "Integrated known and predicted DTI layer used for DiseaseMind Drug-Target edges.",
             },
             {
                 "dataset": "Drug-Disease known",
@@ -2013,9 +2013,9 @@ def meta_research_summary() -> dict[str, Any]:
                 "description": "CTD-based Target-Disease evidence including exact and substring matching.",
             },
             {
-                "dataset": "Formal expanded prediction set",
+                "dataset": "DiseaseMind expanded prediction set",
                 "table": "src_highconfidence_expand_vote4_top50_tx07",
-                "description": "Formal prediction rows after vote>=2 release plus resultsdti TXGNN disease-candidate expansion; used for predicted Drug-Disease, Target-Disease, and synchronized Drug-Target edges.",
+                "description": "Prediction rows after vote>=2 screening plus resultsdti TXGNN disease-candidate expansion; used for predicted Drug-Disease, Target-Disease, and synchronized Drug-Target edges.",
             },
         ]
         for item in source_tables:
@@ -2026,7 +2026,7 @@ def meta_research_summary() -> dict[str, Any]:
                 {
                     "dataset": "ncRNA-Drug known",
                     "table": "external:ncrna_drug_known_hs",
-                    "description": "Curated human ncRNA-drug evidence retained as a formal known-only result layer.",
+                    "description": "Curated human ncRNA-drug evidence retained as a trusted known-evidence result layer.",
                     "rows": ncrna_overview["evidence_rows"],
                 }
             )
@@ -2043,7 +2043,7 @@ def meta_research_summary() -> dict[str, Any]:
             (
                 "src_expanded_dti_candidates_txgnn",
                 "resultsdti TXGNN disease-candidate expansion",
-                "Seven-model DTI candidates with TXGNN disease assignment; new drug-target-disease keys are promoted into the formal prediction layer with full audit status.",
+                "Seven-model DTI candidates with TXGNN disease assignment; new drug-target-disease keys are promoted into the DiseaseMind prediction layer with full audit status.",
             ),
             (
                 "ncrna_disease_candidates",
@@ -2932,23 +2932,23 @@ def meta_research_summary() -> dict[str, Any]:
         }
 
         result_tables = [
-            {"name": "Formal network nodes", "rows": overview["nodes"], "description": "Unified node table used by the platform."},
-            {"name": "Formal network edges", "rows": overview["edges"], "description": "Unified edge table used by the platform."},
+            {"name": "DiseaseMind network nodes", "rows": overview["nodes"], "description": "Unified node table used by the platform."},
+            {"name": "DiseaseMind network edges", "rows": overview["edges"], "description": "Unified edge table used by the platform."},
             {"name": "Disease aliases", "rows": overview["disease_aliases"], "description": "Disease synonym expansion and normalization mapping."},
             {"name": "Predicted high-confidence rows", "rows": pred["total_rows"], "description": "Rows retained in the current high-confidence prediction table."},
-            {"name": "Pipeline shrinkage summary", "rows": 5, "description": "Scale reduction from raw DTI candidates to released disease network results."},
-            {"name": "Support tier overview", "rows": len(algo_distribution) + len(vote_distribution), "description": "Released-method and seven-model support tiers for retained rows."},
-            {"name": "Drug-level prediction distribution", "rows": len(drug_distribution), "description": "Top retained drugs ranked by released prediction-row count."},
-            {"name": "Target-level prediction distribution", "rows": len(target_distribution), "description": "Top retained targets ranked by released prediction-row count."},
-            {"name": "Disease-level result table", "rows": len(disease_result_rows), "description": "Disease-centered released prediction summaries."},
+            {"name": "Pipeline shrinkage summary", "rows": 5, "description": "Scale reduction from raw DTI candidates to DiseaseMind evidence results."},
+            {"name": "Support tier overview", "rows": len(algo_distribution) + len(vote_distribution), "description": "Evidence-method and seven-model support tiers for retained rows."},
+            {"name": "Drug-level prediction distribution", "rows": len(drug_distribution), "description": "Top retained drugs ranked by prediction evidence-row count."},
+            {"name": "Target-level prediction distribution", "rows": len(target_distribution), "description": "Top retained targets ranked by prediction evidence-row count."},
+            {"name": "Disease-level result table", "rows": len(disease_result_rows), "description": "Disease-centered prediction evidence summaries."},
             {"name": "Disease summary table", "rows": len(disease_spotlights), "description": "Top diseases with leading drugs, targets, and retained support levels."},
             {"name": "Drug summary table", "rows": len(drug_spotlights), "description": "Top drugs with dominant diseases, targets, and retained support peaks."},
             {"name": "Target summary table", "rows": len(target_spotlights), "description": "Top targets with dominant diseases, drugs, and retained support peaks."},
-            {"name": "Consensus result table", "rows": len(high_consensus_cases), "description": "Rows jointly retained by all three released methods and strong 7-model vote support."},
-            {"name": "Consensus priority table", "rows": len(top_consensus_leaderboard), "description": "Highest-priority released rows ranked by support and score."},
-            {"name": "Approved drug result table", "rows": len(approved_drug_deep_results), "description": "Approved drugs ranked by released prediction support."},
+            {"name": "Consensus result table", "rows": len(high_consensus_cases), "description": "Rows jointly retained by all three evidence methods and strong 7-model vote support."},
+            {"name": "Consensus priority table", "rows": len(top_consensus_leaderboard), "description": "Highest-priority evidence rows ranked by support and score."},
+            {"name": "Approved drug result table", "rows": len(approved_drug_deep_results), "description": "Approved drugs ranked by prediction evidence support."},
             {"name": "Approved drug priority table", "rows": len(top_approved_leaderboard), "description": "Best supported retained rows among approved drugs."},
-            {"name": "Selected prediction results", "rows": len(representative_cases), "description": "High-support released rows selected for direct review."},
+            {"name": "Selected prediction results", "rows": len(representative_cases), "description": "High-support evidence rows selected for direct review."},
         ]
         ncrna_linked_results: dict[str, Any] = {
             "available": False,
@@ -2963,7 +2963,7 @@ def meta_research_summary() -> dict[str, Any]:
                     {
                         "name": "Known ncRNA-drug evidence",
                         "rows": ncrna_overview["evidence_rows"],
-                        "description": "Curated human ncRNA-drug evidence rows incorporated as a formal known-only module.",
+                        "description": "Curated human ncRNA-drug evidence rows incorporated as a trusted known-evidence module.",
                     },
                     {
                         "name": "ncRNA summary table",
@@ -2981,19 +2981,19 @@ def meta_research_summary() -> dict[str, Any]:
             result_tables.extend(
                 [
                     {
-                        "name": "ncRNA-linked released result table",
+                        "name": "ncRNA-linked evidence result table",
                         "rows": ncrna_linked_results["overview"]["released_row_count"],
-                        "description": "Released prediction rows whose drugs also appear in the curated ncRNA-drug layer.",
+                        "description": "Prediction evidence rows whose drugs also appear in the curated ncRNA-drug layer.",
                     },
                     {
                         "name": "ncRNA-linked consensus result table",
                         "rows": len(ncrna_linked_results.get("top_linked_consensus_cases") or []),
-                        "description": "Consensus-tier released rows linked to curated ncRNA-drug evidence through shared drugs.",
+                        "description": "Consensus-tier evidence rows linked to curated ncRNA-drug evidence through shared drugs.",
                     },
                     {
                         "name": "ncRNA-linked approved result table",
                         "rows": len(ncrna_linked_results.get("top_linked_selected_approved") or []),
-                        "description": "Selected approved-drug released rows linked to the curated ncRNA-drug layer.",
+                        "description": "Selected approved-drug evidence rows linked to the curated ncRNA-drug layer.",
                     },
                 ]
             )
@@ -3006,24 +3006,24 @@ def meta_research_summary() -> dict[str, Any]:
                         "description": "TTD targets contributing therapeutic target annotations and disease mappings.",
                     },
                     {
-                        "name": "TTD-supported released result table",
+                        "name": "TTD-supported evidence result table",
                         "rows": ttd_overview["ttd_supported_released_rows"],
-                        "description": "Released rows overlapping TTD drug-disease or target-disease mappings.",
+                        "description": "Prediction evidence rows overlapping TTD drug-disease or target-disease mappings.",
                     },
                     {
                         "name": "TTD-supported consensus result table",
                         "rows": sum(1 for row in ttd_overlap_rows if row.get("consensus_row") and row.get("ttd_any_supported")),
-                        "description": "Consensus-tier released rows additionally supported by TTD therapeutic target mappings.",
+                        "description": "Consensus-tier evidence rows additionally supported by TTD therapeutic target mappings.",
                     },
                     {
                         "name": "TTD-supported approved result table",
                         "rows": sum(1 for row in ttd_overlap_rows if row.get("ttd_approved_drug") and row.get("ttd_any_supported")),
-                        "description": "Approved-drug released rows overlapping TTD therapeutic target knowledge.",
+                        "description": "Approved-drug evidence rows overlapping TTD therapeutic target knowledge.",
                     },
                     {
                         "name": "TTD-supported target summary",
                         "rows": len(ttd_summary.get("top_supported_targets") or []),
-                        "description": "Leading released targets supported by TTD therapeutic target knowledge.",
+                        "description": "Leading evidence targets supported by TTD therapeutic target knowledge.",
                     },
                 ]
             )
@@ -3031,19 +3031,19 @@ def meta_research_summary() -> dict[str, Any]:
             result_tables.extend(
                 [
                     {
-                        "name": "Released disease-linked result table",
+                        "name": "Disease-linked evidence result table",
                         "rows": released_disease_summary["released_rows"],
-                        "description": "Disease-linked released rows incorporated into the current formal release through the broadened DTI intake together with curated drug-disease and target-disease intersection.",
+                        "description": "Disease-linked evidence rows incorporated into the current DiseaseMind evidence set through the broadened DTI intake together with curated drug-disease and target-disease intersection.",
                     },
                     {
-                        "name": "Released target summary",
+                        "name": "Evidence target summary",
                         "rows": len(released_disease_summary.get("top_targets") or []),
-                        "description": "Top targets represented in the current released disease-linked layer.",
+                        "description": "Top targets represented in the current disease-linked evidence layer.",
                     },
                     {
-                        "name": "Released drug summary",
+                        "name": "Evidence drug summary",
                         "rows": len(released_disease_summary.get("top_drugs") or []),
-                        "description": "Top drugs represented in the current released disease-linked layer.",
+                        "description": "Top drugs represented in the current disease-linked evidence layer.",
                     },
                 ]
             )
@@ -3960,7 +3960,7 @@ def online_analysis(
             [focus],
         ).fetchone()
         if not focus_row:
-            raise HTTPException(status_code=404, detail=f"Released disease network node not found: {focus}")
+            raise HTTPException(status_code=404, detail=f"DiseaseMind network node not found: {focus}")
 
         focus_type = focus_row["node_type"]
         focus_label = focus_row["display_name"]
@@ -4134,7 +4134,7 @@ def online_analysis_subgraph(
             [focus],
         ).fetchone()
         if not focus_row:
-            raise HTTPException(status_code=404, detail=f"Released disease network node not found: {focus}")
+            raise HTTPException(status_code=404, detail=f"DiseaseMind network node not found: {focus}")
 
         where_sql, params = build_online_analysis_where(
             focus=focus,

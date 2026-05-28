@@ -481,7 +481,7 @@ export default function DatabasePage({
       <div className="analysis-header page-head">
         <div>
           <h2>DiseaseMind Database</h2>
-          <div className="analysis-subtitle">Browse DiseaseMind drug, target, disease, ncRNA, evidence, and prediction tables in one release database.</div>
+          <div className="analysis-subtitle">Browse DiseaseMind drug, target, disease, ncRNA, evidence, and prediction tables in one DiseaseMind database.</div>
         </div>
         <div className="toolbar">
           <button className="btn-quiet" onClick={onExportNodes}>Export Nodes</button>
@@ -684,7 +684,7 @@ export default function DatabasePage({
         <div className="db-panel-head">
           <div>
             <h3>Disease Network Result Overview</h3>
-          <div className="db-panel-subtitle">Release statistics, source tables, and core result summaries.</div>
+          <div className="db-panel-subtitle">Evidence statistics, source tables, and core result summaries.</div>
           </div>
         </div>
         <div className="db-ai-strip">
@@ -697,7 +697,7 @@ export default function DatabasePage({
         <SectionToggle
           collapsed={collapsedSections.releaseOverview}
           onToggle={() => setCollapsedSections((prev) => ({ ...prev, releaseOverview: !prev.releaseOverview }))}
-          label="release overview"
+          label="evidence overview"
         />
         {!collapsedSections.releaseOverview ? (
           <>
@@ -719,7 +719,7 @@ export default function DatabasePage({
                     <tr><td>RWR pass</td><td>{predictionSummary.rwr_pass}</td></tr>
                   </>
                 ) : (
-                  <tr><td colSpan={2}>No algorithm summary is available for the current release.</td></tr>
+                  <tr><td colSpan={2}>No algorithm summary is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -780,8 +780,8 @@ export default function DatabasePage({
                   <em>Curated ncRNA-drug rows</em>
                 </span>
                 <span className="layer-legend-pill is-release-layer">
-                  <strong>Released prediction layer</strong>
-                  <em>Formal disease-network result tables</em>
+                  <strong>Prediction evidence layer</strong>
+                  <em>DiseaseMind result tables</em>
                 </span>
                 <span className="layer-legend-pill is-cross-layer">
                   <strong>Cross-layer linkage</strong>
@@ -839,7 +839,7 @@ export default function DatabasePage({
                       <td><span className="result-emphasis-number">{row.evidence_rows}</span></td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={3}>No ncRNA summary rows are available for the current release.</td></tr>
+                    <tr><td colSpan={3}>No ncRNA summary rows are available for the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -865,7 +865,7 @@ export default function DatabasePage({
                       <td><span className="result-emphasis-number">{row.evidence_rows}</span></td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={3}>No ncRNA-drug summary rows are available for the current release.</td></tr>
+                    <tr><td colSpan={3}>No ncRNA-drug summary rows are available for the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -889,7 +889,7 @@ export default function DatabasePage({
                       <td>{row.count}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={2}>No ncRNA-type distribution is available in the current release.</td></tr>
+                    <tr><td colSpan={2}>No ncRNA-type distribution is available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -909,7 +909,7 @@ export default function DatabasePage({
                       <td>{row.count}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={2}>No ncRNA relation summary is available in the current release.</td></tr>
+                    <tr><td colSpan={2}>No ncRNA relation summary is available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -921,7 +921,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>TTD Therapeutic Target Validation</strong>
-                <span>External therapeutic-target validation aligned to released disease-network results.</span>
+                <span>External therapeutic-target validation aligned to DiseaseMind disease-network results.</span>
               </div>
               <div className="layer-legend-strip">
                 <span className="layer-legend-pill is-known-only">
@@ -930,10 +930,10 @@ export default function DatabasePage({
                 </span>
                 <span className="layer-legend-pill is-cross-layer">
                   <strong>Validation overlap</strong>
-                  <em>Released rows sharing drug, target, or disease mappings with TTD</em>
+                  <em>Evidence rows sharing drug, target, or disease mappings with TTD</em>
                 </span>
                 <span className="layer-legend-pill is-release-layer">
-                  <strong>Released output</strong>
+                  <strong>Evidence output</strong>
                   <em>TTD-supported drugs, targets, and retained rows</em>
                 </span>
               </div>
@@ -956,7 +956,7 @@ export default function DatabasePage({
               </span>
               <span className="result-summary-pill">
                 <strong>{ttdOverview.ttd_supported_released_rows}</strong>
-                <em>TTD-supported released rows</em>
+                <em>TTD-supported retained rows</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{ttdOverview.ttd_drug_disease_supported_rows}</strong>
@@ -986,7 +986,7 @@ export default function DatabasePage({
                   <tr><td>Drug-disease mapping rows</td><td><span className="result-emphasis-number">{ttdOverview.ttd_drug_disease_rows}</span></td></tr>
                   <tr><td>Target-disease mapping rows</td><td><span className="result-emphasis-number">{ttdOverview.ttd_target_disease_rows}</span></td></tr>
                   <tr><td>Drug-target MOA rows</td><td><span className="result-emphasis-number">{ttdOverview.ttd_drug_target_moa_rows}</span></td></tr>
-                  <tr><td>TTD-supported released rows</td><td><span className="result-emphasis-number">{ttdOverview.ttd_supported_released_rows}</span></td></tr>
+                  <tr><td>TTD-supported retained rows</td><td><span className="result-emphasis-number">{ttdOverview.ttd_supported_released_rows}</span></td></tr>
                   <tr><td>Top target type</td><td>{ttdOverview.top_target_type || "NA"}</td></tr>
                 </tbody>
               </table>
@@ -996,7 +996,7 @@ export default function DatabasePage({
                 <thead>
                   <tr>
                     <th>TTD-supported drug</th>
-                    <th>Released rows</th>
+                    <th>Evidence rows</th>
                     <th>Consensus rows</th>
                     <th>Avg TXGNN</th>
                   </tr>
@@ -1014,7 +1014,7 @@ export default function DatabasePage({
                       <td>{Number(row.avg_txgnn || 0).toFixed(4)}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={4}>No TTD-supported released drugs are available in the current release.</td></tr>
+                    <tr><td colSpan={4}>No TTD-supported retained drugs are available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1024,7 +1024,7 @@ export default function DatabasePage({
                 <thead>
                   <tr>
                     <th>TTD-supported target</th>
-                    <th>Released rows</th>
+                    <th>Evidence rows</th>
                     <th>Consensus rows</th>
                   </tr>
                 </thead>
@@ -1040,7 +1040,7 @@ export default function DatabasePage({
                       <td>{row.consensus_rows}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={3}>No TTD-supported released targets are available in the current release.</td></tr>
+                    <tr><td colSpan={3}>No TTD-supported retained targets are available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1117,13 +1117,13 @@ export default function DatabasePage({
           <div className="db-research-grid db-stack-gap">
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
-                <strong>TTD-Supported Released Results</strong>
-                <span>These tables isolate the released rows that also receive external support from TTD target-drug-disease knowledge, with consensus and approved subsets broken out for direct review.</span>
+                <strong>TTD-Supported Evidence Results</strong>
+                <span>These tables isolate the retained rows that also receive external support from TTD target-drug-disease knowledge, with consensus and approved subsets broken out for direct review.</span>
               </div>
               <div className="result-summary-strip">
                 <span className="result-summary-pill">
                   <strong>{ttdSupportedOverview.released_row_count}</strong>
-                  <em>TTD-supported released rows</em>
+                  <em>TTD-supported retained rows</em>
                 </span>
                 <span className="result-summary-pill">
                   <strong>{ttdSupportedOverview.consensus_row_count}</strong>
@@ -1160,7 +1160,7 @@ export default function DatabasePage({
                       <td>{row.ttd_moa || "-"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={5}>No consensus rows are currently cross-supported by TTD in this release.</td></tr>
+                    <tr><td colSpan={5}>No consensus rows are currently cross-supported by TTD in current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1186,7 +1186,7 @@ export default function DatabasePage({
                       <td>{row.ttd_moa || "-"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={5}>No approved rows are currently cross-supported by TTD in this release.</td></tr>
+                    <tr><td colSpan={5}>No approved rows are currently cross-supported by TTD in current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1198,7 +1198,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>Therapeutic Target Module</strong>
-                <span>Target- and disease-centered object browsing for the released network.</span>
+                <span>Target- and disease-centered object browsing for the DiseaseMind network.</span>
               </div>
               <div className="result-summary-strip">
                 <span className="result-summary-pill">
@@ -1231,7 +1231,7 @@ export default function DatabasePage({
                 <thead>
                   <tr>
                     <th>Target</th>
-                    <th>Released rows</th>
+                    <th>Evidence rows</th>
                     <th>Top disease</th>
                     <th>Top drug</th>
                     <th>TTD support</th>
@@ -1249,7 +1249,7 @@ export default function DatabasePage({
                       <td>{row.top_ttd_moa || "-"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={6}>No therapeutic target module rows are available in the current release.</td></tr>
+                    <tr><td colSpan={6}>No therapeutic target module rows are available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1258,7 +1258,7 @@ export default function DatabasePage({
               <div className="dti-heatmap-card target-detail-card">
                 <div className="dti-heatmap-head">
                   <strong>Selected Target Detail</strong>
-                  <span>A structured target-centric detail card for the currently selected therapeutic target, combining released-network reach with disease, drug, and TTD/MOA context.</span>
+                  <span>A structured target-centric detail card for the currently selected therapeutic target, combining DiseaseMind network reach with disease, drug, and TTD/MOA context.</span>
                 </div>
                 <div className="result-summary-strip target-detail-summary">
                   <span className="result-summary-pill">
@@ -1267,7 +1267,7 @@ export default function DatabasePage({
                   </span>
                   <span className="result-summary-pill">
                     <strong>{selectedTargetDetail.released_rows}</strong>
-                    <em>Released rows</em>
+                    <em>Evidence rows</em>
                   </span>
                   <span className="result-summary-pill">
                     <strong>{selectedTargetDetail.consensus_rows}</strong>
@@ -1299,8 +1299,8 @@ export default function DatabasePage({
                     <div className="item-meta">{selectedTargetDetail.top_ttd_support || "No TTD support label available."}</div>
                   </div>
                   <div className="comparison-card target-detail-panel">
-                    <div className="annot-title">Best Released Support</div>
-                    <div className="item-meta">{selectedTargetDetail.max_algo_pass || 0}/3 released support and {selectedTargetDetail.max_votes || 0}/7 seven-model vote support</div>
+                    <div className="annot-title">Best Evidence Support</div>
+                    <div className="item-meta">{selectedTargetDetail.max_algo_pass || 0}/3 evidence support and {selectedTargetDetail.max_votes || 0}/7 seven-model vote support</div>
                     <div className="comparison-actions">
                       <button className="primary" onClick={() => onJumpToNode(selectedTargetDetail.target_id)}>View in Network</button>
                     </div>
@@ -1310,7 +1310,7 @@ export default function DatabasePage({
                   <table className="result-table compact">
                     <thead>
                       <tr>
-                        <th>Linked released row</th>
+                        <th>Linked evidence row</th>
                         <th>Disease</th>
                         <th>TTD support</th>
                         <th>MOA</th>
@@ -1325,7 +1325,7 @@ export default function DatabasePage({
                           <td>{row.ttd_moa || "-"}</td>
                         </tr>
                       )) : (
-                        <tr><td colSpan={4}>No linked released rows are available for the selected target.</td></tr>
+                        <tr><td colSpan={4}>No linked retained rows are available for the selected target.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -1342,8 +1342,8 @@ export default function DatabasePage({
           <div className="db-research-grid db-stack-gap">
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
-                <strong>Disease-Linked Released Context</strong>
-                <span>These summary tables capture where the formal released prediction layer and the curated disease-context evidence layer intersect through shared drugs.</span>
+                <strong>Disease-Linked Evidence Context</strong>
+                <span>These summary tables capture where the DiseaseMind prediction layer and the curated disease-context evidence layer intersect through shared drugs.</span>
               </div>
               <div className="layer-legend-strip">
                 <span className="layer-legend-pill is-known-only">
@@ -1355,8 +1355,8 @@ export default function DatabasePage({
                   <em>Shared-drug overlap</em>
                 </span>
                 <span className="layer-legend-pill is-release-layer">
-                  <strong>Released result output</strong>
-                  <em>Released, consensus, and approved rows</em>
+                  <strong>Evidence result output</strong>
+                  <em>Retained, consensus, and approved rows</em>
                 </span>
               </div>
             </div>
@@ -1369,11 +1369,11 @@ export default function DatabasePage({
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>Released rows linked to ncRNA evidence</td><td><span className="result-emphasis-number">{ncrnaLinkedOverview.released_row_count || 0}</span></td></tr>
+                  <tr><td>Evidence rows linked to ncRNA evidence</td><td><span className="result-emphasis-number">{ncrnaLinkedOverview.released_row_count || 0}</span></td></tr>
                   <tr><td>Consensus rows linked to ncRNA evidence</td><td><span className="result-emphasis-number">{ncrnaLinkedOverview.consensus_row_count || 0}</span></td></tr>
                   <tr><td>Selected approved-drug rows linked to ncRNA evidence</td><td><span className="result-emphasis-number">{ncrnaLinkedOverview.selected_approved_row_count || 0}</span></td></tr>
-                  <tr><td>Released drugs shared with ncRNA layer</td><td><span className="result-emphasis-number">{ncrnaLinkedOverview.linked_drug_count || 0}</span></td></tr>
-                  <tr><td>ncRNAs connected to released drugs</td><td><span className="result-emphasis-number">{ncrnaLinkedOverview.linked_ncrna_count || 0}</span></td></tr>
+                  <tr><td>Retained drugs shared with ncRNA layer</td><td><span className="result-emphasis-number">{ncrnaLinkedOverview.linked_drug_count || 0}</span></td></tr>
+                  <tr><td>ncRNAs connected to retained drugs</td><td><span className="result-emphasis-number">{ncrnaLinkedOverview.linked_ncrna_count || 0}</span></td></tr>
                   <tr><td>Top relation category</td><td>{ncrnaLinkedOverview.top_relation_category || "NA"}</td></tr>
                   <tr><td>Top ncRNA type</td><td>{ncrnaLinkedOverview.top_ncrna_type || "NA"}</td></tr>
                 </tbody>
@@ -1384,7 +1384,7 @@ export default function DatabasePage({
                 <thead>
                   <tr>
                     <th>Linked drug</th>
-                    <th>Released rows</th>
+                    <th>Evidence rows</th>
                     <th>Linked ncRNAs</th>
                     <th>Support</th>
                     <th>Top ncRNA</th>
@@ -1404,7 +1404,7 @@ export default function DatabasePage({
                       <td>{row.top_ncrna_name || "-"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={5}>No released-result overlap with the ncRNA layer is available in the current release.</td></tr>
+                    <tr><td colSpan={5}>No evidence-result overlap with the ncRNA layer is available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1478,8 +1478,8 @@ export default function DatabasePage({
         <div className="db-research-grid db-stack-gap" ref={algorithmsSectionRef}>
           <div className="dti-heatmap-card">
             <div className="dti-heatmap-head">
-              <strong>Released Analytics Layer</strong>
-              <span>Method support, seven-model consistency, TTD overlap, and released disease-linked audit.</span>
+              <strong>Evidence Analytics Layer</strong>
+              <span>Method support, seven-model consistency, TTD overlap, and disease-linked evidence audit.</span>
             </div>
             <SectionToggle
               collapsed={collapsedSections.analyticsLayer}
@@ -1494,7 +1494,7 @@ export default function DatabasePage({
               <thead>
                 <tr>
                   <th>DTI model</th>
-                  <th>Released rows</th>
+                  <th>Evidence rows</th>
                   <th>Share</th>
                   <th>Avg score</th>
                 </tr>
@@ -1508,7 +1508,7 @@ export default function DatabasePage({
                     <td>{item.avg_score ?? "-"}</td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={4}>No seven-model consistency summary is available for the current release.</td></tr>
+                  <tr><td colSpan={4}>No seven-model consistency summary is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1530,7 +1530,7 @@ export default function DatabasePage({
                     <td>{item.share_pct}%</td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={3}>No DTI pair consistency summary is available for the current release.</td></tr>
+                  <tr><td colSpan={3}>No DTI pair consistency summary is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1538,7 +1538,7 @@ export default function DatabasePage({
           <div className="dti-heatmap-card">
             <div className="dti-heatmap-head">
               <strong>DTI co-support heatmap</strong>
-              <span>Diagonal cells show per-model coverage; off-diagonal cells show the strongest pairwise co-support counts among released rows.</span>
+              <span>Diagonal cells show per-model coverage; off-diagonal cells show the strongest pairwise co-support counts among retained rows.</span>
             </div>
             <div className="dti-heatmap-grid" style={{ gridTemplateColumns: `120px repeat(${dtiHeatmap.labels.length}, minmax(0, 1fr))` }}>
               <div className="dti-heatmap-corner" />
@@ -1583,7 +1583,7 @@ export default function DatabasePage({
                     <td>{item.share_pct}%</td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={3}>No DTI support-pattern summary is available for the current release.</td></tr>
+                  <tr><td colSpan={3}>No DTI support-pattern summary is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1602,13 +1602,13 @@ export default function DatabasePage({
                 {pipelineShrinkage ? (
                   <>
                     <tr><td>Raw DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.raw_dti_pairs}</span></td></tr>
-                    <tr><td>Release-filtered DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained}</span></td></tr>
-                    <tr><td>Released prediction rows</td><td><span className="result-emphasis-number">{pipelineShrinkage.released_prediction_rows}</span></td></tr>
-                    <tr><td>Formal network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
-                    <tr><td>Formal network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
+                    <tr><td>Prioritized DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained}</span></td></tr>
+                    <tr><td>Prediction evidence rows</td><td><span className="result-emphasis-number">{pipelineShrinkage.released_prediction_rows}</span></td></tr>
+                    <tr><td>DiseaseMind network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
+                    <tr><td>DiseaseMind network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
                   </>
                 ) : (
-                  <tr><td colSpan={2}>No pipeline shrinkage summary is available for the current release.</td></tr>
+                  <tr><td colSpan={2}>No pipeline shrinkage summary is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1617,11 +1617,11 @@ export default function DatabasePage({
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>{releasedDtiAudit.release_filtered_pairs.toLocaleString()}</strong>
-                <em>Release-filtered DTI pairs</em>
+                <em>Prioritized DTI pairs</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{releasedDtiAudit.released_prediction_rows.toLocaleString()}</strong>
-                <em>Released prediction rows</em>
+                <em>Prediction evidence rows</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{releasedDtiAudit.curated_overlap_rows.toLocaleString()}</strong>
@@ -1629,7 +1629,7 @@ export default function DatabasePage({
               </span>
               <span className="result-summary-pill">
                 <strong>{releasedDtiAudit.additional_released_pairs.toLocaleString()}</strong>
-                <em>Additional released pairs</em>
+                <em>Additional retained pairs</em>
               </span>
             </div>
           ) : null}
@@ -1641,7 +1641,7 @@ export default function DatabasePage({
               <div className="result-summary-strip">
                 <span className="result-summary-pill">
                   <strong>{releasedDtiTtdSummary.ttd_supported_pairs.toLocaleString()}</strong>
-                  <em>TTD-supported released pairs</em>
+                  <em>TTD-supported retained pairs</em>
                 </span>
                 <span className="result-summary-pill">
                   <strong>{releasedDtiTtdSummary.ttd_supported_pair_pct}%</strong>
@@ -1653,7 +1653,7 @@ export default function DatabasePage({
                 </span>
                 <span className="result-summary-pill">
                   <strong>{releasedDtiTtdSummary.ttd_supported_released_rows.toLocaleString()}</strong>
-                  <em>TTD-supported released rows</em>
+                  <em>TTD-supported retained rows</em>
                 </span>
               </div>
               <div className="home-research-grid inner-result-grid">
@@ -1692,7 +1692,7 @@ export default function DatabasePage({
                           <td><span className="result-emphasis-number">{item.pair_count}</span></td>
                         </tr>
                       )) : (
-                        <tr><td colSpan={2}>No target-level TTD support is available for the current released pair layer.</td></tr>
+                        <tr><td colSpan={2}>No target-level TTD support is available for the current evidence setd pair layer.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -1706,11 +1706,11 @@ export default function DatabasePage({
               <div className="result-summary-strip">
                 <span className="result-summary-pill">
                   <strong>{releasedDiseaseSummary.released_rows.toLocaleString()}</strong>
-                  <em>Released disease-linked rows</em>
+                  <em>Disease-linked evidence rows</em>
                 </span>
                 <span className="result-summary-pill">
                   <strong>{releasedDiseaseSummary.released_pairs.toLocaleString()}</strong>
-                  <em>Released disease-linked pairs</em>
+                  <em>Disease-linked evidence pairs</em>
                 </span>
                 <span className="result-summary-pill">
                   <strong>{releasedDiseaseSummary.released_unique_targets.toLocaleString()}</strong>
@@ -1726,7 +1726,7 @@ export default function DatabasePage({
                   <table className="result-table compact">
                     <thead>
                       <tr>
-                        <th>Released disease-linked row</th>
+                        <th>Disease-linked evidence row</th>
                         <th>Target</th>
                         <th>Disease</th>
                         <th>Support</th>
@@ -1745,7 +1745,7 @@ export default function DatabasePage({
                           <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
                         </tr>
                       )) : (
-                        <tr><td colSpan={6}>No released disease-linked rows are available.</td></tr>
+                        <tr><td colSpan={6}>No disease-linked evidence rows are available.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -1754,7 +1754,7 @@ export default function DatabasePage({
                   <table className="result-table compact">
                     <thead>
                       <tr>
-                        <th>Released target</th>
+                        <th>Evidence target</th>
                         <th>Rows</th>
                         <th>Top disease</th>
                       </tr>
@@ -1770,7 +1770,7 @@ export default function DatabasePage({
                           </tr>
                         );
                       }) : (
-                        <tr><td colSpan={3}>No target summary is available for the current released layer.</td></tr>
+                        <tr><td colSpan={3}>No target summary is available for the current evidence setd layer.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -1783,7 +1783,7 @@ export default function DatabasePage({
             <table className="result-table compact">
               <thead>
                 <tr>
-                  <th>Released support</th>
+                  <th>Evidence support</th>
                   <th>Rows</th>
                   <th>Share</th>
                 </tr>
@@ -1796,7 +1796,7 @@ export default function DatabasePage({
                     <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={3}>No released-support tier overview is available.</td></tr>
+                  <tr><td colSpan={3}>No evidence-support tier overview is available.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1830,8 +1830,8 @@ export default function DatabasePage({
         <div className="db-research-grid db-stack-gap">
           <div className="dti-heatmap-card">
             <div className="dti-heatmap-head">
-              <strong>Released Summary Tables</strong>
-              <span>Disease, drug, target, validation, and representative released summaries.</span>
+              <strong>Evidence Summary Tables</strong>
+              <span>Disease, drug, target, validation, and representative evidence summaries.</span>
             </div>
             <SectionToggle
               collapsed={collapsedSections.summaryLayer}
@@ -1875,7 +1875,7 @@ export default function DatabasePage({
                     <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
                   </tr>
                 )}) : (
-                  <tr><td colSpan={6}>No disease summary rows are available in the current release.</td></tr>
+                  <tr><td colSpan={6}>No disease summary rows are available in the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1886,7 +1886,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>Disease Context Module</strong>
-                <span>Disease-centered object browsing aligned with the released disease network: each row captures the dominant drug, target, ncRNA-linked context, and TTD-supported target context around the same disease node.</span>
+                <span>Disease-centered object browsing aligned with the DiseaseMind disease network: each row captures the dominant drug, target, ncRNA-linked context, and TTD-supported target context around the same disease node.</span>
               </div>
               <div className="result-summary-strip">
                 <span className="result-summary-pill">
@@ -1912,7 +1912,7 @@ export default function DatabasePage({
                 <thead>
                   <tr>
                     <th>Disease</th>
-                    <th>Released rows</th>
+                    <th>Evidence rows</th>
                     <th>Top drug</th>
                     <th>Top target</th>
                     <th>ncRNA context</th>
@@ -1930,7 +1930,7 @@ export default function DatabasePage({
                       <td>{row.ttd_summary ? <span className="result-emphasis-chip is-soft">{row.ttd_summary}</span> : "-"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={6}>No disease-centric rows are available in the current release.</td></tr>
+                    <tr><td colSpan={6}>No disease-centric rows are available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1939,7 +1939,7 @@ export default function DatabasePage({
               <div className="dti-heatmap-card target-detail-card">
                 <div className="dti-heatmap-head">
                   <strong>Selected Disease Detail</strong>
-                  <span>A structured disease-centric detail card for the currently selected disease node, combining released-network reach with drug, target, ncRNA, and TTD context.</span>
+                  <span>A structured disease-centric detail card for the currently selected disease node, combining DiseaseMind network reach with drug, target, ncRNA, and TTD context.</span>
                 </div>
                 <div className="result-summary-strip target-detail-summary">
                   <span className="result-summary-pill">
@@ -1948,11 +1948,11 @@ export default function DatabasePage({
                   </span>
                   <span className="result-summary-pill">
                     <strong>{selectedDiseaseDetail.released_rows}</strong>
-                    <em>Released rows</em>
+                    <em>Evidence rows</em>
                   </span>
                   <span className="result-summary-pill">
                     <strong>{selectedDiseaseDetail.max_algo_pass || 0}/3</strong>
-                    <em>Best released support</em>
+                    <em>Best evidence support</em>
                   </span>
                   <span className="result-summary-pill">
                     <strong>{selectedDiseaseDetail.max_votes || 0}/7</strong>
@@ -1991,7 +1991,7 @@ export default function DatabasePage({
                   <table className="result-table compact">
                     <thead>
                       <tr>
-                        <th>Linked released row</th>
+                        <th>Linked evidence row</th>
                         <th>Target</th>
                         <th>Support</th>
                         <th>Pattern</th>
@@ -2006,7 +2006,7 @@ export default function DatabasePage({
                           <td>{row.support_pattern || "-"}</td>
                         </tr>
                       )) : (
-                        <tr><td colSpan={4}>No linked released rows are available for the selected disease.</td></tr>
+                        <tr><td colSpan={4}>No linked retained rows are available for the selected disease.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -2020,11 +2020,11 @@ export default function DatabasePage({
         <div className="db-research-grid db-stack-gap">
           <div className="dti-heatmap-card">
             <div className="dti-heatmap-head">
-              <strong>Released-method consistency</strong>
-              <span>The released disease network retains rows through TXGNN, ENR, and RWR agreement patterns.</span>
+              <strong>Evidence-method consistency</strong>
+              <span>The DiseaseMind disease network retains rows through TXGNN, ENR, and RWR agreement patterns.</span>
             </div>
             <div className="model-overview-strip">
-              <div className="model-overview-bar" aria-label="Released-method support distribution">
+              <div className="model-overview-bar" aria-label="Evidence-method support distribution">
                 {(predictionSummary?.support_pattern_distribution || []).length ? (
                   (() => {
                     const rows = (predictionSummary?.support_pattern_distribution || []).reduce((acc, item) => {
@@ -2062,7 +2062,7 @@ export default function DatabasePage({
           <div className="dti-heatmap-card">
             <div className="dti-heatmap-head">
               <strong>Seven-model DTI consistency</strong>
-              <span>The upstream DTI layer exposes which models most often co-support the released prediction rows.</span>
+              <span>The upstream DTI layer exposes which models most often co-support the prediction evidence rows.</span>
             </div>
             <div className="dti-heatmap-grid" style={{ gridTemplateColumns: `120px repeat(${dtiHeatmap.labels.length}, minmax(0, 1fr))` }}>
               <div className="dti-heatmap-corner" />
@@ -2113,7 +2113,7 @@ export default function DatabasePage({
                     <tr><td>Cohen's d</td><td>{approvedValidation.cohens_d}</td></tr>
                   </>
                 ) : (
-                  <tr><td colSpan={2}>No approved-drug validation summary is available for the current release.</td></tr>
+                  <tr><td colSpan={2}>No approved-drug validation summary is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -2201,7 +2201,7 @@ export default function DatabasePage({
                     <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={3}>No drug-level distribution is available for the current release.</td></tr>
+                  <tr><td colSpan={3}>No drug-level distribution is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -2227,7 +2227,7 @@ export default function DatabasePage({
                     <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={3}>No target-level distribution is available for the current release.</td></tr>
+                  <tr><td colSpan={3}>No target-level distribution is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -2251,7 +2251,7 @@ export default function DatabasePage({
                     <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={3}>No disease-distribution summary is available for the current release.</td></tr>
+                  <tr><td colSpan={3}>No disease-distribution summary is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -2271,13 +2271,13 @@ export default function DatabasePage({
                 {representativeDrugs.length ? representativeDrugs.map((item) => (
                   <tr key={item.drug_id}>
                     <td><span className="result-emphasis-label">{item.drug_label}</span> <span className="muted">({item.drug_id})</span></td>
-                    <td>{item.disease_label || "Retained in network release"}</td>
+                    <td>{item.disease_label || "Retained in DiseaseMind network"}</td>
                     <td><span className="result-emphasis-number">{item.txgnn_score ?? "-"}</span></td>
                     <td>{item.enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.enr_fdr}</span> : "-"}</td>
                     <td>{item.n_algo_pass != null ? <span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.seven_model_votes}/7</span> : "-"}</td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={5}>No representative-drug summary is available for the current release.</td></tr>
+                  <tr><td colSpan={5}>No representative-drug summary is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -2321,7 +2321,7 @@ export default function DatabasePage({
                     <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={7}>No representative prediction cases are available for the current release.</td></tr>
+                  <tr><td colSpan={7}>No representative prediction cases are available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -2331,7 +2331,7 @@ export default function DatabasePage({
           <div className="dti-heatmap-card">
             <div className="dti-heatmap-head">
               <strong>Consensus Result Table</strong>
-              <span>High-consensus released rows are additionally checked against curated ncRNA-drug evidence through shared drugs, so ncRNA-linked consensus coverage can be reviewed before reading the full table.</span>
+              <span>High-consensus retained rows are additionally checked against curated ncRNA-drug evidence through shared drugs, so ncRNA-linked consensus coverage can be reviewed before reading the full table.</span>
             </div>
             <div className="result-summary-strip">
               <span className="result-summary-pill">
@@ -2400,7 +2400,7 @@ export default function DatabasePage({
                     <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
                   </tr>
                 )}) : (
-                  <tr><td colSpan={8}>No high-consensus results are available for the current release.</td></tr>
+                  <tr><td colSpan={8}>No high-consensus results are available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -2412,7 +2412,7 @@ export default function DatabasePage({
               <thead>
                 <tr>
                   <th>Disease</th>
-                  <th>Released rows</th>
+                  <th>Evidence rows</th>
                   <th>Max support</th>
                   <th>Max 7-model votes</th>
                   <th>Top TXGNN score</th>
@@ -2434,7 +2434,7 @@ export default function DatabasePage({
                     <td>{item.best_enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.best_enr_fdr}</span> : "-"}</td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={6}>No disease-centered result table is available for the current release.</td></tr>
+                  <tr><td colSpan={6}>No disease-centered result table is available for the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -2444,7 +2444,7 @@ export default function DatabasePage({
                 <thead>
                   <tr>
                     <th>Approved drug</th>
-                    <th>Released rows</th>
+                    <th>Evidence rows</th>
                     <th>Max support</th>
                     <th>Max 7-model votes</th>
                     <th>ncRNA link</th>
@@ -2473,7 +2473,7 @@ export default function DatabasePage({
                     <td>{item.best_enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.best_enr_fdr}</span> : "-"}</td>
                   </tr>
                 )}) : (
-                  <tr><td colSpan={8}>No approved-drug result rows are available in the current release.</td></tr>
+                  <tr><td colSpan={8}>No approved-drug result rows are available in the current evidence set.</td></tr>
                 )}
               </tbody>
             </table>
@@ -2506,7 +2506,7 @@ export default function DatabasePage({
                     <td>{linked ? <span className="result-emphasis-chip is-soft">{linked.top_ncrna_name || "linked"} · {linked.linked_ncrna_count || 0}</span> : "-"}</td>
                     <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
                   </tr>
-                )}) : <tr><td colSpan={7}>No drug summary rows are available in the current release.</td></tr>}
+                )}) : <tr><td colSpan={7}>No drug summary rows are available in the current evidence set.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -2532,7 +2532,7 @@ export default function DatabasePage({
                     <td>{item.top_drug_label || "-"}</td>
                     <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
                   </tr>
-                )) : <tr><td colSpan={6}>No target summary rows are available in the current release.</td></tr>}
+                )) : <tr><td colSpan={6}>No target summary rows are available in the current evidence set.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -2595,7 +2595,7 @@ export default function DatabasePage({
                     <td><span className="result-emphasis-number">{item.TXGNN_score ?? "-"}</span></td>
                     <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
                   </tr>
-                )}) : <tr><td colSpan={7}>No consensus priority rows are available in the current release.</td></tr>}
+                )}) : <tr><td colSpan={7}>No consensus priority rows are available in the current evidence set.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -2625,7 +2625,7 @@ export default function DatabasePage({
                     <td><span className="result-emphasis-number">{item.TXGNN_score ?? "-"}</span></td>
                     <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
                   </tr>
-                )}) : <tr><td colSpan={7}>No approved priority rows are available in the current release.</td></tr>}
+                )}) : <tr><td colSpan={7}>No approved priority rows are available in the current evidence set.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -2659,7 +2659,7 @@ export default function DatabasePage({
         <span>
           Current prediction table shows <strong>{predictionVisibleStart}-{predictionVisibleEnd}</strong> of <strong>{predictionState.total || 0}</strong> rows (page {predictionState.page}, size {predictionState.page_size}).
         </span>
-        <span className="db-result-visibility-note">Use export buttons for full released tables.</span>
+        <span className="db-result-visibility-note">Use export buttons for full evidence tables.</span>
       </section>
 
       <div className="db-layout">
@@ -2667,7 +2667,7 @@ export default function DatabasePage({
           <div className="db-panel-head">
             <div>
               <h3>Node Table</h3>
-              {!collapsedSections.nodeLayer ? <div className="db-panel-subtitle">Search and review drug, target, and disease entries in the current network release.</div> : null}
+              {!collapsedSections.nodeLayer ? <div className="db-panel-subtitle">Search and review drug, target, and disease entries in the current DiseaseMind network.</div> : null}
             </div>
             {!collapsedSections.nodeLayer ? <div className="muted">page {nodesState.page} · size {nodesState.page_size} · total {nodesState.total}</div> : null}
           </div>
@@ -2755,7 +2755,7 @@ export default function DatabasePage({
         <div className="db-panel-head">
           <div>
             <h3>Prediction Result Table</h3>
-            <div className="db-panel-subtitle">Disease-centered prediction rows with released-method evidence and per-model AI score traces.</div>
+            <div className="db-panel-subtitle">Disease-centered prediction rows with evidence-method support and per-model AI score traces.</div>
           </div>
           <div className="db-panel-actions">
             <div className="muted">page {predictionState.page} · size {predictionState.page_size} · total {predictionState.total}</div>
@@ -2776,7 +2776,7 @@ export default function DatabasePage({
             <div className="result-summary-strip db-result-summary">
               <span className="result-summary-pill">
                 <strong>{predictionState.total}</strong>
-                <em>Released prediction records</em>
+                <em>Prediction evidence records</em>
               </span>
               {predictionSummary ? (
                 <span className="result-summary-pill">
@@ -2928,7 +2928,7 @@ export default function DatabasePage({
                 <div className="prediction-metric">
                   <span>Retained methods</span>
                   <strong>{selectedPrediction.n_algo_pass ?? "-"} / 3</strong>
-                  <small>Released method support</small>
+                  <small>Evidence method support</small>
                 </div>
                 <div className="prediction-metric">
                   <span>7-model votes</span>
@@ -2952,7 +2952,7 @@ export default function DatabasePage({
               </div>
               <div className="support-meter-row">
                 <div className="support-meter-card">
-                  <span>Released method support</span>
+                  <span>Evidence method support</span>
                   {renderCoreSupportMeter(selectedPrediction.n_algo_pass)}
                 </div>
                 <div className="support-meter-card">
@@ -3010,7 +3010,7 @@ export default function DatabasePage({
         <div className="db-panel-head">
           <div>
             <h3>ncRNA Evidence Table</h3>
-            <div className="db-panel-subtitle">Curated human-known ncRNA-drug evidence rows retained as a formal known-only release module.</div>
+            <div className="db-panel-subtitle">Curated human-known ncRNA-drug evidence rows retained as a trusted known-evidence module.</div>
           </div>
           <div className="muted">page {ncrnaEvidenceState.page} · size {ncrnaEvidenceState.page_size} · total {ncrnaEvidenceState.total}</div>
         </div>

@@ -158,7 +158,7 @@ export default function App() {
       setStats(await api("/api/meta/stats"));
       setResearchSummary(await api("/api/meta/research-summary"));
     } catch (e) {
-      showToast("warn", `Load stats failed: ${e.message}`);
+      showToast("warn", `Unable to load summary statistics: ${e.message}`);
     }
   }, [showToast]);
 
@@ -214,7 +214,7 @@ export default function App() {
           data = fallback;
           effectiveMode = "full";
           setGraphMode("full");
-          showToast("warn", "Current center has no visible edges in core mode, switched to full mode");
+          showToast("warn", "No core-network edges were found. Expanded network view applied.");
         }
       }
 
@@ -223,7 +223,7 @@ export default function App() {
       setCenterNode(id);
       setGraphMeta(`mode=${data.mode || effectiveMode} · center=${data.center_id} · depth=${data.depth} · nodes=${data.nodes.length} · edges=${data.edges.length}`);
     } catch (e) {
-      showToast("warn", `Load graph failed: ${e.message}`);
+      showToast("warn", `Unable to load network view: ${e.message}`);
     } finally {
       if (ticket === reqSeq.current.graph) setGraphLoading(false);
       if (graphReqKeyRef.current === reqKey) graphReqKeyRef.current = "";
@@ -270,7 +270,7 @@ export default function App() {
         return next;
       });
     } catch (e) {
-      showToast("warn", `Load detail failed: ${e.message}`);
+      showToast("warn", `Unable to load record details: ${e.message}`);
     }
   }, [neighborState.edge_category, neighborState.edge_type, neighborState.order_by, neighborState.page, neighborState.page_size, neighborState.q, showToast]);
 
@@ -299,7 +299,7 @@ export default function App() {
         items: data.items || [],
       }));
     } catch (e) {
-      showToast("warn", `Load neighbors failed: ${e.message}`);
+      showToast("warn", `Unable to load neighboring records: ${e.message}`);
     }
   }, [neighborState, selectedNodeId, showToast]);
 
@@ -313,7 +313,7 @@ export default function App() {
       const data = await api(`/api/nodes?${params}`);
       setNodesState(data);
     } catch (e) {
-      showToast("warn", `Load nodes failed: ${e.message}`);
+      showToast("warn", `Unable to load node table: ${e.message}`);
     }
   }, [nodeFilters, nodesState.page_size, showToast]);
 
@@ -327,7 +327,7 @@ export default function App() {
       const data = await api(`/api/edges?${params}`);
       setEdgesState(data);
     } catch (e) {
-      showToast("warn", `Load edges failed: ${e.message}`);
+      showToast("warn", `Unable to load edge table: ${e.message}`);
     }
   }, [edgeFilters, edgesState.page_size, showToast]);
 
@@ -341,7 +341,7 @@ export default function App() {
       const data = await api(`/api/results/predictions?${params}`);
       setPredictionState(data);
     } catch (e) {
-      showToast("warn", `Load prediction results failed: ${e.message}`);
+      showToast("warn", `Unable to load prediction results: ${e.message}`);
     }
   }, [predictionFilters, predictionState.page_size, showToast]);
 
@@ -355,7 +355,7 @@ export default function App() {
       const data = await api(`/api/results/ncrna/evidence?${params}`);
       setNcrnaEvidenceState(data);
     } catch (e) {
-      showToast("warn", `Load ncRNA evidence failed: ${e.message}`);
+      showToast("warn", `Unable to load ncRNA evidence: ${e.message}`);
     }
   }, [ncrnaEvidenceFilters, ncrnaEvidenceState.page_size, showToast]);
 
@@ -369,7 +369,7 @@ export default function App() {
       const data = await api(`/api/results/ncrna/edges?${params}`);
       setNcrnaEdgeState(data);
     } catch (e) {
-      showToast("warn", `Load ncRNA-drug relationships failed: ${e.message}`);
+      showToast("warn", `Unable to load ncRNA-drug relationships: ${e.message}`);
     }
   }, [ncrnaEdgeFilters, ncrnaEdgeState.page_size, showToast]);
 
@@ -377,7 +377,7 @@ export default function App() {
     const next = { ...onlineAnalysisState, ...overrides };
     const focusId = (next.focus_id || "").trim();
     if (!focusId) {
-      showToast("warn", "A released atlas node identifier is required for online analysis");
+      showToast("warn", "Select a DiseaseMind record before running online analysis.");
       return;
     }
     try {
@@ -394,7 +394,7 @@ export default function App() {
     const next = { ...onlineAnalysisState, ...overrides };
     const focusId = (next.focus_id || "").trim();
     if (!focusId) {
-      showToast("warn", "A released atlas node identifier is required to load an online-analysis subgraph");
+      showToast("warn", "Select a DiseaseMind record before loading an online-analysis subgraph.");
       return;
     }
     try {
@@ -420,7 +420,7 @@ export default function App() {
     try {
       const r = await api(`/api/search?${query({ q, limit: 1 })}`);
       if (!r.items.length) {
-        showToast("warn", `No released atlas record matched "${q}"`);
+        showToast("warn", `No DiseaseMind record matched "${q}"`);
         return;
       }
       const node = r.items[0];
@@ -465,7 +465,7 @@ export default function App() {
         })}`
       );
       if (!data.found) {
-        showToast("warn", `No atlas path was identified within ${pathState.max_hops} hops`);
+        showToast("warn", `No DiseaseMind path was identified within ${pathState.max_hops} hops`);
         return;
       }
       setGraph({
@@ -632,7 +632,7 @@ export default function App() {
     if (!row) return;
     const nextCenter = row.Disease_ID || row.Target_ID || row.Drug_ID;
     if (!nextCenter) {
-      showToast("warn", "The selected online-analysis row does not have a released atlas node to open");
+      showToast("warn", "The selected online-analysis row is not linked to an openable DiseaseMind record.");
       return;
     }
     setCenterNode(nextCenter);
@@ -872,7 +872,7 @@ export default function App() {
                 onCompareModes={compareModes}
                 onFitGraph={() => {
                   if (!graph?.nodes?.length) {
-                    showToast("warn", "No released network view is currently available for fitting");
+                    showToast("warn", "No DiseaseMind network view is currently available for fitting");
                     return;
                   }
                   setFitSignal((v) => v + 1);

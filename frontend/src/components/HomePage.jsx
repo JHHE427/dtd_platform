@@ -815,9 +815,9 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       return acc;
     }, {});
     return [
-      { label: "1-method support", value: rows["1"] || 0, tier: "tier-1", note: "Retained by one released method." },
-      { label: "2-method support", value: rows["2"] || 0, tier: "tier-2", note: "Retained by two released methods." },
-      { label: "3-method support", value: rows["3"] || 0, tier: "tier-3", note: "Retained by all three released methods." },
+      { label: "1-method support", value: rows["1"] || 0, tier: "tier-1", note: "Retained by one evidence method." },
+      { label: "2-method support", value: rows["2"] || 0, tier: "tier-2", note: "Retained by two evidence methods." },
+      { label: "3-method support", value: rows["3"] || 0, tier: "tier-3", note: "Retained by all three evidence methods." },
     ];
   }, [algoDistribution]);
   const sevenVoteCards = React.useMemo(() => {
@@ -854,7 +854,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   ];
   const conclusionCards = [
     {
-      title: "Formal disease layer",
+      title: "Curated disease layer",
       value: nodeMap.Disease || 0,
       note: "Disease nodes retained after alias expansion, normalization, and network-level integration."
     },
@@ -866,19 +866,19 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     {
       title: "Algorithm-supported screening",
       value: predictionSummary ? `${predictionSummary.txgnn_pass}/${predictionSummary.enr_pass}/${predictionSummary.rwr_pass}` : "NA",
-      note: "TXGNN, ENR, and RWR support counts are surfaced as formal evidence indicators."
+      note: "TXGNN, ENR, and RWR support counts are surfaced as DiseaseMind evidence indicators."
     }
   ];
   const keyFindings = [
     {
       title: "Pipeline retention",
       value: pipelineShrinkage ? `${(pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained).toLocaleString()} retained` : "NA",
-      note: pipelineShrinkage ? `from ${pipelineShrinkage.raw_dti_pairs.toLocaleString()} raw DTI pairs into the current release-filtered DTI layer.` : "Pipeline retention summary is unavailable.",
+      note: pipelineShrinkage ? `from ${pipelineShrinkage.raw_dti_pairs.toLocaleString()} raw DTI pairs into the prioritized DTI layer.` : "Pipeline retention summary is unavailable.",
     },
     {
       title: "Disease concentration",
       value: topDiseaseShare != null ? `${topDiseaseShare}%` : "NA",
-      note: topDiseaseShare != null ? "Top disease share in the released prediction layer." : "Disease concentration summary is unavailable.",
+      note: topDiseaseShare != null ? "Top disease share in the prediction evidence layer." : "Disease concentration summary is unavailable.",
     },
     {
       title: "Approved-drug retention",
@@ -888,17 +888,17 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     {
       title: "Strongest DTI co-support",
       value: topDtiPair?.pair_label || "NA",
-      note: topDtiPair ? `${topDtiPair.count} released rows (${topDtiPair.share_pct}%) are jointly supported by this model pair.` : "Seven-model co-support summary is unavailable.",
+      note: topDtiPair ? `${topDtiPair.count} retained rows (${topDtiPair.share_pct}%) are jointly supported by this model pair.` : "Seven-model co-support summary is unavailable.",
     },
     {
-      title: "ncRNA-linked release coverage",
+      title: "ncRNA-linked evidence coverage",
       value: ncrnaLinkedOverview ? `${ncrnaLinkedOverview.released_row_count || 0} rows` : "NA",
       note: ncrnaLinkedOverview
         ? `${ncrnaLinkedOverview.consensus_row_count || 0} consensus rows and ${ncrnaLinkedOverview.selected_approved_row_count || 0} selected approved-drug rows are cross-linked to curated ncRNA evidence.`
-        : "ncRNA-linked released-result coverage is unavailable.",
+        : "ncRNA-linked evidence-result coverage is unavailable.",
     },
     {
-      title: "TTD-supported release coverage",
+      title: "TTD-supported evidence coverage",
       value: ttdOverview ? `${ttdOverview.ttd_supported_released_rows || 0} rows` : "NA",
       note: ttdOverview
         ? `${ttdOverview.ttd_drug_disease_supported_rows || 0} rows overlap TTD drug-disease mappings and ${ttdOverview.ttd_target_disease_supported_rows || 0} rows overlap TTD target-disease mappings.`
@@ -915,7 +915,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       metrics: `${leadingApprovedCase.n_algo_pass || leadingApprovedCase.max_algo_pass || 0}/3 · ${leadingApprovedCase.Total_Votes_Optional7 || leadingApprovedCase.max_votes || 0}/7`,
       score: leadingApprovedCase.TXGNN_score ?? leadingApprovedCase.top_txgnn_score ?? "-",
       fdr: leadingApprovedCase.ENR_FDR ?? leadingApprovedCase.best_enr_fdr ?? "-",
-      conclusion: "An approved drug remains in the formal network after multi-method retention and DTI vote filtering.",
+      conclusion: "An approved drug remains in the DiseaseMind network after multi-method retention and DTI vote filtering.",
     } : null,
     leadingConsensusCase ? {
       key: "consensus",
@@ -926,7 +926,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       metrics: `${leadingConsensusCase.n_algo_pass || 0}/3 · ${leadingConsensusCase.Total_Votes_Optional7 || 0}/7`,
       score: leadingConsensusCase.TXGNN_score ?? "-",
       fdr: leadingConsensusCase.ENR_FDR ?? "-",
-      conclusion: "This released row is retained by the strongest joint support tier across released methods and the seven-model vote layer.",
+      conclusion: "This evidence row is retained by the strongest joint support tier across evidence methods and the seven-model vote layer.",
     } : null,
     leadingDiseaseCase ? {
       key: "disease",
@@ -937,7 +937,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       metrics: `${leadingDiseaseCase.max_algo_pass || 0}/3 · ${leadingDiseaseCase.max_votes || 0}/7`,
       score: leadingDiseaseCase.top_txgnn_score ?? "-",
       fdr: leadingDiseaseCase.best_enr_fdr ?? "-",
-      conclusion: "This disease-centered summary highlights the dominant retained drug-target context within the released disease network.",
+      conclusion: "This disease-centered summary highlights the dominant retained drug-target context within the DiseaseMind disease network.",
     } : null,
   ].filter(Boolean);
   const featureCards = [
@@ -961,8 +961,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   const coveredDiseases = Number(researchSummary?.overview?.diseases || nodeMap.Disease || 0);
   const visualCards = [
     {
-      title: "AI mind consensus",
-      body: "Seven DTI models converge into retained DiseaseMind candidates.",
+      title: "AI evidence consensus",
+      body: "Seven DTI models converge into prioritized DiseaseMind candidates.",
       visual: <SevenModelMiniVisual />,
     },
     {
@@ -976,7 +976,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       visual: <DiseaseMapMiniVisual />,
     },
     {
-      title: "DiseaseMind database",
+      title: "Curated record system",
       body: "Curated tables feed stable DiseaseMind API records and views.",
       visual: <ReleaseDatabaseMiniVisual />,
     },
@@ -1009,21 +1009,21 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     {
       title: "ncRNA bridge evidence",
       metric: `${Number(ncrnaLinkedOverview?.released_row_count || ncrnaOverview?.human_evidence_rows || 0).toLocaleString()} linked rows`,
-      body: "Curated ncRNA-drug evidence is connected back to disease-centered released results.",
+      body: "Curated ncRNA-drug evidence is connected back to disease-centered evidence results.",
       visual: <NcrnaLinkFigureVisual />,
     },
     {
-      title: "AI release funnel",
+      title: "AI evidence funnel",
       metric: `${dtiModelCoverage.length || sevenDtiModels.length} DTI models`,
-      body: "Seven model outputs are filtered into compact, queryable, release-grade network records.",
+      body: "Seven model outputs are filtered into compact, queryable DiseaseMind records.",
       visual: <PipelineFunnelFigureVisual />,
     },
   ];
   const consoleMetricRows = [
     {
-      label: "Released AI rows",
+      label: "Prioritized AI rows",
       value: releasedPredictionTotal,
-      note: "formal prediction layer",
+      note: "prediction evidence layer",
       icon: "model",
     },
     {
@@ -1065,7 +1065,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               <span>Drug · Target · Disease · Mind</span>
             </h1>
             <p>
-              DiseaseMind turns drug, target, disease, and ncRNA evidence into a disease-centered AI interpretation system, unifying seven DTI models, retained prediction rows, and curated knowledge in one queryable release.
+              DiseaseMind turns drug, target, disease, and ncRNA evidence into a disease-centered AI interpretation system, unifying seven DTI models, retained prediction rows, and curated knowledge in one queryable DiseaseMind workspace.
             </p>
             <div className="hero-search">
               <input
@@ -1082,7 +1082,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="hero-ai-strip">
               <span className="ai-brand-chip"><DetailIcon name="disease" />Disease core</span>
               <span className="ai-brand-chip"><DetailIcon name="target" />drug-target orbit</span>
-              <span className="ai-brand-chip"><DetailIcon name="analysis" />AI mind layer</span>
+              <span className="ai-brand-chip"><DetailIcon name="analysis" />AI evidence layer</span>
               {topDtiModel ? <span className="ai-brand-chip">top {topDtiModel.model}</span> : null}
               {topDtiModel?.avg_score != null ? <span className="ai-brand-chip">avg {topDtiModel.avg_score}</span> : null}
               {topDtiPair ? <span className="ai-brand-chip">{topDtiPair.pair_label}</span> : null}
@@ -1117,10 +1117,10 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         </div>
         <section className="home-storyboard-panel" aria-label="DiseaseMind workflow storyboard">
           <div className="home-storyboard-copy">
-            <span>Brand Storyboard</span>
-            <strong>DiseaseMind evidence mind</strong>
+            <span>Evidence Architecture</span>
+            <strong>DiseaseMind integration workflow</strong>
             <p>
-              Seven DTI models, curated evidence, disease-centered expansion, and stable database records are organized around the DiseaseMind brand logic.
+              Seven DTI models, curated evidence, disease-centered expansion, and stable database records are organized into one review-ready DiseaseMind workflow.
             </p>
           </div>
           <ReleaseStoryboardVisual />
@@ -1134,10 +1134,10 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-evidence-console" aria-label="AI evidence console">
           <div className="home-evidence-console-head">
             <div>
-              <span>AI Evidence Console</span>
-              <strong>DiseaseMind scoring cockpit for the disease-network release</strong>
+              <span>Evidence Intelligence</span>
+              <strong>DiseaseMind multimodal evidence workspace</strong>
               <p>
-                A denser systems view that combines DiseaseMind's seven-model vote structure, disease-centered graph topology, heatmap-style AI confidence, external TTD support, and ncRNA evidence.
+                Combines seven-model vote structure, disease-centered graph topology, AI confidence, external TTD support, and ncRNA evidence.
               </p>
             </div>
             <button type="button" onClick={() => onAnalyze(keyword)}>
@@ -1169,8 +1169,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-atlas-gallery" aria-label="DiseaseMind visual overview">
           <div className="home-atlas-gallery-head">
             <div>
-              <strong>DiseaseMind Visual System</strong>
-              <span>Compact flat illustrations of the main data layers and DiseaseMind AI workflow.</span>
+              <strong>DiseaseMind Data Layers</strong>
+              <span>Compact visual summaries of the main evidence layers and AI workflow.</span>
             </div>
             <button type="button" onClick={() => onOpenDatabase?.("nodes")}>
               <DetailIcon name="database" />
@@ -1192,17 +1192,17 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         </section>
         <section className="home-result-scale-card">
           <div className="home-result-scale-head">
-            <strong>Release Result Scale</strong>
-            <span>Current page tables are top-list previews. Full records are available in Database export.</span>
+            <strong>Evidence Scale</strong>
+            <span>Top-list previews are shown here. Full records are available in Database export.</span>
           </div>
           <div className="home-result-scale-grid">
             <span className="result-summary-pill">
               <strong>{releasedPredictionTotal.toLocaleString()}</strong>
-              <em>Released prediction rows</em>
+              <em>Prediction evidence rows</em>
             </span>
             <span className="result-summary-pill">
               <strong>{releasedDiseaseLinkedTotal.toLocaleString()}</strong>
-              <em>Disease-linked released rows</em>
+              <em>Disease-linked retained rows</em>
             </span>
             <span className="result-summary-pill">
               <strong>{consensusTotal.toLocaleString()}</strong>
@@ -1246,13 +1246,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
-            <h3>Release Result Inventory</h3>
-            <div className="home-panel-subtitle">Compact index of the current release.</div>
+            <h3>Evidence Inventory</h3>
+            <div className="home-panel-subtitle">Compact index of the current DiseaseMind evidence set.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.inventoryPanel}
             onToggle={() => toggleTableSection("inventoryPanel")}
-            label="release inventory"
+            label="evidence inventory"
           />
           {!collapsedTables.inventoryPanel ? (
             <div className="result-summary-strip">
@@ -1274,7 +1274,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </span>
               <span className="result-summary-pill">
                 <strong>{resultTables.length}</strong>
-                <em>Formal result tables</em>
+                <em>DiseaseMind result tables</em>
               </span>
             </div>
           ) : null}
@@ -1283,7 +1283,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide ai-brand-panel">
           <div className="home-panel-head">
             <h3>DiseaseMind Intelligence Layer</h3>
-            <div className="home-panel-subtitle">Seven deep learning DTI models provide raw pair scores and vote support for DiseaseMind's disease-centered release.</div>
+            <div className="home-panel-subtitle">Seven deep learning DTI models provide pair scores and vote support for DiseaseMind's disease-centered evidence layer.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.aiBrandPanel}
@@ -1311,7 +1311,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             {topDtiPattern ? (
               <span className="result-summary-pill ai-pill">
                 <strong>{topDtiPattern.pattern_label}</strong>
-                <em>{topDtiPattern.count} released rows</em>
+                <em>{topDtiPattern.count} retained rows</em>
               </span>
             ) : null}
           </div>
@@ -1335,7 +1335,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <section className="home-panel-card">
               <div className="home-panel-head">
                 <h3>Key Findings</h3>
-                <div className="home-panel-subtitle">Short release-level findings.</div>
+                <div className="home-panel-subtitle">Current evidence highlights.</div>
               </div>
               <HomeTableToggle
                 collapsed={collapsedTables.keyFindingsPanel}
@@ -1380,7 +1380,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <span className="result-emphasis-chip is-soft">{item.fdr}</span>
                       </div>
                     </article>
-                  )) : <div className="empty-state">No fixed case-study rows are available in the current release.</div>}
+                  )) : <div className="empty-state">No fixed case-study rows are available in the current evidence set.</div>}
                 </div>
               ) : null}
             </section>
@@ -1389,7 +1389,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-seven-model-card home-priority-seven">
             <div className="home-panel-head">
               <h3>Seven DTI Models</h3>
-              <div className="home-panel-subtitle">Seven upstream DTI models feed the released disease network.</div>
+              <div className="home-panel-subtitle">Seven upstream DTI models feed the DiseaseMind disease network.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.sevenModelIntro}
@@ -1413,7 +1413,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>7 models</strong>
-                <em>Explicitly displayed in the network release</em>
+                <em>Explicitly displayed in the DiseaseMind network</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{predictionSummary?.total_rows || 0}</strong>
@@ -1422,7 +1422,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               {topDtiModel ? (
                 <span className="result-summary-pill">
                   <strong>{topDtiModel.model}</strong>
-                  <em>{topDtiModel.count} released rows</em>
+                  <em>{topDtiModel.count} retained rows</em>
                 </span>
               ) : null}
               {topDtiPair ? (
@@ -1441,7 +1441,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="home-action-row">
               <button className="quick-access-card is-inline-action" onClick={() => onOpenDatabase?.("predictions")}>
                 <strong>View Prediction Result Table</strong>
-                <span>Open released prediction rows and per-model support.</span>
+                <span>Open prediction evidence rows and per-model support.</span>
               </button>
             </div>
             </>
@@ -1468,12 +1468,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <em>Curated ncRNA-drug evidence</em>
               </span>
               <span className="layer-legend-pill is-release-layer">
-                <strong>Released prediction layer</strong>
+                <strong>Prediction evidence layer</strong>
                 <em>Drug-target-disease result rows</em>
               </span>
               <span className="layer-legend-pill is-cross-layer">
                 <strong>Cross-layer linkage</strong>
-                <em>Shared drugs connect ncRNA evidence to released results</em>
+                <em>Shared drugs connect ncRNA evidence to retained results</em>
               </span>
             </div>
             <div className="home-conclusion-grid">
@@ -1545,7 +1545,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td><span className="result-emphasis-number">{row.evidence_rows}</span></td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={3}>No ncRNA summary rows are available for the current release.</td></tr>
+                      <tr><td colSpan={3}>No ncRNA summary rows are available for the current evidence set.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1571,7 +1571,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td><span className="result-emphasis-number">{row.evidence_rows}</span></td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={3}>No ncRNA-drug summary rows are available for the current release.</td></tr>
+                      <tr><td colSpan={3}>No ncRNA-drug summary rows are available for the current evidence set.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1593,7 +1593,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td>{row.count}</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={2}>No ncRNA-type distribution is available in the current release.</td></tr>
+                      <tr><td colSpan={2}>No ncRNA-type distribution is available in the current evidence set.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1613,7 +1613,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td>{row.count}</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={2}>No ncRNA relation summary is available in the current release.</td></tr>
+                      <tr><td colSpan={2}>No ncRNA relation summary is available in the current evidence set.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1629,13 +1629,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         {ncrnaLinkedOverview ? (
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
-              <h3>Disease-Linked Released Context</h3>
-              <div className="home-panel-subtitle">Released rows linked back to curated disease-context evidence.</div>
+              <h3>Disease-Linked Evidence Context</h3>
+              <div className="home-panel-subtitle">Evidence rows linked back to curated disease-context evidence.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.diseaseReleasedPanel}
               onToggle={() => toggleTableSection("diseaseReleasedPanel")}
-              label="disease-linked release module"
+              label="disease-linked evidence module"
             />
             {!collapsedTables.diseaseReleasedPanel ? (
             <>
@@ -1646,23 +1646,23 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </span>
               <span className="layer-legend-pill is-cross-layer">
                 <strong>Linking rule</strong>
-                <em>Drug overlap between curated evidence and released rows</em>
+                <em>Drug overlap between curated evidence and retained rows</em>
               </span>
               <span className="layer-legend-pill is-release-layer">
                 <strong>Output layer</strong>
-                <em>Released, consensus, and approved result rows</em>
+                <em>Retained, consensus, and approved result rows</em>
               </span>
             </div>
             <div className="home-conclusion-grid">
               <article className="home-conclusion-card">
-                <div className="home-conclusion-title">Released network overlap</div>
+                <div className="home-conclusion-title">DiseaseMind network overlap</div>
                 <div className="home-conclusion-value">{ncrnaLinkedOverview.released_row_count || 0}</div>
-                <div className="home-conclusion-note">Released rows currently intersecting the curated ncRNA-drug layer through shared drugs.</div>
+                <div className="home-conclusion-note">Evidence rows currently intersecting the curated ncRNA-drug layer through shared drugs.</div>
               </article>
               <article className="home-conclusion-card">
                 <div className="home-conclusion-title">Consensus layer overlap</div>
                 <div className="home-conclusion-value">{ncrnaLinkedOverview.consensus_row_count || 0}</div>
-                <div className="home-conclusion-note">Consensus rows simultaneously retained by the released method layer and supported through ncRNA-linked drugs.</div>
+                <div className="home-conclusion-note">Consensus rows simultaneously retained by the evidence method layer and supported through ncRNA-linked drugs.</div>
               </article>
               <article className="home-conclusion-card">
                 <div className="home-conclusion-title">Approved-drug overlap</div>
@@ -1673,7 +1673,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>{ncrnaLinkedOverview.released_row_count || 0}</strong>
-                <em>Released rows linked to ncRNA evidence</em>
+                <em>Evidence rows linked to ncRNA evidence</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{ncrnaLinkedOverview.consensus_row_count || 0}</strong>
@@ -1685,11 +1685,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </span>
               <span className="result-summary-pill">
                 <strong>{ncrnaLinkedOverview.linked_drug_count || 0}</strong>
-                <em>Released drugs shared with the ncRNA layer</em>
+                <em>Retained drugs shared with the ncRNA layer</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{ncrnaLinkedOverview.linked_ncrna_count || 0}</strong>
-                <em>ncRNAs connected to released drugs</em>
+                <em>ncRNAs connected to retained drugs</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{ncrnaLinkedOverview.top_relation_category || "NA"}</strong>
@@ -1708,7 +1708,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   <thead>
                     <tr>
                       <th>Linked drug</th>
-                      <th>Released rows</th>
+                      <th>Evidence rows</th>
                       <th>Linked ncRNAs</th>
                       <th>Support</th>
                     </tr>
@@ -1726,7 +1726,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td><span className="result-emphasis-chip">{row.max_algo_pass}/3 · {row.max_votes}/7</span></td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={4}>No released-result overlap with the ncRNA layer is available in the current release.</td></tr>
+                      <tr><td colSpan={4}>No evidence-result overlap with the ncRNA layer is available in the current evidence set.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1770,7 +1770,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>TTD Therapeutic Target Validation</h3>
-              <div className="home-panel-subtitle">External therapeutic-target validation for released disease-network results.</div>
+              <div className="home-panel-subtitle">External therapeutic-target validation for DiseaseMind disease-network results.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.ttdValidationPanel}
@@ -1786,11 +1786,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </span>
               <span className="layer-legend-pill is-cross-layer">
                 <strong>Validation rule</strong>
-                <em>Overlap with released rows by drug, target, and disease identifiers</em>
+                <em>Overlap with retained rows by drug, target, and disease identifiers</em>
               </span>
               <span className="layer-legend-pill is-release-layer">
-                <strong>Released output</strong>
-                <em>TTD-supported drugs, targets, and released rows</em>
+                <strong>Evidence output</strong>
+                <em>TTD-supported drugs, targets, and retained rows</em>
               </span>
             </div>
             <div className="home-conclusion-grid">
@@ -1800,9 +1800,9 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <div className="home-conclusion-note">Therapeutic targets available for validation and annotation.</div>
               </article>
               <article className="home-conclusion-card">
-                <div className="home-conclusion-title">TTD-supported released rows</div>
+                <div className="home-conclusion-title">TTD-supported retained rows</div>
                 <div className="home-conclusion-value">{ttdOverview.ttd_supported_released_rows}</div>
-                <div className="home-conclusion-note">Released rows overlapping TTD disease-linked knowledge.</div>
+                <div className="home-conclusion-note">Evidence rows overlapping TTD disease-linked knowledge.</div>
               </article>
               <article className="home-conclusion-card">
                 <div className="home-conclusion-title">Leading MOA</div>
@@ -1825,11 +1825,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </span>
               <span className="result-summary-pill">
                 <strong>{ttdOverview.ttd_drug_disease_supported_rows}</strong>
-                <em>Released rows with TTD drug-disease support</em>
+                <em>Evidence rows with TTD drug-disease support</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{ttdOverview.ttd_target_disease_supported_rows}</strong>
-                <em>Released rows with TTD target-disease support</em>
+                <em>Evidence rows with TTD target-disease support</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{ttdOverview.top_target_type || "NA"}</strong>
@@ -1849,7 +1849,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   <thead>
                     <tr>
                       <th>TTD-supported drug</th>
-                      <th>Released rows</th>
+                      <th>Evidence rows</th>
                       <th>Consensus rows</th>
                       <th>Avg TXGNN</th>
                     </tr>
@@ -1867,7 +1867,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td>{Number(row.avg_txgnn || 0).toFixed(4)}</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={4}>No TTD-supported released drugs are available in the current release.</td></tr>
+                      <tr><td colSpan={4}>No TTD-supported retained drugs are available in the current evidence set.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1877,7 +1877,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   <thead>
                     <tr>
                       <th>TTD-supported target</th>
-                      <th>Released rows</th>
+                      <th>Evidence rows</th>
                       <th>Consensus rows</th>
                     </tr>
                   </thead>
@@ -1893,7 +1893,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td>{row.consensus_rows}</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={3}>No TTD-supported released targets are available in the current release.</td></tr>
+                      <tr><td colSpan={3}>No TTD-supported retained targets are available in the current evidence set.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1950,8 +1950,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         {ttdSupportedOverview ? (
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
-              <h3>TTD-Supported Released Results</h3>
-              <div className="home-panel-subtitle">Released rows with extra therapeutic-target validation.</div>
+              <h3>TTD-Supported Evidence Results</h3>
+              <div className="home-panel-subtitle">Evidence rows with extra therapeutic-target validation.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.ttdSupportedPanel}
@@ -1963,7 +1963,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>{ttdSupportedOverview.released_row_count}</strong>
-                <em>TTD-supported released rows</em>
+                <em>TTD-supported retained rows</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{ttdSupportedOverview.consensus_row_count}</strong>
@@ -2008,7 +2008,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td>{row.ttd_moa || "-"}</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={4}>No consensus rows are currently cross-supported by TTD in this release.</td></tr>
+                      <tr><td colSpan={4}>No consensus rows are currently cross-supported by TTD in current evidence set.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -2036,7 +2036,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td>{row.ttd_moa || "-"}</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={4}>No approved rows are currently cross-supported by TTD in this release.</td></tr>
+                      <tr><td colSpan={4}>No approved rows are currently cross-supported by TTD in current evidence set.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -2052,7 +2052,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Therapeutic Target Module</h3>
-              <div className="home-panel-subtitle">Target-centered released-network browsing.</div>
+              <div className="home-panel-subtitle">Target-centered DiseaseMind network browsing.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.targetModulePanel}
@@ -2090,7 +2090,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <thead>
                   <tr>
                     <th>Target</th>
-                    <th>Released rows</th>
+                    <th>Evidence rows</th>
                     <th>Top disease</th>
                     <th>Top drug</th>
                     <th>TTD support</th>
@@ -2108,7 +2108,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td>{row.top_ttd_moa || "-"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={6}>No therapeutic target module rows are available in the current release.</td></tr>
+                    <tr><td colSpan={6}>No therapeutic target module rows are available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -2123,7 +2123,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Disease Context Module</h3>
-              <div className="home-panel-subtitle">Disease-centered released-network browsing.</div>
+              <div className="home-panel-subtitle">Disease-centered DiseaseMind network browsing.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.diseaseModulePanel}
@@ -2161,7 +2161,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <thead>
                   <tr>
                     <th>Disease</th>
-                    <th>Released rows</th>
+                    <th>Evidence rows</th>
                     <th>Top drug</th>
                     <th>Top target</th>
                     <th>ncRNA context</th>
@@ -2179,7 +2179,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td>{row.ttd_summary ? <span className="result-emphasis-chip is-soft">{row.ttd_summary}</span> : "-"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={6}>No disease-centric rows are available in the current release.</td></tr>
+                    <tr><td colSpan={6}>No disease-centric rows are available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -2193,7 +2193,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Model-Stratified Result Overview</h3>
-            <div className="home-panel-subtitle">Released rows grouped by method support.</div>
+            <div className="home-panel-subtitle">Evidence rows grouped by method support.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.modelSummaryPanel}
@@ -2259,7 +2259,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={2}>No model-support summary is available in the current release.</td>
+                    <td colSpan={2}>No model-support summary is available in the current evidence set.</td>
                   </tr>
                 )}
               </tbody>
@@ -2273,7 +2273,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Seven-Model Support Overview</h3>
-            <div className="home-panel-subtitle">Released rows grouped by seven-model support.</div>
+            <div className="home-panel-subtitle">Evidence rows grouped by seven-model support.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.voteOverviewPanel}
@@ -2307,7 +2307,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={2}>No seven-model vote summary is available in the current release.</td>
+                    <td colSpan={2}>No seven-model vote summary is available in the current evidence set.</td>
                   </tr>
                 )}
               </tbody>
@@ -2335,7 +2335,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               return (
                 <article className={`seven-model-chip-card model-${meta?.key || "graphdta"} dti-consistency-card`} key={item.model}>
                   <strong>{item.model}</strong>
-                  <span>{item.count} released rows</span>
+                  <span>{item.count} retained rows</span>
                   <span>{item.share_pct}% of retained predictions</span>
                   <span>avg score {item.avg_score ?? "-"}</span>
                 </article>
@@ -2391,7 +2391,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={3}>No seven-model pair summary is available in the current release.</td>
+                      <td colSpan={3}>No seven-model pair summary is available in the current evidence set.</td>
                     </tr>
                   )}
                 </tbody>
@@ -2415,7 +2415,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={3}>No seven-model pattern summary is available in the current release.</td>
+                      <td colSpan={3}>No seven-model pattern summary is available in the current evidence set.</td>
                     </tr>
                   )}
                 </tbody>
@@ -2428,8 +2428,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
 
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
-            <h3>Released-Method vs DTI-Model Consistency</h3>
-            <div className="home-panel-subtitle">Released-method support compared with seven-model DTI support.</div>
+            <h3>Evidence-Method vs DTI-Model Consistency</h3>
+            <div className="home-panel-subtitle">Evidence-method support compared with seven-model DTI support.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.methodConsistencyPanel}
@@ -2441,11 +2441,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <div className="home-result-two-col">
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
-                <strong>Released-method consistency</strong>
-                <span>The three released methods define the disease-level interpretation tier retained in the disease network atlas.</span>
+                <strong>Evidence-method consistency</strong>
+                <span>The three evidence methods define the disease-level interpretation tier retained in the DiseaseMind network.</span>
               </div>
               <div className="model-overview-strip">
-                <div className="model-overview-bar" aria-label="Released-method support distribution">
+                <div className="model-overview-bar" aria-label="Evidence-method support distribution">
                   {supportPatternLegend.map((item) => {
                     const width = supportPatternTotal ? `${(item.value / supportPatternTotal) * 100}%` : "0%";
                     return <span key={`compare-${item.key}`} className={`model-overview-segment ${item.colorClass}`} style={{ width }} />;
@@ -2465,7 +2465,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>Seven-model DTI consistency</strong>
-                <span>The upstream DTI layer shows which of the seven models most frequently agree before disease network release filtering.</span>
+                <span>The upstream DTI layer shows which of the seven models most frequently agree before DiseaseMind disease network filtering.</span>
               </div>
               <div className="dti-heatmap-grid" style={{ gridTemplateColumns: `120px repeat(${dtiHeatmap.labels.length}, minmax(0, 1fr))` }}>
                 <div className="dti-heatmap-corner" />
@@ -2500,7 +2500,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Seven-Model DTI Screening Map</h3>
-            <div className="home-panel-subtitle">How seven-model DTI support feeds the released disease network.</div>
+            <div className="home-panel-subtitle">How seven-model DTI support feeds the DiseaseMind disease network.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.screeningMapPanel}
@@ -2566,11 +2566,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </div>
               <div className="schema-note">
                 <strong>Vote retention layer</strong>
-                <span>The disease network atlas currently exposes this layer through `7-model votes`, `Retained methods`, and per-record supporting-model panels.</span>
+                <span>The DiseaseMind network currently exposes this layer through `7-model votes`, `Retained methods`, and per-record supporting-model panels.</span>
               </div>
               <div className="schema-note">
-                <strong>Released interpretation layer</strong>
-                <span>TXGNN, ENR, and RWR remain the explicit disease-level interpretation modules linked to the final released network.</span>
+                <strong>Evidence interpretation layer</strong>
+                <span>TXGNN, ENR, and RWR remain the explicit disease-level interpretation modules linked to the final DiseaseMind network.</span>
               </div>
             </div>
           </div>
@@ -2581,7 +2581,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Disease Network Result Summary</h3>
-            <div className="home-panel-subtitle">A compact overview of the released disease network.</div>
+            <div className="home-panel-subtitle">A compact overview of the DiseaseMind disease network.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.resultSummaryPanel}
@@ -2684,7 +2684,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="layer-legend-strip">
               <span className="layer-legend-pill is-release-layer">
                 <strong>Prediction result access</strong>
-                <em>Released disease-network result tables</em>
+                <em>DiseaseMind disease-network result tables</em>
               </span>
               <span className="layer-legend-pill is-known-only">
                 <strong>Disease context access</strong>
@@ -2692,14 +2692,14 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </span>
               <span className="layer-legend-pill is-cross-layer">
                 <strong>Shared table workflow</strong>
-                <em>Compare released rows and disease-context evidence from the same database entry area</em>
+                <em>Compare retained rows and disease-context evidence from the same database entry area</em>
               </span>
             </div>
           ) : null}
           <div className="quick-access-grid">
             <button className="quick-access-card" onClick={() => onOpenDatabase?.("predictions")}>
               <strong>Prediction Result Table</strong>
-              <span>View the released prediction table with sortable columns, model evidence, and per-record detail.</span>
+              <span>View the prediction evidence table with sortable columns, model evidence, and per-record detail.</span>
             </button>
             {ncrnaOverview ? (
               <button className="quick-access-card quick-access-card--ncrna" onClick={() => onOpenDatabase?.("ncrna")}>
@@ -2713,7 +2713,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </button>
             <button className="quick-access-card" onClick={() => onOpenDatabase?.("nodes")}>
               <strong>Node and Edge Tables</strong>
-              <span>Review released node and relationship tables before drilling down into network-level analysis.</span>
+              <span>Review DiseaseMind node and relationship tables before drilling down into network-level analysis.</span>
             </button>
           </div>
           </>
@@ -2723,7 +2723,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide home-schema-card">
           <div className="home-panel-head">
             <h3>Disease Network Construction Schema</h3>
-            <div className="home-panel-subtitle">Workflow from source tables to formal network release.</div>
+            <div className="home-panel-subtitle">Workflow from source tables to the DiseaseMind network layer.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.constructionPanel}
@@ -2734,7 +2734,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <>
           <div className="schema-kpis">
             <div className="schema-kpi">
-              <span className="schema-kpi-label">Formal disease release</span>
+              <span className="schema-kpi-label">DiseaseMind disease layer</span>
               <strong>{nodeMap.Disease || 0}</strong>
             </div>
             <div className="schema-kpi">
@@ -2747,7 +2747,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
           </div>
           <div className="home-schema-layout">
-            <svg className="home-schema-svg" viewBox="0 0 1180 250" role="img" aria-label="Disease network atlas construction schema">
+            <svg className="home-schema-svg" viewBox="0 0 1180 250" role="img" aria-label="Disease DiseaseMind network construction schema">
               <defs>
                 <linearGradient id="schemaBlue" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="#eff6ff" />
@@ -2780,14 +2780,14 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               <text x="356" y="173" className="schema-line">Alias expansion and normalization</text>
 
               <rect x="640" y="30" width="250" height="170" rx="22" fill="url(#schemaGreen)" stroke="#bbf7d0" strokeWidth="2" />
-              <text x="666" y="65" className="schema-title">3. Formal Result Tables</text>
+              <text x="666" y="65" className="schema-title">3. DiseaseMind Result Tables</text>
               <text x="666" y="98" className="schema-line">network_nodes_final</text>
               <text x="666" y="123" className="schema-line">network_edges_final</text>
               <text x="666" y="148" className="schema-line">disease_aliases_final</text>
               <text x="666" y="173" className="schema-line">algorithm evidence summaries</text>
 
               <rect x="950" y="30" width="210" height="170" rx="22" fill="#ffffff" stroke="#dbeafe" strokeWidth="2" />
-              <text x="976" y="65" className="schema-title">4. Network Release</text>
+              <text x="976" y="65" className="schema-title">4. DiseaseMind Network</text>
               <text x="976" y="98" className="schema-line">{nodeMap.Drug || 0} drug nodes</text>
               <text x="976" y="123" className="schema-line">{nodeMap.Target || 0} target nodes</text>
               <text x="976" y="148" className="schema-line">{nodeMap.Disease || 0} disease nodes</text>
@@ -2807,8 +2807,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <span>TXGNN, ENR, and RWR support is retained as algorithm-specific evidence fields.</span>
               </div>
               <div className="schema-note">
-                <strong>Release-facing result layer</strong>
-                <span>Formal tables are exposed through the disease network atlas, database tables, and current-network result tables.</span>
+                <strong>DiseaseMind result layer</strong>
+                <span>DiseaseMind tables are exposed through database browsing, export, and current-network result views.</span>
               </div>
             </div>
           </div>
@@ -2820,7 +2820,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-pipeline-card">
             <div className="home-panel-head">
               <h3>Data Integration Workflow</h3>
-              {!collapsedTables.workflowPanel ? <div className="home-panel-subtitle">Primary data sources, algorithm screening, and final atlas output</div> : null}
+              {!collapsedTables.workflowPanel ? <div className="home-panel-subtitle">Primary data sources, algorithm screening, and final DiseaseMind output</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.workflowPanel}
@@ -2855,7 +2855,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     <span>{nodeMap.Drug || 0} drug nodes</span>
                     <span>{nodeMap.Target || 0} target nodes</span>
                     <span>{nodeMap.Disease || 0} disease nodes</span>
-                    <span>{edgeTotal} formal network edges</span>
+                    <span>{edgeTotal} DiseaseMind network edges</span>
                   </div>
                 </div>
               </div>
@@ -2865,7 +2865,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Algorithm Result Summary</h3>
-              {!collapsedTables.algoSummaryPanel ? <div className="home-panel-subtitle">Prediction-support composition retained in the current release</div> : null}
+              {!collapsedTables.algoSummaryPanel ? <div className="home-panel-subtitle">Prediction-support composition retained in the current evidence set</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.algoSummaryPanel}
@@ -2893,7 +2893,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     </tbody>
                   </table>
                 </div>
-              ) : <div className="empty-state">Release-level research summary is not available.</div>
+              ) : <div className="empty-state">Evidence-level research summary is not available.</div>
             ) : null}
           </section>
         </div>
@@ -2902,7 +2902,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Method-to-Result Matrix</h3>
-            {!collapsedTables.methodMatrixPanel ? <div className="home-panel-subtitle">Primary algorithm outputs surfaced in the database tables and released result views.</div> : null}
+            {!collapsedTables.methodMatrixPanel ? <div className="home-panel-subtitle">Primary algorithm outputs surfaced in the database tables and evidence result views.</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.methodMatrixPanel}
@@ -2938,7 +2938,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
             <h3>Source Dataset Table</h3>
-            {!collapsedTables.sourceDatasetPanel ? <div className="home-panel-subtitle">Rows incorporated from major source datasets in the current release.</div> : null}
+            {!collapsedTables.sourceDatasetPanel ? <div className="home-panel-subtitle">Rows incorporated from major source datasets in the current evidence set.</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.sourceDatasetPanel}
@@ -2971,13 +2971,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
 
           <section className="home-panel-card">
             <div className="home-panel-head">
-              <h3>Formal Result Tables</h3>
-              {!collapsedTables.formalTablesPanel ? <div className="home-panel-subtitle">Current release tables available for browsing and export</div> : null}
+              <h3>DiseaseMind Result Tables</h3>
+              {!collapsedTables.formalTablesPanel ? <div className="home-panel-subtitle">Current evidence tables available for browsing and export</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.formalTablesPanel}
               onToggle={() => toggleTableSection("formalTablesPanel")}
-              label="formal result tables"
+              label="DiseaseMind result tables"
             />
             {!collapsedTables.formalTablesPanel ? (
               <div className="result-table-wrap">
@@ -3008,7 +3008,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Approved Drug Validation</h3>
-              {!collapsedTables.approvedValidationPanel ? <div className="home-panel-subtitle">External validation summary extracted from the formal report, showing coverage, retention, and score separation between approved and non-approved drugs.</div> : null}
+              {!collapsedTables.approvedValidationPanel ? <div className="home-panel-subtitle">External validation summary extracted from the DiseaseMind validation report, showing coverage, retention, and score separation between approved and non-approved drugs.</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.approvedValidationPanel}
@@ -3058,14 +3058,14 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <div className="prediction-support-pattern">{approvedValidation.summary}</div>
               </>
             ) : (
-              <div className="empty-state">No approved-drug validation summary is available in the current release.</div>
+              <div className="empty-state">No approved-drug validation summary is available in the current evidence set.</div>
             )) : null}
           </section>
 
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Disease Distribution Summary</h3>
-              {!collapsedTables.diseaseDistributionPanel ? <div className="home-panel-subtitle">Top disease nodes ranked by retained Drug-Disease and Target-Disease connectivity in the released disease network.</div> : null}
+              {!collapsedTables.diseaseDistributionPanel ? <div className="home-panel-subtitle">Top disease nodes ranked by retained Drug-Disease and Target-Disease connectivity in the DiseaseMind disease network.</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.diseaseDistributionPanel}
@@ -3092,7 +3092,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         </tr>
                       )) : (
                         <tr>
-                          <td colSpan={3}>No disease-distribution summary is available in the current release.</td>
+                          <td colSpan={3}>No disease-distribution summary is available in the current evidence set.</td>
                         </tr>
                       )}
                     </tbody>
@@ -3142,14 +3142,14 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <tr key={item.drug_id}>
                         <td><span className="result-emphasis-label">{item.drug_label}</span></td>
                         <td><span className="result-id-chip">{item.drug_id}</span></td>
-                        <td>{item.disease_label || "Retained in network release"}</td>
+                        <td>{item.disease_label || "Retained in DiseaseMind network"}</td>
                         <td><span className="result-emphasis-number">{item.txgnn_score ?? "-"}</span></td>
                         <td>{item.enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.enr_fdr}</span> : "-"}</td>
                         <td>{item.n_algo_pass != null ? <span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.seven_model_votes}/7</span> : "-"}</td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={6}>No representative-drug summary is available in the current release.</td>
+                        <td colSpan={6}>No representative-drug summary is available in the current evidence set.</td>
                       </tr>
                     )}
                   </tbody>
@@ -3164,7 +3164,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Pipeline Shrinkage Summary</h3>
-              {!collapsedTables.pipelineShrinkagePanel ? <div className="home-panel-subtitle">Scale reduction from raw DTI candidates to the released disease network and retained prediction rows.</div> : null}
+              {!collapsedTables.pipelineShrinkagePanel ? <div className="home-panel-subtitle">Scale reduction from raw DTI candidates to the DiseaseMind disease network and retained prediction rows.</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.pipelineShrinkagePanel}
@@ -3185,13 +3185,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   {pipelineShrinkage ? (
                     <>
                       <tr><td>Raw DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.raw_dti_pairs}</span></td></tr>
-                      <tr><td>Release-filtered DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained}</span></td></tr>
-                      <tr><td>Released prediction rows</td><td><span className="result-emphasis-number">{pipelineShrinkage.released_prediction_rows}</span></td></tr>
-                      <tr><td>Formal network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
-                      <tr><td>Formal network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
+                      <tr><td>Prioritized DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained}</span></td></tr>
+                      <tr><td>Prediction evidence rows</td><td><span className="result-emphasis-number">{pipelineShrinkage.released_prediction_rows}</span></td></tr>
+                      <tr><td>DiseaseMind network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
+                      <tr><td>DiseaseMind network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
                     </>
                   ) : (
-                    <tr><td colSpan={2}>No pipeline shrinkage summary is available in the current release.</td></tr>
+                    <tr><td colSpan={2}>No pipeline shrinkage summary is available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -3201,11 +3201,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <div className="result-summary-strip">
                   <span className="result-summary-pill">
                     <strong>{releasedDtiAudit.release_filtered_pairs.toLocaleString()}</strong>
-                    <em>Release-filtered DTI pairs</em>
+                    <em>Prioritized DTI pairs</em>
                   </span>
                   <span className="result-summary-pill">
                     <strong>{releasedDtiAudit.released_prediction_rows.toLocaleString()}</strong>
-                    <em>Released prediction rows</em>
+                    <em>Prediction evidence rows</em>
                   </span>
                   <span className="result-summary-pill">
                     <strong>{releasedDtiAudit.curated_overlap_rows.toLocaleString()}</strong>
@@ -3213,7 +3213,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   </span>
                   <span className="result-summary-pill">
                     <strong>{releasedDtiAudit.additional_released_pairs.toLocaleString()}</strong>
-                    <em>Additional released pairs</em>
+                    <em>Additional retained pairs</em>
                   </span>
                 </div>
                 <div className="network-caption">{releasedDtiAudit.coverage_note}</div>
@@ -3224,7 +3224,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <div className="result-summary-strip">
                   <span className="result-summary-pill">
                     <strong>{releasedDtiTtdSummary.ttd_supported_pairs.toLocaleString()}</strong>
-                    <em>TTD-supported released pairs</em>
+                    <em>TTD-supported retained pairs</em>
                   </span>
                   <span className="result-summary-pill">
                     <strong>{releasedDtiTtdSummary.ttd_supported_pair_pct}%</strong>
@@ -3236,7 +3236,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   </span>
                   <span className="result-summary-pill">
                     <strong>{releasedDtiTtdSummary.ttd_supported_released_rows.toLocaleString()}</strong>
-                    <em>TTD-supported released rows</em>
+                    <em>TTD-supported retained rows</em>
                   </span>
                 </div>
                 <div className="home-research-grid inner-result-grid">
@@ -3275,7 +3275,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                             <td><span className="result-emphasis-number">{item.pair_count}</span></td>
                           </tr>
                         )) : (
-                          <tr><td colSpan={2}>No target-level TTD support is available for the current released pair layer.</td></tr>
+                          <tr><td colSpan={2}>No target-level TTD support is available for the current evidence setd pair layer.</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -3289,11 +3289,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <div className="result-summary-strip">
                   <span className="result-summary-pill">
                     <strong>{releasedDiseaseSummary.released_rows.toLocaleString()}</strong>
-                    <em>Released disease-linked rows</em>
+                    <em>Disease-linked evidence rows</em>
                   </span>
                   <span className="result-summary-pill">
                     <strong>{releasedDiseaseSummary.released_pairs.toLocaleString()}</strong>
-                    <em>Released disease-linked pairs</em>
+                    <em>Disease-linked evidence pairs</em>
                   </span>
                   <span className="result-summary-pill">
                     <strong>{releasedDiseaseSummary.released_unique_diseases.toLocaleString()}</strong>
@@ -3309,7 +3309,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     <table className="result-table compact">
                       <thead>
                         <tr>
-                          <th>Released disease-linked row</th>
+                          <th>Disease-linked evidence row</th>
                           
                           <th>Target</th>
                           <th>Disease</th>
@@ -3325,7 +3325,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                             <td><span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.Total_Votes_Optional7}/7</span></td>
                           </tr>
                         )) : (
-                          <tr><td colSpan={4}>No released disease-linked rows are available.</td></tr>
+                          <tr><td colSpan={4}>No disease-linked evidence rows are available.</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -3334,7 +3334,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     <table className="result-table compact">
                       <thead>
                         <tr>
-                        <th>Released target</th>
+                        <th>Evidence target</th>
                           <th>Rows</th>
                         </tr>
                       </thead>
@@ -3345,7 +3345,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                             <td><span className="result-emphasis-number">{item.row_count}</span></td>
                           </tr>
                         )) : (
-                          <tr><td colSpan={2}>No target summary is available for the current released layer.</td></tr>
+                          <tr><td colSpan={2}>No target summary is available for the current evidence setd layer.</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -3361,7 +3361,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Detailed Result Tables</h3>
-              {!collapsedTables.resultSummaryPanel ? <div className="home-panel-subtitle">Expanded release tables for consensus, disease, drug, target, and support distributions.</div> : null}
+              {!collapsedTables.resultSummaryPanel ? <div className="home-panel-subtitle">Expanded evidence tables for consensus, disease, drug, target, and support distributions.</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.resultSummaryPanel}
@@ -3377,14 +3377,14 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Support Tier Overview</h3>
-              <div className="home-panel-subtitle">Released-method tiers and seven-model vote tiers summarizing support strength across retained prediction rows.</div>
+              <div className="home-panel-subtitle">Evidence-method tiers and seven-model vote tiers summarizing support strength across retained prediction rows.</div>
             </div>
             <div className="home-research-grid inner-result-grid">
               <div className="result-table-wrap">
                 <table className="result-table compact">
                   <thead>
                     <tr>
-                      <th>Released support</th>
+                      <th>Evidence support</th>
                       <th>Rows</th>
                       <th>Share</th>
                     </tr>
@@ -3397,7 +3397,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                         <td><span className="result-emphasis-chip">{item.share_pct}%</span></td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={3}>No released-support tier summary is available.</td></tr>
+                      <tr><td colSpan={3}>No evidence-support tier summary is available.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -3440,7 +3440,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Consensus Result Table</h3>
-              <div className="home-panel-subtitle">Released rows jointly retained by TXGNN, ENR, and RWR with strong support from the seven-model DTI layer.</div>
+              <div className="home-panel-subtitle">Evidence rows jointly retained by TXGNN, ENR, and RWR with strong support from the seven-model DTI layer.</div>
             </div>
             <div className="result-summary-strip">
               <span className="result-summary-pill">
@@ -3487,7 +3487,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
                     </tr>
                   )}) : (
-                    <tr><td colSpan={7}>No high-consensus results are available for the current release.</td></tr>
+                    <tr><td colSpan={7}>No high-consensus results are available for the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -3497,7 +3497,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Disease Result Table</h3>
-              <div className="home-panel-subtitle">Disease-centered summaries ranked by released row count, strongest retained support, and peak seven-model vote support.</div>
+              <div className="home-panel-subtitle">Disease-centered summaries ranked by evidence row count, strongest retained support, and peak seven-model vote support.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table">
@@ -3526,7 +3526,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td>{item.best_enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.best_enr_fdr}</span> : "-"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={6}>No disease-centered result table is available for the current release.</td></tr>
+                    <tr><td colSpan={6}>No disease-centered result table is available for the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -3571,7 +3571,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td><span className="result-emphasis-chip is-soft">{item.max_votes}/7</span></td>
                     </tr>
                   )}) : (
-                    <tr><td colSpan={7}>No disease summary rows are available in the current release.</td></tr>
+                    <tr><td colSpan={7}>No disease summary rows are available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -3583,7 +3583,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Drug Summary Table</h3>
-              <div className="home-panel-subtitle">Top retained drugs with their leading disease, leading target, and strongest released support tier.</div>
+              <div className="home-panel-subtitle">Top retained drugs with their leading disease, leading target, and strongest evidence support tier.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table">
@@ -3611,7 +3611,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td>{linked ? <span className="result-emphasis-chip is-soft">{linked.top_ncrna_name || "linked"} · {linked.linked_ncrna_count || 0}</span> : "-"}</td>
                       <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
                     </tr>
-                  )}) : <tr><td colSpan={7}>No drug summary rows are available in the current release.</td></tr>}
+                  )}) : <tr><td colSpan={7}>No drug summary rows are available in the current evidence set.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -3619,7 +3619,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Target Summary Table</h3>
-              <div className="home-panel-subtitle">Top retained targets with their leading disease, leading drug, and strongest released support tier.</div>
+              <div className="home-panel-subtitle">Top retained targets with their leading disease, leading drug, and strongest evidence support tier.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table">
@@ -3643,7 +3643,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td>{item.top_drug_label || "-"}</td>
                       <td><span className="result-emphasis-chip">{item.max_algo_pass}/3 · {item.max_votes}/7</span></td>
                     </tr>
-                  )) : <tr><td colSpan={6}>No target summary rows are available in the current release.</td></tr>}
+                  )) : <tr><td colSpan={6}>No target summary rows are available in the current evidence set.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -3654,7 +3654,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Drug Result Distribution</h3>
-              <div className="home-panel-subtitle">Top retained drugs ranked by the number of released prediction rows in the current disease network release.</div>
+              <div className="home-panel-subtitle">Top retained drugs ranked by the number of prediction evidence rows in the current DiseaseMind disease network.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table compact">
@@ -3678,7 +3678,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={3}>No drug-level distribution is available in the current release.</td>
+                      <td colSpan={3}>No drug-level distribution is available in the current evidence set.</td>
                     </tr>
                   )}
                 </tbody>
@@ -3689,7 +3689,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Target Result Distribution</h3>
-              <div className="home-panel-subtitle">Top retained targets ranked by the number of released prediction rows in the current disease network release.</div>
+              <div className="home-panel-subtitle">Top retained targets ranked by the number of prediction evidence rows in the current DiseaseMind disease network.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table compact">
@@ -3713,7 +3713,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={3}>No target-level distribution is available in the current release.</td>
+                      <td colSpan={3}>No target-level distribution is available in the current evidence set.</td>
                     </tr>
                   )}
                 </tbody>
@@ -3724,7 +3724,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Approved Drug Result Table</h3>
-              <div className="home-panel-subtitle">Approved drugs ranked by retained row count, strongest released support, and best atlas-level evidence.</div>
+              <div className="home-panel-subtitle">Approved drugs ranked by retained row count, strongest evidence support, and best DiseaseMind evidence.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table">
@@ -3760,7 +3760,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td>{item.best_enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.best_enr_fdr}</span> : "-"}</td>
                     </tr>
                   )}) : (
-                    <tr><td colSpan={8}>No approved-drug result rows are available in the current release.</td></tr>
+                    <tr><td colSpan={8}>No approved-drug result rows are available in the current evidence set.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -3772,7 +3772,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Consensus Priority Table</h3>
-              <div className="home-panel-subtitle">Top released rows ranked by joint support strength, seven-model votes, TXGNN score, and ENR significance.</div>
+              <div className="home-panel-subtitle">Top retained rows ranked by joint support strength, seven-model votes, TXGNN score, and ENR significance.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table">
@@ -3796,7 +3796,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td><span className="result-emphasis-number">{item.TXGNN_score ?? "-"}</span></td>
                       <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
                     </tr>
-                  )) : <tr><td colSpan={6}>No consensus priority rows are available in the current release.</td></tr>}
+                  )) : <tr><td colSpan={6}>No consensus priority rows are available in the current evidence set.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -3807,7 +3807,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Approved Drug Priority Table</h3>
-              <div className="home-panel-subtitle">Best supported released rows among approved drugs from the validation cohort.</div>
+              <div className="home-panel-subtitle">Best supported retained rows among approved drugs from the validation cohort.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table">
@@ -3835,7 +3835,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <td><span className="result-emphasis-number">{item.TXGNN_score ?? "-"}</span></td>
                       <td>{item.ENR_FDR != null ? <span className="result-emphasis-chip is-soft">{item.ENR_FDR}</span> : "-"}</td>
                     </tr>
-                  )}) : <tr><td colSpan={7}>No approved priority rows are available in the current release.</td></tr>}
+                  )}) : <tr><td colSpan={7}>No approved priority rows are available in the current evidence set.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -3846,16 +3846,16 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Selected Prediction Results</h3>
-              <div className="home-panel-subtitle">Released examples ranked by retained-method support, 7-model vote support, graph score, and enrichment evidence.</div>
+              <div className="home-panel-subtitle">Evidence examples ranked by retained-method support, 7-model vote support, graph score, and enrichment evidence.</div>
             </div>
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>{representativeCases.length}</strong>
-                <em>Selected released cases</em>
+                <em>Selected evidence cases</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{predictionResultTotal}</strong>
-                <em>Total released prediction rows</em>
+                <em>Total prediction evidence rows</em>
               </span>
             </div>
             <div className="result-table-wrap">
@@ -3897,7 +3897,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={7}>No representative prediction cases are available in the current release.</td>
+                      <td colSpan={7}>No representative prediction cases are available in the current evidence set.</td>
                     </tr>
                   )}
                 </tbody>
@@ -3910,7 +3910,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Network Composition</h3>
-              <div className="home-panel-subtitle">Final edge classes retained in the current atlas</div>
+              <div className="home-panel-subtitle">Final edge classes retained in the current DiseaseMind network</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table compact">
