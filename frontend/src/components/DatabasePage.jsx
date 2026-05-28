@@ -41,13 +41,61 @@ function buildDtiHeatmap(modelCoverage, topPairs) {
   return { labels, rows };
 }
 
+function formatCompactValue(value) {
+  if (value == null || value === "") return "-";
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && String(value).trim() !== "") return numeric.toLocaleString();
+  return String(value);
+}
+
 function SectionToggle({ collapsed, onToggle, label }) {
   return (
     <div className="page-section-toggle-row">
-      <button type="button" className="page-section-toggle" onClick={onToggle} aria-expanded={!collapsed}>
+      <button
+        type="button"
+        className={`page-section-toggle ${collapsed ? "is-collapsed" : ""}`}
+        onClick={onToggle}
+        aria-expanded={!collapsed}
+      >
         <strong>{collapsed ? "Show" : "Hide"} {label}</strong>
       </button>
     </div>
+  );
+}
+
+function OverviewIcon({ name }) {
+  const paths = {
+    model: <>
+      <rect x="4" y="5" width="16" height="14" rx="4" />
+      <path d="M8 10h8M8 14h5" />
+      <circle cx="17" cy="14" r="1" />
+    </>,
+    database: <>
+      <ellipse cx="12" cy="6" rx="6.5" ry="3" />
+      <path d="M5.5 6v10c0 1.7 2.9 3 6.5 3s6.5-1.3 6.5-3V6" />
+      <path d="M5.5 11c0 1.7 2.9 3 6.5 3s6.5-1.3 6.5-3" />
+    </>,
+    score: <>
+      <path d="M5 18V8" />
+      <path d="M12 18V5" />
+      <path d="M19 18v-7" />
+      <path d="M4 18h16" />
+    </>,
+    edges: <>
+      <circle cx="6.5" cy="12" r="2.6" />
+      <circle cx="17.5" cy="7" r="2.6" />
+      <circle cx="17.5" cy="17" r="2.6" />
+      <path d="M8.9 10.9l6.2-2.8M8.9 13.1l6.2 2.8" />
+    </>,
+    source: <>
+      <path d="M6 5h12v14H6z" />
+      <path d="M9 9h6M9 13h6M9 17h4" />
+    </>,
+  };
+  return (
+    <svg className={`overview-icon overview-icon-${name}`} viewBox="0 0 24 24" aria-hidden="true">
+      {paths[name]}
+    </svg>
   );
 }
 
@@ -297,6 +345,13 @@ export default function DatabasePage({
   const topApprovedLeaderboard = researchSummary?.top_approved_leaderboard || [];
   const representativeDrugCount = representativeDrugs.length;
   const topDiseaseShare = diseaseDistribution[0]?.share_pct ?? null;
+  const overviewStats = [
+    { icon: "model", label: "Deep models", value: SEVEN_DTI_MODEL_META.length },
+    { icon: "database", label: "Prediction rows", value: predictionSummary?.total_rows ?? predictionState.total ?? 0 },
+    { icon: "score", label: "Top model", value: dtiModelCoverage[0]?.model || "-" },
+    { icon: "edges", label: "Avg score", value: dtiModelCoverage[0]?.avg_score ?? "-" },
+    { icon: "source", label: "Sources", value: sourceTables.length },
+  ];
   const predictionVisibleEnd = Math.min(
     predictionState.total || 0,
     ((predictionState.page || 1) - 1) * (predictionState.page_size || 0) + (predictionState.items?.length || 0)
@@ -680,27 +735,40 @@ export default function DatabasePage({
         </>
       ) : null}
 
-      <section className="card panel-pad db-research-panel">
-        <div className="db-panel-head">
-          <div>
-            <h3>Disease Network Result Overview</h3>
-          <div className="db-panel-subtitle">Evidence statistics, source tables, and core result summaries.</div>
+      <section className={`card panel-pad db-research-panel ${collapsedSections.releaseOverview ? "is-compact" : ""}`}>
+        <div className="db-overview-stat-bar">
+          <div className="db-overview-copy">
+            <span>Evidence overview</span>
+            <strong>Disease Network Result Overview</strong>
+            <em>Model support, source tables, and core result summaries.</em>
           </div>
+          <div className="db-overview-stats">
+            {overviewStats.map((item) => (
+              <span className="db-overview-stat" key={item.label}>
+                <OverviewIcon name={item.icon} />
+                <strong>{formatCompactValue(item.value)}</strong>
+                <em>{item.label}</em>
+              </span>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="db-overview-toggle"
+            onClick={() => setCollapsedSections((prev) => ({ ...prev, releaseOverview: !prev.releaseOverview }))}
+            aria-expanded={!collapsedSections.releaseOverview}
+          >
+            {collapsedSections.releaseOverview ? "Details" : "Collapse"}
+          </button>
         </div>
-        <div className="db-ai-strip">
+        {!collapsedSections.releaseOverview ? (
+          <>
+        <div className="db-ai-strip db-ai-strip--overview">
           <span className="ai-brand-chip">7 deep models</span>
           {dtiModelCoverage[0] ? <span className="ai-brand-chip">top {dtiModelCoverage[0].model}</span> : null}
           {dtiModelCoverage[0]?.avg_score != null ? <span className="ai-brand-chip">avg {dtiModelCoverage[0].avg_score}</span> : null}
           {dtiTopPairs[0] ? <span className="ai-brand-chip">{dtiTopPairs[0].pair_label}</span> : null}
           {dtiTopPatterns[0] ? <span className="ai-brand-chip">{dtiTopPatterns[0].pattern_label}</span> : null}
         </div>
-        <SectionToggle
-          collapsed={collapsedSections.releaseOverview}
-          onToggle={() => setCollapsedSections((prev) => ({ ...prev, releaseOverview: !prev.releaseOverview }))}
-          label="evidence overview"
-        />
-        {!collapsedSections.releaseOverview ? (
-          <>
         <div className="db-research-grid">
           <div className="result-table-wrap">
             <table className="result-table compact">

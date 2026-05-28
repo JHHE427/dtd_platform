@@ -637,7 +637,7 @@ export default function AnalysisPage({
         </div>
       </div>
 
-      <section className="card panel-pad online-analysis-panel">
+      <section className={`card panel-pad online-analysis-panel ${collapsedSections.onlineAnalysis ? "is-collapsed" : ""}`}>
         <div className="card-head">
           <h3>Online Analysis</h3>
           <div className="muted">Run a filtered query around a DiseaseMind drug, target, disease, or ncRNA record.</div>
@@ -897,7 +897,7 @@ export default function AnalysisPage({
         </div>
       ) : null}
 
-      <section className="card panel-pad analysis-seven-model-panel">
+      <section className={`card panel-pad analysis-seven-model-panel ${collapsedSections.sevenModel ? "is-collapsed" : ""}`}>
         <div className="card-head">
           <h3>Seven DTI Model Support</h3>
           <div className="muted">Seven-model vote support for the current network view.</div>
