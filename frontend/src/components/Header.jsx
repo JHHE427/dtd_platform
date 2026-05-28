@@ -6,6 +6,12 @@ const pagePrefetchers = {
   database: () => import("./DatabasePage"),
   help: () => import("./HelpPage"),
 };
+const NAV_ITEMS = [
+  { key: "home", label: "Home", icon: "home" },
+  { key: "analysis", label: "Analysis", icon: "network" },
+  { key: "database", label: "Database", icon: "database" },
+  { key: "help", label: "Help", icon: "help" },
+];
 const prefetched = new Set();
 function prefetchPage(tab) {
   if (prefetched.has(tab)) return;
@@ -27,11 +33,41 @@ if (typeof window !== "undefined") {
   else setTimeout(warm, 1200);
 }
 
+function HeaderIcon({ name }) {
+  const paths = {
+    home: <path d="M4 10.4L12 4l8 6.4v8.1a1.5 1.5 0 0 1-1.5 1.5h-4.2v-5.4H9.7V20H5.5A1.5 1.5 0 0 1 4 18.5Z" />,
+    network: <>
+      <circle cx="7" cy="7" r="2.2" />
+      <circle cx="17" cy="7" r="2.2" />
+      <circle cx="12" cy="17" r="2.2" />
+      <path d="M9 8.5l2.1 5.1M15 8.5l-2.1 5.1M9.3 7h5.4" />
+    </>,
+    database: <>
+      <ellipse cx="12" cy="6" rx="6.6" ry="3" />
+      <path d="M5.4 6v6c0 1.7 3 3 6.6 3s6.6-1.3 6.6-3V6" />
+      <path d="M5.4 12v4c0 1.7 3 3 6.6 3s6.6-1.3 6.6-3v-4" />
+    </>,
+    help: <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M9.7 9.6A2.5 2.5 0 0 1 12 8c1.6 0 2.8 1 2.8 2.4 0 1.2-.8 1.8-1.8 2.4-.7.4-1 .8-1 1.7" />
+      <path d="M12 17.2h.01" />
+    </>,
+    search: <>
+      <circle cx="10.6" cy="10.6" r="5.6" />
+      <path d="M15 15l4 4" />
+    </>,
+  };
+  return (
+    <svg className="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
+
 export default function Header({ page, onPageChange, onQuickSearch, onSuggest }) {
   const [keyword, setKeyword] = React.useState("");
   const [suggestions, setSuggestions] = React.useState([]);
   const [open, setOpen] = React.useState(false);
-  const tabs = ["home", "analysis", "database", "help"];
   const boxRef = React.useRef(null);
   const inputRef = React.useRef(null);
 
@@ -115,15 +151,16 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
         </button>
 
         <nav className="nav">
-          {tabs.map((tab) => (
+          {NAV_ITEMS.map((item) => (
             <button
-              key={tab}
-              className={`nav-btn ${page === tab ? "is-active" : ""}`}
-              onClick={() => onPageChange(tab)}
-              onMouseEnter={() => prefetchPage(tab)}
-              onFocus={() => prefetchPage(tab)}
+              key={item.key}
+              className={`nav-btn ${page === item.key ? "is-active" : ""}`}
+              onClick={() => onPageChange(item.key)}
+              onMouseEnter={() => prefetchPage(item.key)}
+              onFocus={() => prefetchPage(item.key)}
             >
-              {tab[0].toUpperCase() + tab.slice(1)}
+              <HeaderIcon name={item.icon} />
+              <span>{item.label}</span>
             </button>
           ))}
           <span className="system-status" title="Live Data Source">
@@ -146,7 +183,10 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
             }}
             placeholder="Search a drug, target, disease, ncRNA, or registered alias..."
           />
-          <button onClick={() => onQuickSearch(keyword)}>Go</button>
+          <button onClick={() => onQuickSearch(keyword)}>
+            <HeaderIcon name="search" />
+            <span>Go</span>
+          </button>
           {open && suggestions.length > 0 ? (
             <div className="suggest-panel">
               {suggestions.map((s) => (

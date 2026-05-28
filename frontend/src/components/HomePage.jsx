@@ -10,6 +10,63 @@ const SEVEN_DTI_MODEL_META = [
   { key: "conplex", label: "Conplex" },
 ];
 
+function DetailIcon({ name }) {
+  const paths = {
+    search: <>
+      <circle cx="10.6" cy="10.6" r="5.6" />
+      <path d="M15 15l4 4" />
+    </>,
+    analysis: <>
+      <circle cx="7" cy="7" r="2.2" />
+      <circle cx="17" cy="8" r="2.2" />
+      <circle cx="12" cy="17" r="2.2" />
+      <path d="M9.1 7.2l5.8.6M8.2 9l2.6 5.8M15.8 9.8l-2.6 5" />
+    </>,
+    database: <>
+      <ellipse cx="12" cy="6" rx="6.5" ry="3" />
+      <path d="M5.5 6v6c0 1.7 2.9 3 6.5 3s6.5-1.3 6.5-3V6" />
+      <path d="M5.5 12v4c0 1.7 2.9 3 6.5 3s6.5-1.3 6.5-3v-4" />
+    </>,
+    drug: <>
+      <path d="M8.2 15.8l7.6-7.6a3.4 3.4 0 0 1 4.8 4.8L13 20.6a3.4 3.4 0 0 1-4.8-4.8Z" />
+      <path d="M11.9 12.1l4 4" />
+    </>,
+    target: <>
+      <circle cx="12" cy="12" r="7.5" />
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3" />
+    </>,
+    disease: <>
+      <circle cx="12" cy="12" r="7.2" />
+      <circle cx="12" cy="12" r="3.8" />
+      <circle cx="12" cy="12" r="1.2" />
+    </>,
+    ncrna: <>
+      <path d="M7 4c5 2 5 6 10 8" />
+      <path d="M17 4c-5 2-5 6-10 8" />
+      <path d="M7 12c5 2 5 6 10 8" />
+      <path d="M17 12c-5 2-5 6-10 8" />
+      <path d="M8.8 7h6.4M8.8 17h6.4" />
+    </>,
+    edges: <>
+      <circle cx="6.5" cy="12" r="2.6" />
+      <circle cx="17.5" cy="7" r="2.6" />
+      <circle cx="17.5" cy="17" r="2.6" />
+      <path d="M8.9 10.9l6.2-2.8M8.9 13.1l6.2 2.8" />
+    </>,
+    model: <>
+      <rect x="4" y="5" width="16" height="14" rx="4" />
+      <path d="M8 10h8M8 14h5" />
+      <circle cx="17" cy="14" r="1" />
+    </>,
+  };
+  return (
+    <svg className={`detail-icon detail-icon-${name}`} viewBox="0 0 24 24" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
+
 function buildDtiHeatmap(modelCoverage, topPairs) {
   const labels = SEVEN_DTI_MODEL_META.map((item) => item.label);
   const coverageMap = Object.fromEntries((modelCoverage || []).map((item) => [item.model, Number(item.count || 0)]));
@@ -53,7 +110,7 @@ function HomeTableToggle({ collapsed, onToggle, label = "Detailed tables" }) {
 
 function DiseaseMindBrandVisual() {
   return (
-    <svg viewBox="0 0 720 420" className="hero-brand-visual" role="img" aria-labelledby="dmHeroTitle dmHeroDesc">
+    <svg viewBox="30 38 620 320" className="hero-brand-visual" role="img" aria-labelledby="dmHeroTitle dmHeroDesc">
       <title id="dmHeroTitle">DiseaseMind primary logo and variants</title>
       <desc id="dmHeroDesc">A brain-shaped disease-centered drug-target network mark with the DiseaseMind wordmark and tagline.</desc>
       <defs>
@@ -967,24 +1024,35 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       label: "Released AI rows",
       value: releasedPredictionTotal,
       note: "formal prediction layer",
+      icon: "model",
     },
     {
       label: "High-consensus rows",
       value: consensusTotal,
       note: "multi-method support",
+      icon: "analysis",
     },
     {
       label: "TTD supported",
       value: Number(ttdOverview?.ttd_supported_released_rows || 0),
       note: "external validation",
+      icon: "target",
     },
     {
       label: "ncRNA-linked",
       value: Number(ncrnaLinkedOverview?.released_row_count || ncrnaOverview?.human_evidence_rows || 0),
       note: "multimodal bridge",
+      icon: "ncrna",
     },
   ];
   const consoleMetricMax = Math.max(1, ...consoleMetricRows.map((item) => item.value || 0));
+  const statCards = [
+    { title: "Drug Nodes", value: nodeMap.Drug || 0, icon: "drug" },
+    { title: "Target Nodes", value: nodeMap.Target || 0, icon: "target" },
+    { title: "Disease Nodes", value: nodeMap.Disease || 0, icon: "disease" },
+    { title: "ncRNA Nodes", value: nodeMap.ncRNA || 0, icon: "ncrna" },
+    { title: "Total Edges", value: edgeTotal, icon: "edges" },
+  ];
 
   return (
     <section className="page is-active home-page">
@@ -1006,12 +1074,15 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 onKeyDown={(e) => e.key === "Enter" && onAnalyze(keyword)}
                 placeholder="Search by DrugBank ID, target ID, disease name, ncRNA name, or alias..."
               />
-              <button onClick={() => onAnalyze(keyword)}>Access Network Analysis</button>
+              <button onClick={() => onAnalyze(keyword)}>
+                <DetailIcon name="analysis" />
+                <span>Access Network Analysis</span>
+              </button>
             </div>
             <div className="hero-ai-strip">
-              <span className="ai-brand-chip">Disease core</span>
-              <span className="ai-brand-chip">drug-target orbit</span>
-              <span className="ai-brand-chip">AI mind layer</span>
+              <span className="ai-brand-chip"><DetailIcon name="disease" />Disease core</span>
+              <span className="ai-brand-chip"><DetailIcon name="target" />drug-target orbit</span>
+              <span className="ai-brand-chip"><DetailIcon name="analysis" />AI mind layer</span>
               {topDtiModel ? <span className="ai-brand-chip">top {topDtiModel.model}</span> : null}
               {topDtiModel?.avg_score != null ? <span className="ai-brand-chip">avg {topDtiModel.avg_score}</span> : null}
               {topDtiPair ? <span className="ai-brand-chip">{topDtiPair.pair_label}</span> : null}
@@ -1023,26 +1094,15 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           </figure>
         </div>
         <div className="home-stats">
-          <article className="stat-card">
-            <div className="stat-title">Drug Nodes</div>
-            <div className="stat-value">{nodeMap.Drug || 0}</div>
-          </article>
-          <article className="stat-card">
-            <div className="stat-title">Target Nodes</div>
-            <div className="stat-value">{nodeMap.Target || 0}</div>
-          </article>
-          <article className="stat-card">
-            <div className="stat-title">Disease Nodes</div>
-            <div className="stat-value">{nodeMap.Disease || 0}</div>
-          </article>
-          <article className="stat-card">
-            <div className="stat-title">ncRNA Nodes</div>
-            <div className="stat-value">{nodeMap.ncRNA || 0}</div>
-          </article>
-          <article className="stat-card">
-            <div className="stat-title">Total Edges</div>
-            <div className="stat-value">{edgeTotal}</div>
-          </article>
+          {statCards.map((item) => (
+            <article className="stat-card" key={item.title}>
+              <div className="stat-card-head">
+                <DetailIcon name={item.icon} />
+                <div className="stat-title">{item.title}</div>
+              </div>
+              <div className="stat-value">{item.value}</div>
+            </article>
+          ))}
         </div>
         <div className="home-visual-grid">
           {visualCards.map((item) => (
@@ -1065,10 +1125,10 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           </div>
           <ReleaseStoryboardVisual />
           <div className="home-storyboard-metrics">
-            <span><strong>{(dtiModelCoverage.length || sevenDtiModels.length).toLocaleString()}</strong><em>DTI models</em></span>
-            <span><strong>{releasedPredictionTotal.toLocaleString()}</strong><em>prediction rows</em></span>
-            <span><strong>{releasedDiseaseLinkedTotal.toLocaleString()}</strong><em>disease-linked</em></span>
-            <span><strong>{edgeTotal.toLocaleString()}</strong><em>network edges</em></span>
+            <span><DetailIcon name="model" /><strong>{(dtiModelCoverage.length || sevenDtiModels.length).toLocaleString()}</strong><em>DTI models</em></span>
+            <span><DetailIcon name="analysis" /><strong>{releasedPredictionTotal.toLocaleString()}</strong><em>prediction rows</em></span>
+            <span><DetailIcon name="disease" /><strong>{releasedDiseaseLinkedTotal.toLocaleString()}</strong><em>disease-linked</em></span>
+            <span><DetailIcon name="edges" /><strong>{edgeTotal.toLocaleString()}</strong><em>network edges</em></span>
           </div>
         </section>
         <section className="home-evidence-console" aria-label="AI evidence console">
@@ -1080,7 +1140,10 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 A denser systems view that combines DiseaseMind's seven-model vote structure, disease-centered graph topology, heatmap-style AI confidence, external TTD support, and ncRNA evidence.
               </p>
             </div>
-            <button type="button" onClick={() => onAnalyze(keyword)}>Inspect in network</button>
+            <button type="button" onClick={() => onAnalyze(keyword)}>
+              <DetailIcon name="analysis" />
+              <span>Inspect in network</span>
+            </button>
           </div>
           <div className="home-evidence-console-body">
             <AdvancedEvidenceConsoleVisual />
@@ -1092,6 +1155,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                   style={{ "--bar-pct": `${Math.max(8, Math.min(100, Math.round(((item.value || 0) / consoleMetricMax) * 100)))}%` }}
                 >
                   <div>
+                    <DetailIcon name={item.icon} />
                     <strong>{(item.value || 0).toLocaleString()}</strong>
                     <span>{item.label}</span>
                   </div>
@@ -1108,7 +1172,10 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               <strong>DiseaseMind Visual System</strong>
               <span>Compact flat illustrations of the main data layers and DiseaseMind AI workflow.</span>
             </div>
-            <button type="button" onClick={() => onOpenDatabase?.("nodes")}>Open full database</button>
+            <button type="button" onClick={() => onOpenDatabase?.("nodes")}>
+              <DetailIcon name="database" />
+              <span>Open full database</span>
+            </button>
           </div>
           <div className="home-atlas-gallery-grid">
             {atlasVisualCards.map((item) => (
