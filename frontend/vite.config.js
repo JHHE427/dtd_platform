@@ -21,6 +21,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      "/diseasemind/api": {
+        target: "http://127.0.0.1:8787",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/diseasemind/, "")
+      },
       "/api": {
         target: "http://127.0.0.1:8787",
         changeOrigin: true

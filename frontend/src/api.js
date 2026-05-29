@@ -1,9 +1,24 @@
 const DEFAULT_TIMEOUT_MS = 60000;
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const APP_BASE = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "");
 
 // In-flight GET dedup: identical concurrent requests share one Promise.
 const inFlight = new Map();
+
+function shouldUseAppBase() {
+  if (!APP_BASE || typeof window === "undefined") return false;
+  return window.location.pathname === APP_BASE || window.location.pathname.startsWith(`${APP_BASE}/`);
+}
+
+export function appPath(path) {
+  if (!path || typeof path !== "string") return path;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path) || path.startsWith("//")) return path;
+  if (!path.startsWith("/")) return path;
+  if (!shouldUseAppBase()) return path;
+  if (path === APP_BASE || path.startsWith(`${APP_BASE}/`)) return path;
+  return `${APP_BASE}${path}`;
+}
 
 async function parseErrorResponse(resp) {
   const ctype = resp.headers.get("content-type") || "";
@@ -24,7 +39,8 @@ async function fetchOnce(path, options, timeoutMs) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const resp = await fetch(path, { ...options, signal: controller.signal });
+    const requestPath = appPath(path);
+    const resp = await fetch(requestPath, { ...options, signal: controller.signal });
     if (!resp.ok) {
       const msg = await parseErrorResponse(resp);
       const err = new Error(msg);

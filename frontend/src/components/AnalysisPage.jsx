@@ -1,5 +1,6 @@
 import React from "react";
 import GraphCanvas from "./GraphCanvas";
+import { appPath } from "../api";
 
 const SEVEN_DTI_MODEL_META = [
   { key: "graphdta", label: "GraphDTA" },
@@ -447,7 +448,7 @@ export default function AnalysisPage({
   };
   const unresolvedHint = unresolvedHintMap[annotationSource] || "";
   const structureUrl =
-    ann.structure_image_url ||
+    appPath(ann.structure_image_url) ||
     (smiles ? `https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(smiles)}/image` : "");
   const structureIsPlaceholder = Boolean(ann.structure_image_url && ann.structure_image_url.endsWith(".svg"));
   const drugMissingSmilesReason = smiles
