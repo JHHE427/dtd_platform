@@ -24,6 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 STRUCTURE_DIR = STATIC_DIR / "structures"
 BRAND_ICON = STATIC_DIR / "brand-icon.svg"
+FAVICON_ICO = STATIC_DIR / "favicon.ico"
+FAVICON_16 = STATIC_DIR / "favicon-16x16.png"
+FAVICON_32 = STATIC_DIR / "favicon-32x32.png"
+APPLE_TOUCH_ICON = STATIC_DIR / "apple-touch-icon.png"
 DEFAULT_DB_PATH = BASE_DIR / "dtd_network_vote2_formal.sqlite"
 DB_PATH = Path(os.environ.get("DTD_DB_PATH", DEFAULT_DB_PATH)).expanduser()
 DEFAULT_ORIGINS = "http://127.0.0.1:8787,http://localhost:8787"
@@ -1909,24 +1913,40 @@ def serve_brand_icon() -> Response:
     return Response(status_code=204)
 
 
+def serve_icon_file(path: Path, media_type: str) -> Response:
+    if path.exists():
+        return FileResponse(path, media_type=media_type)
+    return serve_brand_icon()
+
+
 @app.get("/brand-icon.svg")
 def brand_icon() -> Response:
     return serve_brand_icon()
 
 
+@app.get("/favicon-16x16.png")
+def favicon_16() -> Response:
+    return serve_icon_file(FAVICON_16, "image/png")
+
+
+@app.get("/favicon-32x32.png")
+def favicon_32() -> Response:
+    return serve_icon_file(FAVICON_32, "image/png")
+
+
 @app.get("/favicon.ico")
 def favicon() -> Response:
-    return serve_brand_icon()
+    return serve_icon_file(FAVICON_ICO, "image/x-icon")
 
 
 @app.get("/apple-touch-icon.png")
 def apple_touch_icon() -> Response:
-    return serve_brand_icon()
+    return serve_icon_file(APPLE_TOUCH_ICON, "image/png")
 
 
 @app.get("/apple-touch-icon-precomposed.png")
 def apple_touch_icon_precomposed() -> Response:
-    return serve_brand_icon()
+    return serve_icon_file(APPLE_TOUCH_ICON, "image/png")
 
 
 @app.get("/api/health")
