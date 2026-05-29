@@ -1,127 +1,78 @@
-# DTD Atlas Deployment Guide
+# DiseaseMind Deployment Guide
 
-## 1. Server Prerequisites
+Current production URL:
 
-- Ubuntu 22.04 or similar Linux distribution
-- Python 3.10+
-- Node 18+
-- `nginx`
-- Optional but recommended: `python3-venv`
+- `https://tmliang.cn/diseasemind/`
 
-## 2. Upload Project
+Current production layout:
 
-Upload the entire folder to the server, for example:
+- Project root: `/home/admin1/diseasemind`
+- Application code: `/home/admin1/diseasemind/app`
+- Database: `/home/admin1/diseasemind/data/dtd_network.sqlite`
+- Runtime logs: `/home/admin1/diseasemind/logs/dtd_runtime_logs/uvicorn_8099.log`
+- Python environment: `/home/admin1/miniforge3/envs/dtd`
+- Internal app port: `8099`
 
-- Project root: `/srv/dtd_platform`
-- Database path: `/srv/dtd_data/dtd_network.sqlite`
-
-## 3. Install Backend Dependencies
+## Build Frontend
 
 ```bash
-cd /srv/dtd_platform
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements.txt
-```
-
-## 4. Build Frontend
-
-```bash
-cd /srv/dtd_platform/frontend
+cd /home/admin1/diseasemind/app/frontend
 npm install
 npm run build
 ```
 
-This writes production assets into `/srv/dtd_platform/static`.
+The Vite build writes production assets into `/home/admin1/diseasemind/app/static`.
+The frontend is configured for the `/diseasemind/` subpath.
 
-## 5. Environment Variable
-
-The backend reads:
-
-- `DTD_DB_PATH`
-
-Example:
+## Run Backend
 
 ```bash
-export DTD_DB_PATH=/srv/dtd_data/dtd_network.sqlite
+DTD_DB_PATH=/home/admin1/diseasemind/data/dtd_network.sqlite \
+  /home/admin1/miniforge3/envs/dtd/bin/uvicorn app:app \
+  --app-dir /home/admin1/diseasemind/app \
+  --host 0.0.0.0 \
+  --port 8099
 ```
 
-## 6. Local Server Test
+The backend also falls back to `../data/dtd_network.sqlite` when it is started from
+`/home/admin1/diseasemind/app` and `DTD_DB_PATH` is not set.
+
+## Detached Restart
 
 ```bash
-cd /srv/dtd_platform
-source .venv/bin/activate
-DTD_DB_PATH=/srv/dtd_data/dtd_network.sqlite uvicorn app:app --host 127.0.0.1 --port 8787
+ps -ef | awk '/[u]vicorn app:app/ && /8099/ {print $2}' | xargs -r kill
+
+DTD_DB_PATH=/home/admin1/diseasemind/data/dtd_network.sqlite \
+  setsid /home/admin1/miniforge3/envs/dtd/bin/uvicorn app:app \
+  --app-dir /home/admin1/diseasemind/app \
+  --host 0.0.0.0 \
+  --port 8099 \
+  >> /home/admin1/diseasemind/logs/dtd_runtime_logs/uvicorn_8099.log 2>&1 < /dev/null &
 ```
 
-Check:
+## Nginx
+
+The active nginx config proxies the public subpath to the internal app:
+
+```nginx
+location /diseasemind/ {
+    proxy_pass http://127.0.0.1:8099/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+}
+```
+
+## Smoke Test
 
 ```bash
-curl http://127.0.0.1:8787/api/health
-curl http://127.0.0.1:8787/api/ready
+curl http://127.0.0.1:8099/api/health
+curl "http://127.0.0.1:8099/api/results/predictions?page=1&page_size=1"
+curl -k --resolve tmliang.cn:443:127.0.0.1 https://tmliang.cn/diseasemind/
 ```
 
-## 7. systemd Service
-
-Copy the template from:
-
-- `deploy/systemd/dtd-atlas.service`
-
-Then update:
-
-- `User`
-- `Group`
-- project path
-- venv path
-- `DTD_DB_PATH`
-
-Enable it:
-
-```bash
-sudo cp deploy/systemd/dtd-atlas.service /etc/systemd/system/dtd-atlas.service
-sudo systemctl daemon-reload
-sudo systemctl enable dtd-atlas
-sudo systemctl start dtd-atlas
-sudo systemctl status dtd-atlas
-```
-
-## 8. Nginx Reverse Proxy
-
-Copy the template from:
-
-- `deploy/nginx/dtd-atlas.conf`
-
-Then update:
-
-- `server_name`
-- optional TLS certificate paths
-
-Enable it:
-
-```bash
-sudo cp deploy/nginx/dtd-atlas.conf /etc/nginx/sites-available/dtd-atlas
-sudo ln -s /etc/nginx/sites-available/dtd-atlas /etc/nginx/sites-enabled/dtd-atlas
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-## 9. HTTPS
-
-If you have a domain:
-
-```bash
-sudo apt-get install certbot python3-certbot-nginx
-sudo certbot --nginx -d your-domain.example
-```
-
-## 10. Final Smoke Test
-
-- Open the domain in browser
-- Test Home / Analysis / Database / Help
-- Test one Drug search
-- Test one Target search
-- Test one Disease search
-- Test graph load
-- Test compare drugs
-- Test export CSV
+Also test Home, Analysis, Database, Help, graph load, search, and favicon in the browser.

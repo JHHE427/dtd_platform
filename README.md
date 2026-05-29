@@ -42,7 +42,7 @@ npm install
 npm run build
 ```
 
-3. 启动服务（默认读取 `/Users/jhhe/Documents/Playground/dtd_vote2_formal_build/dtd_network_vote2_formal.sqlite`）
+3. 启动服务（默认读取项目内 `dtd_network_vote2_formal.sqlite`；如果部署为 `/home/admin1/diseasemind/app`，也会自动识别相邻的 `../data/dtd_network.sqlite`）
 
 ```bash
 cd /Users/jhhe/Documents/Playground/dtd_platform
@@ -61,6 +61,16 @@ uvicorn app:app --host 0.0.0.0 --port 8787 --reload
 
 ```bash
 DTD_DB_PATH=/Users/jhhe/Documents/Playground/dtd_vote2_formal_build/dtd_network_vote2_formal.sqlite uvicorn app:app --port 8787 --reload
+```
+
+线上服务器当前使用：
+
+```bash
+DTD_DB_PATH=/home/admin1/diseasemind/data/dtd_network.sqlite \
+  /home/admin1/miniforge3/envs/dtd/bin/uvicorn app:app \
+  --app-dir /home/admin1/diseasemind/app \
+  --host 0.0.0.0 \
+  --port 8099
 ```
 
 ## 前端开发模式（可选）

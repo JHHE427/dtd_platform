@@ -29,7 +29,19 @@ FAVICON_16 = STATIC_DIR / "favicon-16x16.png"
 FAVICON_32 = STATIC_DIR / "favicon-32x32.png"
 APPLE_TOUCH_ICON = STATIC_DIR / "apple-touch-icon.png"
 DEFAULT_DB_PATH = BASE_DIR / "dtd_network_vote2_formal.sqlite"
-DB_PATH = Path(os.environ.get("DTD_DB_PATH", DEFAULT_DB_PATH)).expanduser()
+SIBLING_DATA_DB_PATH = BASE_DIR.parent / "data" / "dtd_network.sqlite"
+
+
+def resolve_db_path() -> Path:
+    configured = os.environ.get("DTD_DB_PATH")
+    if configured:
+        return Path(configured).expanduser()
+    if SIBLING_DATA_DB_PATH.exists():
+        return SIBLING_DATA_DB_PATH
+    return DEFAULT_DB_PATH
+
+
+DB_PATH = resolve_db_path()
 DEFAULT_ORIGINS = "http://127.0.0.1:8787,http://localhost:8787"
 DEFAULT_SEVEN_MODEL_FILENAME = "Candidates_withNames_andDisease_TXGNN.csv"
 DEFAULT_NCRNA_SUMMARY_FILENAME = "known_ncrna_drug_summary_hs.json"

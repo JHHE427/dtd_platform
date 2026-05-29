@@ -1,14 +1,14 @@
 [Unit]
-Description=DTD Atlas FastAPI Service
+Description=DiseaseMind FastAPI Service
 After=network.target
 
 [Service]
 Type=simple
-User=ubuntu
-Group=ubuntu
-WorkingDirectory=/srv/dtd_platform
-Environment=DTD_DB_PATH=/srv/dtd_data/dtd_network.sqlite
-ExecStart=/srv/dtd_platform/.venv/bin/uvicorn app:app --host 127.0.0.1 --port 8787
+User=admin1
+Group=admin1
+WorkingDirectory=/home/admin1/diseasemind/app
+Environment=DTD_DB_PATH=/home/admin1/diseasemind/data/dtd_network.sqlite
+ExecStart=/home/admin1/miniforge3/envs/dtd/bin/uvicorn app:app --host 0.0.0.0 --port 8099
 Restart=always
 RestartSec=3
 
