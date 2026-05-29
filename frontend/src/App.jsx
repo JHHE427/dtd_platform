@@ -214,7 +214,6 @@ export default function App() {
           data = fallback;
           effectiveMode = "full";
           setGraphMode("full");
-          showToast("warn", "No core-network edges were found. Expanded network view applied.");
         }
       }
 
