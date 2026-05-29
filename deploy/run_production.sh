@@ -9,6 +9,8 @@ PYTHON_ENV="${DISEASEMIND_PYTHON_ENV:-/home/admin1/miniforge3/envs/dtd}"
 PORT="${DISEASEMIND_PORT:-8099}"
 
 mkdir -p "${LOG_DIR}"
+cd "${APP_DIR}"
+export DTD_DB_PATH="${DB_PATH}"
 
 exec "${PYTHON_ENV}/bin/uvicorn" app:app \
   --app-dir "${APP_DIR}" \
