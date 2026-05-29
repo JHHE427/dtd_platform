@@ -1903,25 +1903,30 @@ def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
-@app.get("/favicon.ico")
-def favicon() -> Response:
+def serve_brand_icon() -> Response:
     if BRAND_ICON.exists():
         return FileResponse(BRAND_ICON, media_type="image/svg+xml")
     return Response(status_code=204)
 
 
+@app.get("/brand-icon.svg")
+def brand_icon() -> Response:
+    return serve_brand_icon()
+
+
+@app.get("/favicon.ico")
+def favicon() -> Response:
+    return serve_brand_icon()
+
+
 @app.get("/apple-touch-icon.png")
 def apple_touch_icon() -> Response:
-    if BRAND_ICON.exists():
-        return RedirectResponse(url="/static/brand-icon.svg", status_code=307)
-    return Response(status_code=204)
+    return serve_brand_icon()
 
 
 @app.get("/apple-touch-icon-precomposed.png")
 def apple_touch_icon_precomposed() -> Response:
-    if BRAND_ICON.exists():
-        return RedirectResponse(url="/static/brand-icon.svg", status_code=307)
-    return Response(status_code=204)
+    return serve_brand_icon()
 
 
 @app.get("/api/health")
