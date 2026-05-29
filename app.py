@@ -259,6 +259,7 @@ def resolve_ncrna_summary_file() -> Path | None:
         candidates.append(Path(explicit_dir).expanduser() / DEFAULT_NCRNA_SUMMARY_FILENAME)
     candidates.extend(
         [
+            BASE_DIR.parent / "outputs" / "ncrna_drug_output" / DEFAULT_NCRNA_SUMMARY_FILENAME,
             BASE_DIR.parent / "ncrna_drug_output" / DEFAULT_NCRNA_SUMMARY_FILENAME,
             BASE_DIR / "ncrna_drug_output" / DEFAULT_NCRNA_SUMMARY_FILENAME,
             BASE_DIR / "data" / "ncrna_drug_output" / DEFAULT_NCRNA_SUMMARY_FILENAME,
@@ -327,6 +328,7 @@ def resolve_ncrna_output_file(filename: str) -> Path | None:
         candidates.append(Path(explicit_dir).expanduser() / filename)
     candidates.extend(
         [
+            BASE_DIR.parent / "outputs" / "ncrna_drug_output" / filename,
             BASE_DIR.parent / "ncrna_drug_output" / filename,
             BASE_DIR / "ncrna_drug_output" / filename,
             BASE_DIR / "data" / "ncrna_drug_output" / filename,
@@ -349,6 +351,7 @@ def resolve_ttd_summary_file() -> Path | None:
         candidates.append(Path(explicit_dir).expanduser() / DEFAULT_TTD_SUMMARY_FILENAME)
     candidates.extend(
         [
+            BASE_DIR.parent / "outputs" / "ttd_output" / DEFAULT_TTD_SUMMARY_FILENAME,
             BASE_DIR.parent / "ttd_output" / DEFAULT_TTD_SUMMARY_FILENAME,
             BASE_DIR / "ttd_output" / DEFAULT_TTD_SUMMARY_FILENAME,
             BASE_DIR / "data" / "ttd_output" / DEFAULT_TTD_SUMMARY_FILENAME,
@@ -586,6 +589,7 @@ def resolve_ttd_output_file(filename: str) -> Path | None:
         candidates.append(Path(explicit_dir).expanduser() / filename)
     candidates.extend(
         [
+            BASE_DIR.parent / "outputs" / "ttd_output" / filename,
             BASE_DIR.parent / "ttd_output" / filename,
             BASE_DIR / "ttd_output" / filename,
             BASE_DIR / "data" / "ttd_output" / filename,
