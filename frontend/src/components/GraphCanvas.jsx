@@ -522,7 +522,6 @@ export default function GraphCanvas({
       if (typeof fgRef.current.zoom === "function") {
         fgRef.current.zoom(currentZoom * 1.72, 80);
       }
-      fgRef.current.cooldownTicks(0);
     }, layoutForces.settleMs);
     const t2 = setTimeout(() => {
       if (!fgRef.current) return;
