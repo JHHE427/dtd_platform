@@ -9585,7 +9585,38 @@ pre.smiles-box {
   margin-top: 8px;
 }
 
+.brand-mark,
+.brand-logo circle,
+.hero-brand-visual .dm-primary-mark,
+.hero-brand-visual .dm-primary-mark circle,
+.hero-brand-visual .dm-primary-wordmark,
+.hero-brand-visual .dm-brand-legend g,
+.home-mini-visual circle,
+.home-atlas-visual circle,
+.home-storyboard-visual circle,
+.home-evidence-console-visual circle,
+.stat-card,
+.kpi-card,
+.home-visual-card,
+.home-panel-card,
+.home-atlas-card,
+.result-table-wrap,
+.dti-heatmap-card {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
   .system-status__dot,
   .graph-switch-ripple {
     animation: none !important;

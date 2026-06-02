@@ -7,7 +7,7 @@ const SEVEN_DTI_MODEL_META = [
   { key: "deeppurpose", label: "DeepPurpose" },
   { key: "deepdtagen", label: "DeepDTAGen" },
   { key: "moltrans", label: "MolTrans" },
-  { key: "conplex", label: "Conplex" },
+  { key: "conplex", label: "ConPlex" },
 ];
 
 function DetailIcon({ name }) {
@@ -1294,7 +1294,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <div className="result-summary-strip ai-summary-strip">
             <span className="result-summary-pill ai-pill">
               <strong>7 models</strong>
-              <em>GraphDTA · DTIAM · DrugBAN · DeepPurpose · DeepDTAGen · MolTrans · Conplex</em>
+              <em>GraphDTA · DTIAM · DrugBAN · DeepPurpose · DeepDTAGen · MolTrans · ConPlex</em>
             </span>
             {topDtiModel ? (
               <span className="result-summary-pill ai-pill">
@@ -2562,7 +2562,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="dti-model-notes">
               <div className="schema-note">
                 <strong>Seven DTI model layer</strong>
-                <span>GraphDTA, DTIAM, DrugBAN, DeepPurpose, DeepDTAGen, MolTrans, and Conplex contribute raw DTI scores and supporting-model tags.</span>
+                <span>GraphDTA, DTIAM, DrugBAN, DeepPurpose, DeepDTAGen, MolTrans, and ConPlex contribute raw DTI scores and supporting-model tags.</span>
               </div>
               <div className="schema-note">
                 <strong>Vote retention layer</strong>

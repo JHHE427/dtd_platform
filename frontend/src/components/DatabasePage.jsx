@@ -7,7 +7,7 @@ const SEVEN_DTI_MODEL_META = [
   { key: "deeppurpose", label: "DeepPurpose" },
   { key: "deepdtagen", label: "DeepDTAGen" },
   { key: "moltrans", label: "MolTrans" },
-  { key: "conplex", label: "Conplex" },
+  { key: "conplex", label: "ConPlex" },
 ];
 
 function buildDtiHeatmap(modelCoverage, topPairs) {
@@ -2839,7 +2839,7 @@ export default function DatabasePage({
           <>
             <div className="ai-inline-banner">
               <strong>AI score layer</strong>
-              <span>Each retained drug-target pair can carry raw scores from GraphDTA, DTIAM, DrugBAN, DeepPurpose, DeepDTAGen, MolTrans, and Conplex.</span>
+              <span>Each retained drug-target pair can carry raw scores from GraphDTA, DTIAM, DrugBAN, DeepPurpose, DeepDTAGen, MolTrans, and ConPlex.</span>
             </div>
             <div className="result-summary-strip db-result-summary">
               <span className="result-summary-pill">

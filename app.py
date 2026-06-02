@@ -62,7 +62,7 @@ SEVEN_MODEL_FIELDS = [
     ("deeppurpose_score", "DeepPurpose"),
     ("deepdtagan_score", "DeepDTAGen"),
     ("moltrans_score", "MolTrans"),
-    ("conplex_score", "Conplex"),
+    ("conplex_score", "ConPlex"),
 ]
 REPRESENTATIVE_DRUGS = [
     ("DB01229", "Paclitaxel"),

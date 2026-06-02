@@ -9,7 +9,7 @@ const SEVEN_DTI_MODEL_META = [
   { key: "deeppurpose", label: "DeepPurpose" },
   { key: "deepdtagen", label: "DeepDTAGen" },
   { key: "moltrans", label: "MolTrans" },
-  { key: "conplex", label: "Conplex" },
+  { key: "conplex", label: "ConPlex" },
 ];
 
 const ONLINE_ANALYSIS_PRESETS = [

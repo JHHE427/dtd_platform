@@ -2,6 +2,7 @@ import React from "react";
 import { api, query } from "./api";
 import Header from "./components/Header";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { usePageMotion } from "./motion/useGsapMotion";
 
 const HomePage = React.lazy(() => import("./components/HomePage"));
 const AnalysisPage = React.lazy(() => import("./components/AnalysisPage"));
@@ -73,6 +74,7 @@ function PageLoadingShell() {
 
 export default function App() {
   const init = React.useMemo(() => getInitialAnalysisConfig(), []);
+  const mainRef = React.useRef(null);
   const reqSeq = React.useRef({ graph: 0, detail: 0, neighbors: 0 });
   const graphReqKeyRef = React.useRef("");
   const [page, setPage] = React.useState("home");
@@ -110,6 +112,8 @@ export default function App() {
     categories: init.categories,
     types: init.types
   });
+
+  usePageMotion(mainRef, page);
 
   const [nodeFilters, setNodeFilters] = React.useState({ q: "", node_type: "" });
   const [edgeFilters, setEdgeFilters] = React.useState({ q: "", edge_category: "", edge_type: "" });
@@ -804,7 +808,7 @@ export default function App() {
   return (
     <>
       <Header page={page} onPageChange={setPage} onQuickSearch={searchAndAnalyze} onSuggest={suggestQuick} />
-      <main className="main-wrap">
+      <main className="main-wrap" ref={mainRef} data-gsap-page={page}>
         <React.Suspense fallback={<PageLoadingShell />}>
           {page === "home" && (
             <HomePage

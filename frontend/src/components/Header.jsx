@@ -1,4 +1,5 @@
 import React from "react";
+import { useHeaderMotion } from "../motion/useGsapMotion";
 
 const pagePrefetchers = {
   home: () => import("./HomePage"),
@@ -68,8 +69,10 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
   const [keyword, setKeyword] = React.useState("");
   const [suggestions, setSuggestions] = React.useState([]);
   const [open, setOpen] = React.useState(false);
+  const headerRef = React.useRef(null);
   const boxRef = React.useRef(null);
   const inputRef = React.useRef(null);
+  useHeaderMotion(headerRef);
 
   React.useEffect(() => {
     const term = keyword.trim();
@@ -118,7 +121,7 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
   }, []);
 
   return (
-    <header className="header">
+    <header className="header" ref={headerRef}>
       <div className="header-inner">
         <button className="brand" onClick={() => onPageChange("home")}>
           <span className="brand-mark" aria-hidden="true">
