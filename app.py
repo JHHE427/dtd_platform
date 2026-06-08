@@ -99,6 +99,16 @@ class AssetCacheMiddleware(BaseHTTPMiddleware):
             resp.headers["Cache-Control"] = "no-cache"
         return resp
 
+
+class DiseaseMindPrefixMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.scope.get("path", "")
+        if path == "/diseasemind":
+            request.scope["path"] = "/"
+        elif path.startswith("/diseasemind/"):
+            request.scope["path"] = path.removeprefix("/diseasemind")
+        return await call_next(request)
+
 from contextlib import asynccontextmanager
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -148,8 +158,11 @@ app.add_middleware(
 )
 app.add_middleware(GZipMiddleware, minimum_size=1200)
 app.add_middleware(AssetCacheMiddleware)
+app.add_middleware(DiseaseMindPrefixMiddleware)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
+app.mount("/diseasemind/static", StaticFiles(directory=str(STATIC_DIR)), name="diseasemind-static")
+app.mount("/diseasemind/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="diseasemind-assets")
 
 
 @app.exception_handler(sqlite3.OperationalError)
@@ -1919,6 +1932,8 @@ def core_mode_filter(alias: str = "e") -> str:
 
 
 @app.get("/")
+@app.get("/diseasemind")
+@app.get("/diseasemind/")
 def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
@@ -1936,31 +1951,37 @@ def serve_icon_file(path: Path, media_type: str) -> Response:
 
 
 @app.get("/brand-icon.svg")
+@app.get("/diseasemind/brand-icon.svg")
 def brand_icon() -> Response:
     return serve_brand_icon()
 
 
 @app.get("/favicon-16x16.png")
+@app.get("/diseasemind/favicon-16x16.png")
 def favicon_16() -> Response:
     return serve_icon_file(FAVICON_16, "image/png")
 
 
 @app.get("/favicon-32x32.png")
+@app.get("/diseasemind/favicon-32x32.png")
 def favicon_32() -> Response:
     return serve_icon_file(FAVICON_32, "image/png")
 
 
 @app.get("/favicon.ico")
+@app.get("/diseasemind/favicon.ico")
 def favicon() -> Response:
     return serve_icon_file(FAVICON_ICO, "image/x-icon")
 
 
 @app.get("/apple-touch-icon.png")
+@app.get("/diseasemind/apple-touch-icon.png")
 def apple_touch_icon() -> Response:
     return serve_icon_file(APPLE_TOUCH_ICON, "image/png")
 
 
 @app.get("/apple-touch-icon-precomposed.png")
+@app.get("/diseasemind/apple-touch-icon-precomposed.png")
 def apple_touch_icon_precomposed() -> Response:
     return serve_icon_file(APPLE_TOUCH_ICON, "image/png")
 
