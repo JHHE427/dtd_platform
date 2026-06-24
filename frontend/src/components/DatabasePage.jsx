@@ -535,8 +535,8 @@ export default function DatabasePage({
     <section className="page is-active db-page">
       <div className="analysis-header page-head">
         <div>
-          <h2>DiseaseMind Database</h2>
-          <div className="analysis-subtitle">Browse DiseaseMind drug, target, disease, ncRNA, evidence, and prediction tables in one DiseaseMind database.</div>
+          <h2>DTDisMind Database</h2>
+          <div className="analysis-subtitle">Browse DTDisMind drug, target, disease, ncRNA, evidence, and prediction tables in one DTDisMind database.</div>
         </div>
         <div className="toolbar">
           <button className="btn-quiet" onClick={onExportNodes}>Export Nodes</button>
@@ -849,7 +849,7 @@ export default function DatabasePage({
                 </span>
                 <span className="layer-legend-pill is-release-layer">
                   <strong>Prediction evidence layer</strong>
-                  <em>DiseaseMind result tables</em>
+                  <em>DTDisMind result tables</em>
                 </span>
                 <span className="layer-legend-pill is-cross-layer">
                   <strong>Cross-layer linkage</strong>
@@ -989,7 +989,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>TTD Therapeutic Target Validation</strong>
-                <span>External therapeutic-target validation aligned to DiseaseMind disease-network results.</span>
+                <span>External therapeutic-target validation aligned to DTDisMind disease-network results.</span>
               </div>
               <div className="layer-legend-strip">
                 <span className="layer-legend-pill is-known-only">
@@ -1266,7 +1266,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>Therapeutic Target Module</strong>
-                <span>Target- and disease-centered object browsing for the DiseaseMind network.</span>
+                <span>Target- and disease-centered object browsing for the DTDisMind network.</span>
               </div>
               <div className="result-summary-strip">
                 <span className="result-summary-pill">
@@ -1326,7 +1326,7 @@ export default function DatabasePage({
               <div className="dti-heatmap-card target-detail-card">
                 <div className="dti-heatmap-head">
                   <strong>Selected Target Detail</strong>
-                  <span>A structured target-centric detail card for the currently selected therapeutic target, combining DiseaseMind network reach with disease, drug, and TTD/MOA context.</span>
+                  <span>A structured target-centric detail card for the currently selected therapeutic target, combining DTDisMind network reach with disease, drug, and TTD/MOA context.</span>
                 </div>
                 <div className="result-summary-strip target-detail-summary">
                   <span className="result-summary-pill">
@@ -1411,7 +1411,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>Disease-Linked Evidence Context</strong>
-                <span>These summary tables capture where the DiseaseMind prediction layer and the curated disease-context evidence layer intersect through shared drugs.</span>
+                <span>These summary tables capture where the DTDisMind prediction layer and the curated disease-context evidence layer intersect through shared drugs.</span>
               </div>
               <div className="layer-legend-strip">
                 <span className="layer-legend-pill is-known-only">
@@ -1672,8 +1672,8 @@ export default function DatabasePage({
                     <tr><td>Raw DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.raw_dti_pairs}</span></td></tr>
                     <tr><td>Prioritized DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained}</span></td></tr>
                     <tr><td>Prediction evidence rows</td><td><span className="result-emphasis-number">{pipelineShrinkage.released_prediction_rows}</span></td></tr>
-                    <tr><td>DiseaseMind network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
-                    <tr><td>DiseaseMind network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
+                    <tr><td>DTDisMind network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
+                    <tr><td>DTDisMind network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
                   </>
                 ) : (
                   <tr><td colSpan={2}>No pipeline shrinkage summary is available for the current evidence set.</td></tr>
@@ -1954,7 +1954,7 @@ export default function DatabasePage({
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>Disease Context Module</strong>
-                <span>Disease-centered object browsing aligned with the DiseaseMind disease network: each row captures the dominant drug, target, ncRNA-linked context, and TTD-supported target context around the same disease node.</span>
+                <span>Disease-centered object browsing aligned with the DTDisMind disease network: each row captures the dominant drug, target, ncRNA-linked context, and TTD-supported target context around the same disease node.</span>
               </div>
               <div className="result-summary-strip">
                 <span className="result-summary-pill">
@@ -2007,7 +2007,7 @@ export default function DatabasePage({
               <div className="dti-heatmap-card target-detail-card">
                 <div className="dti-heatmap-head">
                   <strong>Selected Disease Detail</strong>
-                  <span>A structured disease-centric detail card for the currently selected disease node, combining DiseaseMind network reach with drug, target, ncRNA, and TTD context.</span>
+                  <span>A structured disease-centric detail card for the currently selected disease node, combining DTDisMind network reach with drug, target, ncRNA, and TTD context.</span>
                 </div>
                 <div className="result-summary-strip target-detail-summary">
                   <span className="result-summary-pill">
@@ -2089,7 +2089,7 @@ export default function DatabasePage({
           <div className="dti-heatmap-card">
             <div className="dti-heatmap-head">
               <strong>Evidence-method consistency</strong>
-              <span>The DiseaseMind disease network retains rows through TXGNN, ENR, and RWR agreement patterns.</span>
+              <span>The DTDisMind disease network retains rows through TXGNN, ENR, and RWR agreement patterns.</span>
             </div>
             <div className="model-overview-strip">
               <div className="model-overview-bar" aria-label="Evidence-method support distribution">
@@ -2339,7 +2339,7 @@ export default function DatabasePage({
                 {representativeDrugs.length ? representativeDrugs.map((item) => (
                   <tr key={item.drug_id}>
                     <td><span className="result-emphasis-label">{item.drug_label}</span> <span className="muted">({item.drug_id})</span></td>
-                    <td>{item.disease_label || "Retained in DiseaseMind network"}</td>
+                    <td>{item.disease_label || "Retained in DTDisMind network"}</td>
                     <td><span className="result-emphasis-number">{item.txgnn_score ?? "-"}</span></td>
                     <td>{item.enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.enr_fdr}</span> : "-"}</td>
                     <td>{item.n_algo_pass != null ? <span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.seven_model_votes}/7</span> : "-"}</td>
@@ -2735,7 +2735,7 @@ export default function DatabasePage({
           <div className="db-panel-head">
             <div>
               <h3>Node Table</h3>
-              {!collapsedSections.nodeLayer ? <div className="db-panel-subtitle">Search and review drug, target, and disease entries in the current DiseaseMind network.</div> : null}
+              {!collapsedSections.nodeLayer ? <div className="db-panel-subtitle">Search and review drug, target, and disease entries in the current DTDisMind network.</div> : null}
             </div>
             {!collapsedSections.nodeLayer ? <div className="muted">page {nodesState.page} · size {nodesState.page_size} · total {nodesState.total}</div> : null}
           </div>

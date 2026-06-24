@@ -108,11 +108,11 @@ function HomeTableToggle({ collapsed, onToggle, label = "Detailed tables" }) {
   );
 }
 
-function DiseaseMindBrandVisual() {
+function DTDisMindBrandVisual() {
   return (
     <svg viewBox="30 38 620 320" className="hero-brand-visual" role="img" aria-labelledby="dmHeroTitle dmHeroDesc">
-      <title id="dmHeroTitle">DiseaseMind primary logo and variants</title>
-      <desc id="dmHeroDesc">A brain-shaped disease-centered drug-target network mark with the DiseaseMind wordmark and tagline.</desc>
+      <title id="dmHeroTitle">DTDisMind primary logo and variants</title>
+      <desc id="dmHeroDesc">A brain-shaped disease-centered drug-target network mark with the DTDisMind wordmark and tagline.</desc>
       <defs>
         <linearGradient id="dmHeroPanel" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" />
@@ -149,7 +149,7 @@ function DiseaseMindBrandVisual() {
       </g>
 
       <g className="dm-primary-wordmark">
-        <text x="332" y="142" className="dm-wordmark">DiseaseMind</text>
+        <text x="332" y="142" className="dm-wordmark">DTDisMind</text>
         <line x1="334" y1="168" x2="607" y2="168" />
         <text x="335" y="197" className="dm-tagline">DRUG · TARGET · DISEASE · MIND</text>
         <text x="336" y="236" className="dm-brand-copy">Disease-centered AI interpretation.</text>
@@ -866,7 +866,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     {
       title: "Algorithm-supported screening",
       value: predictionSummary ? `${predictionSummary.txgnn_pass}/${predictionSummary.enr_pass}/${predictionSummary.rwr_pass}` : "NA",
-      note: "TXGNN, ENR, and RWR support counts are surfaced as DiseaseMind evidence indicators."
+      note: "TXGNN, ENR, and RWR support counts are surfaced as DTDisMind evidence indicators."
     }
   ];
   const keyFindings = [
@@ -915,7 +915,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       metrics: `${leadingApprovedCase.n_algo_pass || leadingApprovedCase.max_algo_pass || 0}/3 · ${leadingApprovedCase.Total_Votes_Optional7 || leadingApprovedCase.max_votes || 0}/7`,
       score: leadingApprovedCase.TXGNN_score ?? leadingApprovedCase.top_txgnn_score ?? "-",
       fdr: leadingApprovedCase.ENR_FDR ?? leadingApprovedCase.best_enr_fdr ?? "-",
-      conclusion: "An approved drug remains in the DiseaseMind network after multi-method retention and DTI vote filtering.",
+      conclusion: "An approved drug remains in the DTDisMind network after multi-method retention and DTI vote filtering.",
     } : null,
     leadingConsensusCase ? {
       key: "consensus",
@@ -937,21 +937,21 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       metrics: `${leadingDiseaseCase.max_algo_pass || 0}/3 · ${leadingDiseaseCase.max_votes || 0}/7`,
       score: leadingDiseaseCase.top_txgnn_score ?? "-",
       fdr: leadingDiseaseCase.best_enr_fdr ?? "-",
-      conclusion: "This disease-centered summary highlights the dominant retained drug-target context within the DiseaseMind disease network.",
+      conclusion: "This disease-centered summary highlights the dominant retained drug-target context within the DTDisMind disease network.",
     } : null,
   ].filter(Boolean);
   const featureCards = [
     {
-      title: "DiseaseMind Evidence Layers",
-      body: "Curated known associations and retained prediction rows are organized around the DiseaseMind drug-target-disease interpretation model."
+      title: "DTDisMind Evidence Layers",
+      body: "Curated known associations and retained prediction rows are organized around the DTDisMind drug-target-disease interpretation model."
     },
     {
-      title: "DiseaseMind Query and Analysis",
-      body: "DiseaseMind supports graph navigation, local expansion, node inspection, and subnetwork comparison within the network analysis view."
+      title: "DTDisMind Query and Analysis",
+      body: "DTDisMind supports graph navigation, local expansion, node inspection, and subnetwork comparison within the network analysis view."
     },
     {
-      title: "Structured DiseaseMind Records",
-      body: "Chemical structures, SMILES, target sequences, ontology terms, summaries, and evidence context are presented within structured DiseaseMind records."
+      title: "Structured DTDisMind Records",
+      body: "Chemical structures, SMILES, target sequences, ontology terms, summaries, and evidence context are presented within structured DTDisMind records."
     }
   ];
   const releasedPredictionTotal = Number(predictionSummary?.total_rows || predictionResultTotal || 0);
@@ -962,7 +962,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
   const visualCards = [
     {
       title: "AI evidence consensus",
-      body: "Seven DTI models converge into prioritized DiseaseMind candidates.",
+      body: "Seven DTI models converge into prioritized DTDisMind candidates.",
       visual: <SevenModelMiniVisual />,
     },
     {
@@ -977,7 +977,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     },
     {
       title: "Curated record system",
-      body: "Curated tables feed stable DiseaseMind API records and views.",
+      body: "Curated tables feed stable DTDisMind API records and views.",
       visual: <ReleaseDatabaseMiniVisual />,
     },
   ];
@@ -1015,7 +1015,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
     {
       title: "AI evidence funnel",
       metric: `${dtiModelCoverage.length || sevenDtiModels.length} DTI models`,
-      body: "Seven model outputs are filtered into compact, queryable DiseaseMind records.",
+      body: "Seven model outputs are filtered into compact, queryable DTDisMind records.",
       visual: <PipelineFunnelFigureVisual />,
     },
   ];
@@ -1061,11 +1061,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <div className="hero-copy">
             <div className="hero-pill">DRUG · TARGET · DISEASE · MIND</div>
             <h1>
-              DiseaseMind
+              DTDisMind
               <span>Drug · Target · Disease · Mind</span>
             </h1>
             <p>
-              DiseaseMind turns drug, target, disease, and ncRNA evidence into a disease-centered AI interpretation system, unifying seven DTI models, retained prediction rows, and curated knowledge in one queryable DiseaseMind workspace.
+              DTDisMind turns drug, target, disease, and ncRNA evidence into a disease-centered AI interpretation system, unifying seven DTI models, retained prediction rows, and curated knowledge in one queryable DTDisMind workspace.
             </p>
             <div className="hero-search">
               <input
@@ -1090,7 +1090,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
           </div>
           <figure className="hero-ai-visual">
-            <DiseaseMindBrandVisual />
+            <DTDisMindBrandVisual />
           </figure>
         </div>
         <div className="home-stats">
@@ -1115,12 +1115,12 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </article>
           ))}
         </div>
-        <section className="home-storyboard-panel" aria-label="DiseaseMind workflow storyboard">
+        <section className="home-storyboard-panel" aria-label="DTDisMind workflow storyboard">
           <div className="home-storyboard-copy">
             <span>Evidence Architecture</span>
-            <strong>DiseaseMind integration workflow</strong>
+            <strong>DTDisMind integration workflow</strong>
             <p>
-              Seven DTI models, curated evidence, disease-centered expansion, and stable database records are organized into one review-ready DiseaseMind workflow.
+              Seven DTI models, curated evidence, disease-centered expansion, and stable database records are organized into one review-ready DTDisMind workflow.
             </p>
           </div>
           <ReleaseStoryboardVisual />
@@ -1135,7 +1135,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <div className="home-evidence-console-head">
             <div>
               <span>Evidence Intelligence</span>
-              <strong>DiseaseMind multimodal evidence workspace</strong>
+              <strong>DTDisMind multimodal evidence workspace</strong>
               <p>
                 Combines seven-model vote structure, disease-centered graph topology, AI confidence, external TTD support, and ncRNA evidence.
               </p>
@@ -1166,10 +1166,10 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
           </div>
         </section>
-        <section className="home-atlas-gallery" aria-label="DiseaseMind visual overview">
+        <section className="home-atlas-gallery" aria-label="DTDisMind visual overview">
           <div className="home-atlas-gallery-head">
             <div>
-              <strong>DiseaseMind Data Layers</strong>
+              <strong>DTDisMind Data Layers</strong>
               <span>Compact visual summaries of the main evidence layers and AI workflow.</span>
             </div>
             <button type="button" onClick={() => onOpenDatabase?.("nodes")}>
@@ -1247,7 +1247,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Evidence Inventory</h3>
-            <div className="home-panel-subtitle">Compact index of the current DiseaseMind evidence set.</div>
+            <div className="home-panel-subtitle">Compact index of the current DTDisMind evidence set.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.inventoryPanel}
@@ -1274,7 +1274,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </span>
               <span className="result-summary-pill">
                 <strong>{resultTables.length}</strong>
-                <em>DiseaseMind result tables</em>
+                <em>DTDisMind result tables</em>
               </span>
             </div>
           ) : null}
@@ -1282,8 +1282,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
 
         <section className="home-panel-card home-panel-wide ai-brand-panel">
           <div className="home-panel-head">
-            <h3>DiseaseMind Intelligence Layer</h3>
-            <div className="home-panel-subtitle">Seven deep learning DTI models provide pair scores and vote support for DiseaseMind's disease-centered evidence layer.</div>
+            <h3>DTDisMind Intelligence Layer</h3>
+            <div className="home-panel-subtitle">Seven deep learning DTI models provide pair scores and vote support for DTDisMind's disease-centered evidence layer.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.aiBrandPanel}
@@ -1389,7 +1389,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-seven-model-card home-priority-seven">
             <div className="home-panel-head">
               <h3>Seven DTI Models</h3>
-              <div className="home-panel-subtitle">Seven upstream DTI models feed the DiseaseMind disease network.</div>
+              <div className="home-panel-subtitle">Seven upstream DTI models feed the DTDisMind disease network.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.sevenModelIntro}
@@ -1413,7 +1413,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>7 models</strong>
-                <em>Explicitly displayed in the DiseaseMind network</em>
+                <em>Explicitly displayed in the DTDisMind network</em>
               </span>
               <span className="result-summary-pill">
                 <strong>{predictionSummary?.total_rows || 0}</strong>
@@ -1655,7 +1655,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
             <div className="home-conclusion-grid">
               <article className="home-conclusion-card">
-                <div className="home-conclusion-title">DiseaseMind network overlap</div>
+                <div className="home-conclusion-title">DTDisMind network overlap</div>
                 <div className="home-conclusion-value">{ncrnaLinkedOverview.released_row_count || 0}</div>
                 <div className="home-conclusion-note">Evidence rows currently intersecting the curated ncRNA-drug layer through shared drugs.</div>
               </article>
@@ -1770,7 +1770,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>TTD Therapeutic Target Validation</h3>
-              <div className="home-panel-subtitle">External therapeutic-target validation for DiseaseMind disease-network results.</div>
+              <div className="home-panel-subtitle">External therapeutic-target validation for DTDisMind disease-network results.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.ttdValidationPanel}
@@ -2052,7 +2052,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Therapeutic Target Module</h3>
-              <div className="home-panel-subtitle">Target-centered DiseaseMind network browsing.</div>
+              <div className="home-panel-subtitle">Target-centered DTDisMind network browsing.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.targetModulePanel}
@@ -2123,7 +2123,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-panel-wide">
             <div className="home-panel-head">
               <h3>Disease Context Module</h3>
-              <div className="home-panel-subtitle">Disease-centered DiseaseMind network browsing.</div>
+              <div className="home-panel-subtitle">Disease-centered DTDisMind network browsing.</div>
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.diseaseModulePanel}
@@ -2442,7 +2442,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>Evidence-method consistency</strong>
-                <span>The three evidence methods define the disease-level interpretation tier retained in the DiseaseMind network.</span>
+                <span>The three evidence methods define the disease-level interpretation tier retained in the DTDisMind network.</span>
               </div>
               <div className="model-overview-strip">
                 <div className="model-overview-bar" aria-label="Evidence-method support distribution">
@@ -2465,7 +2465,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="dti-heatmap-card">
               <div className="dti-heatmap-head">
                 <strong>Seven-model DTI consistency</strong>
-                <span>The upstream DTI layer shows which of the seven models most frequently agree before DiseaseMind disease network filtering.</span>
+                <span>The upstream DTI layer shows which of the seven models most frequently agree before DTDisMind disease network filtering.</span>
               </div>
               <div className="dti-heatmap-grid" style={{ gridTemplateColumns: `120px repeat(${dtiHeatmap.labels.length}, minmax(0, 1fr))` }}>
                 <div className="dti-heatmap-corner" />
@@ -2500,7 +2500,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Seven-Model DTI Screening Map</h3>
-            <div className="home-panel-subtitle">How seven-model DTI support feeds the DiseaseMind disease network.</div>
+            <div className="home-panel-subtitle">How seven-model DTI support feeds the DTDisMind disease network.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.screeningMapPanel}
@@ -2566,11 +2566,11 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               </div>
               <div className="schema-note">
                 <strong>Vote retention layer</strong>
-                <span>The DiseaseMind network currently exposes this layer through `7-model votes`, `Retained methods`, and per-record supporting-model panels.</span>
+                <span>The DTDisMind network currently exposes this layer through `7-model votes`, `Retained methods`, and per-record supporting-model panels.</span>
               </div>
               <div className="schema-note">
                 <strong>Evidence interpretation layer</strong>
-                <span>TXGNN, ENR, and RWR remain the explicit disease-level interpretation modules linked to the final DiseaseMind network.</span>
+                <span>TXGNN, ENR, and RWR remain the explicit disease-level interpretation modules linked to the final DTDisMind network.</span>
               </div>
             </div>
           </div>
@@ -2581,7 +2581,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide">
           <div className="home-panel-head">
             <h3>Disease Network Result Summary</h3>
-            <div className="home-panel-subtitle">A compact overview of the DiseaseMind disease network.</div>
+            <div className="home-panel-subtitle">A compact overview of the DTDisMind disease network.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.resultSummaryPanel}
@@ -2684,7 +2684,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="layer-legend-strip">
               <span className="layer-legend-pill is-release-layer">
                 <strong>Prediction result access</strong>
-                <em>DiseaseMind disease-network result tables</em>
+                <em>DTDisMind disease-network result tables</em>
               </span>
               <span className="layer-legend-pill is-known-only">
                 <strong>Disease context access</strong>
@@ -2713,7 +2713,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </button>
             <button className="quick-access-card" onClick={() => onOpenDatabase?.("nodes")}>
               <strong>Node and Edge Tables</strong>
-              <span>Review DiseaseMind node and relationship tables before drilling down into network-level analysis.</span>
+              <span>Review DTDisMind node and relationship tables before drilling down into network-level analysis.</span>
             </button>
           </div>
           </>
@@ -2723,7 +2723,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
         <section className="home-panel-card home-panel-wide home-schema-card">
           <div className="home-panel-head">
             <h3>Disease Network Construction Schema</h3>
-            <div className="home-panel-subtitle">Workflow from source tables to the DiseaseMind network layer.</div>
+            <div className="home-panel-subtitle">Workflow from source tables to the DTDisMind network layer.</div>
           </div>
           <HomeTableToggle
             collapsed={collapsedTables.constructionPanel}
@@ -2734,7 +2734,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <>
           <div className="schema-kpis">
             <div className="schema-kpi">
-              <span className="schema-kpi-label">DiseaseMind disease layer</span>
+              <span className="schema-kpi-label">DTDisMind disease layer</span>
               <strong>{nodeMap.Disease || 0}</strong>
             </div>
             <div className="schema-kpi">
@@ -2747,7 +2747,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </div>
           </div>
           <div className="home-schema-layout">
-            <svg className="home-schema-svg" viewBox="0 0 1180 250" role="img" aria-label="Disease DiseaseMind network construction schema">
+            <svg className="home-schema-svg" viewBox="0 0 1180 250" role="img" aria-label="Disease DTDisMind network construction schema">
               <defs>
                 <linearGradient id="schemaBlue" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="#eff6ff" />
@@ -2780,14 +2780,14 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               <text x="356" y="173" className="schema-line">Alias expansion and normalization</text>
 
               <rect x="640" y="30" width="250" height="170" rx="22" fill="url(#schemaGreen)" stroke="#bbf7d0" strokeWidth="2" />
-              <text x="666" y="65" className="schema-title">3. DiseaseMind Result Tables</text>
+              <text x="666" y="65" className="schema-title">3. DTDisMind Result Tables</text>
               <text x="666" y="98" className="schema-line">network_nodes_final</text>
               <text x="666" y="123" className="schema-line">network_edges_final</text>
               <text x="666" y="148" className="schema-line">disease_aliases_final</text>
               <text x="666" y="173" className="schema-line">algorithm evidence summaries</text>
 
               <rect x="950" y="30" width="210" height="170" rx="22" fill="#ffffff" stroke="#dbeafe" strokeWidth="2" />
-              <text x="976" y="65" className="schema-title">4. DiseaseMind Network</text>
+              <text x="976" y="65" className="schema-title">4. DTDisMind Network</text>
               <text x="976" y="98" className="schema-line">{nodeMap.Drug || 0} drug nodes</text>
               <text x="976" y="123" className="schema-line">{nodeMap.Target || 0} target nodes</text>
               <text x="976" y="148" className="schema-line">{nodeMap.Disease || 0} disease nodes</text>
@@ -2807,8 +2807,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                 <span>TXGNN, ENR, and RWR support is retained as algorithm-specific evidence fields.</span>
               </div>
               <div className="schema-note">
-                <strong>DiseaseMind result layer</strong>
-                <span>DiseaseMind tables are exposed through database browsing, export, and current-network result views.</span>
+                <strong>DTDisMind result layer</strong>
+                <span>DTDisMind tables are exposed through database browsing, export, and current-network result views.</span>
               </div>
             </div>
           </div>
@@ -2820,7 +2820,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card home-pipeline-card">
             <div className="home-panel-head">
               <h3>Data Integration Workflow</h3>
-              {!collapsedTables.workflowPanel ? <div className="home-panel-subtitle">Primary data sources, algorithm screening, and final DiseaseMind output</div> : null}
+              {!collapsedTables.workflowPanel ? <div className="home-panel-subtitle">Primary data sources, algorithm screening, and final DTDisMind output</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.workflowPanel}
@@ -2855,7 +2855,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                     <span>{nodeMap.Drug || 0} drug nodes</span>
                     <span>{nodeMap.Target || 0} target nodes</span>
                     <span>{nodeMap.Disease || 0} disease nodes</span>
-                    <span>{edgeTotal} DiseaseMind network edges</span>
+                    <span>{edgeTotal} DTDisMind network edges</span>
                   </div>
                 </div>
               </div>
@@ -2971,13 +2971,13 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
 
           <section className="home-panel-card">
             <div className="home-panel-head">
-              <h3>DiseaseMind Result Tables</h3>
+              <h3>DTDisMind Result Tables</h3>
               {!collapsedTables.formalTablesPanel ? <div className="home-panel-subtitle">Current evidence tables available for browsing and export</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.formalTablesPanel}
               onToggle={() => toggleTableSection("formalTablesPanel")}
-              label="DiseaseMind result tables"
+              label="DTDisMind result tables"
             />
             {!collapsedTables.formalTablesPanel ? (
               <div className="result-table-wrap">
@@ -3008,7 +3008,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Approved Drug Validation</h3>
-              {!collapsedTables.approvedValidationPanel ? <div className="home-panel-subtitle">External validation summary extracted from the DiseaseMind validation report, showing coverage, retention, and score separation between approved and non-approved drugs.</div> : null}
+              {!collapsedTables.approvedValidationPanel ? <div className="home-panel-subtitle">External validation summary extracted from the DTDisMind validation report, showing coverage, retention, and score separation between approved and non-approved drugs.</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.approvedValidationPanel}
@@ -3065,7 +3065,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Disease Distribution Summary</h3>
-              {!collapsedTables.diseaseDistributionPanel ? <div className="home-panel-subtitle">Top disease nodes ranked by retained Drug-Disease and Target-Disease connectivity in the DiseaseMind disease network.</div> : null}
+              {!collapsedTables.diseaseDistributionPanel ? <div className="home-panel-subtitle">Top disease nodes ranked by retained Drug-Disease and Target-Disease connectivity in the DTDisMind disease network.</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.diseaseDistributionPanel}
@@ -3142,7 +3142,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <tr key={item.drug_id}>
                         <td><span className="result-emphasis-label">{item.drug_label}</span></td>
                         <td><span className="result-id-chip">{item.drug_id}</span></td>
-                        <td>{item.disease_label || "Retained in DiseaseMind network"}</td>
+                        <td>{item.disease_label || "Retained in DTDisMind network"}</td>
                         <td><span className="result-emphasis-number">{item.txgnn_score ?? "-"}</span></td>
                         <td>{item.enr_fdr != null ? <span className="result-emphasis-chip is-soft">{item.enr_fdr}</span> : "-"}</td>
                         <td>{item.n_algo_pass != null ? <span className="result-emphasis-chip">{item.n_algo_pass}/3 · {item.seven_model_votes}/7</span> : "-"}</td>
@@ -3164,7 +3164,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Pipeline Shrinkage Summary</h3>
-              {!collapsedTables.pipelineShrinkagePanel ? <div className="home-panel-subtitle">Scale reduction from raw DTI candidates to the DiseaseMind disease network and retained prediction rows.</div> : null}
+              {!collapsedTables.pipelineShrinkagePanel ? <div className="home-panel-subtitle">Scale reduction from raw DTI candidates to the DTDisMind disease network and retained prediction rows.</div> : null}
             </div>
             <HomeTableToggle
               collapsed={collapsedTables.pipelineShrinkagePanel}
@@ -3187,8 +3187,8 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
                       <tr><td>Raw DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.raw_dti_pairs}</span></td></tr>
                       <tr><td>Prioritized DTI pairs</td><td><span className="result-emphasis-number">{pipelineShrinkage.release_filtered_pairs || pipelineShrinkage.vote4_retained}</span></td></tr>
                       <tr><td>Prediction evidence rows</td><td><span className="result-emphasis-number">{pipelineShrinkage.released_prediction_rows}</span></td></tr>
-                      <tr><td>DiseaseMind network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
-                      <tr><td>DiseaseMind network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
+                      <tr><td>DTDisMind network edges</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_network_edges}</span></td></tr>
+                      <tr><td>DTDisMind network nodes</td><td><span className="result-emphasis-number">{pipelineShrinkage.formal_nodes}</span></td></tr>
                     </>
                   ) : (
                     <tr><td colSpan={2}>No pipeline shrinkage summary is available in the current evidence set.</td></tr>
@@ -3654,7 +3654,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Drug Result Distribution</h3>
-              <div className="home-panel-subtitle">Top retained drugs ranked by the number of prediction evidence rows in the current DiseaseMind disease network.</div>
+              <div className="home-panel-subtitle">Top retained drugs ranked by the number of prediction evidence rows in the current DTDisMind disease network.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table compact">
@@ -3689,7 +3689,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Target Result Distribution</h3>
-              <div className="home-panel-subtitle">Top retained targets ranked by the number of prediction evidence rows in the current DiseaseMind disease network.</div>
+              <div className="home-panel-subtitle">Top retained targets ranked by the number of prediction evidence rows in the current DTDisMind disease network.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table compact">
@@ -3724,7 +3724,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Approved Drug Result Table</h3>
-              <div className="home-panel-subtitle">Approved drugs ranked by retained row count, strongest evidence support, and best DiseaseMind evidence.</div>
+              <div className="home-panel-subtitle">Approved drugs ranked by retained row count, strongest evidence support, and best DTDisMind evidence.</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table">
@@ -3910,7 +3910,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
           <section className="home-panel-card">
             <div className="home-panel-head">
               <h3>Network Composition</h3>
-              <div className="home-panel-subtitle">Final edge classes retained in the current DiseaseMind network</div>
+              <div className="home-panel-subtitle">Final edge classes retained in the current DTDisMind network</div>
             </div>
             <div className="result-table-wrap">
               <table className="result-table compact">

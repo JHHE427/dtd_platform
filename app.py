@@ -100,13 +100,13 @@ class AssetCacheMiddleware(BaseHTTPMiddleware):
         return resp
 
 
-class DiseaseMindPrefixMiddleware(BaseHTTPMiddleware):
+class DTDisMindPrefixMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.scope.get("path", "")
-        if path == "/diseasemind":
+        if path == "/dtdismind":
             request.scope["path"] = "/"
-        elif path.startswith("/diseasemind/"):
-            request.scope["path"] = path.removeprefix("/diseasemind")
+        elif path.startswith("/dtdismind/"):
+            request.scope["path"] = path.removeprefix("/dtdismind")
         return await call_next(request)
 
 from contextlib import asynccontextmanager
@@ -147,7 +147,7 @@ async def lifespan(app: FastAPI):
         await asyncio.gather(f1, f2, f3, f4, f5, f6, f7, f8, f9)
     yield
 
-app = FastAPI(title="DiseaseMind", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="DTDisMind", version="1.0.0", lifespan=lifespan)
 origins, allow_credentials = parse_cors_origins()
 app.add_middleware(
     CORSMiddleware,
@@ -158,11 +158,11 @@ app.add_middleware(
 )
 app.add_middleware(GZipMiddleware, minimum_size=1200)
 app.add_middleware(AssetCacheMiddleware)
-app.add_middleware(DiseaseMindPrefixMiddleware)
+app.add_middleware(DTDisMindPrefixMiddleware)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
-app.mount("/diseasemind/static", StaticFiles(directory=str(STATIC_DIR)), name="diseasemind-static")
-app.mount("/diseasemind/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="diseasemind-assets")
+app.mount("/dtdismind/static", StaticFiles(directory=str(STATIC_DIR)), name="dtdismind-static")
+app.mount("/dtdismind/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="dtdismind-assets")
 
 
 @app.exception_handler(sqlite3.OperationalError)
@@ -481,7 +481,7 @@ def load_released_dti_audit() -> dict[str, Any]:
         "reference_release_pairs": int(data.get("reference_release_pairs") or data.get("old_release_pairs") or 0),
         "additional_released_pairs": int(data.get("additional_released_pairs") or data.get("new_pairs_not_in_merged") or 0),
         "coverage_note": (
-            "The current DiseaseMind evidence set uses the broadened DTI intake together with curated drug-disease and target-disease alignment "
+            "The current DTDisMind evidence set uses the broadened DTI intake together with curated drug-disease and target-disease alignment "
             "to define the disease-linked network used across the platform."
         ),
     }
@@ -536,7 +536,7 @@ def load_released_dti_ttd_summary() -> dict[str, Any]:
         "top_supported_pair_targets": data.get("top_supported_pair_targets") or [],
         "top_supported_release_drugs": data.get("top_supported_release_drugs") or [],
         "coverage_note": (
-            "TTD support is reported for the current DiseaseMind evidence set through pair-level target-drug support, disease-linked overlap, "
+            "TTD support is reported for the current DTDisMind evidence set through pair-level target-drug support, disease-linked overlap, "
             "and target-centric mode-of-action annotation."
         ),
     }
@@ -589,7 +589,7 @@ def load_released_disease_summary() -> dict[str, Any]:
         "top_diseases": data.get("top_diseases") or [],
         "coverage_note": (
             "Disease-linked evidence rows are retained when the broadened DTI intake is supported by curated disease context "
-            "and carried into the current DiseaseMind evidence set."
+            "and carried into the current DTDisMind evidence set."
         ),
         "source_note": data.get("source_note") or "Curated disease-linked evidence layer",
     }
@@ -1932,8 +1932,8 @@ def core_mode_filter(alias: str = "e") -> str:
 
 
 @app.get("/")
-@app.get("/diseasemind")
-@app.get("/diseasemind/")
+@app.get("/dtdismind")
+@app.get("/dtdismind/")
 def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
@@ -1951,37 +1951,37 @@ def serve_icon_file(path: Path, media_type: str) -> Response:
 
 
 @app.get("/brand-icon.svg")
-@app.get("/diseasemind/brand-icon.svg")
+@app.get("/dtdismind/brand-icon.svg")
 def brand_icon() -> Response:
     return serve_brand_icon()
 
 
 @app.get("/favicon-16x16.png")
-@app.get("/diseasemind/favicon-16x16.png")
+@app.get("/dtdismind/favicon-16x16.png")
 def favicon_16() -> Response:
     return serve_icon_file(FAVICON_16, "image/png")
 
 
 @app.get("/favicon-32x32.png")
-@app.get("/diseasemind/favicon-32x32.png")
+@app.get("/dtdismind/favicon-32x32.png")
 def favicon_32() -> Response:
     return serve_icon_file(FAVICON_32, "image/png")
 
 
 @app.get("/favicon.ico")
-@app.get("/diseasemind/favicon.ico")
+@app.get("/dtdismind/favicon.ico")
 def favicon() -> Response:
     return serve_icon_file(FAVICON_ICO, "image/x-icon")
 
 
 @app.get("/apple-touch-icon.png")
-@app.get("/diseasemind/apple-touch-icon.png")
+@app.get("/dtdismind/apple-touch-icon.png")
 def apple_touch_icon() -> Response:
     return serve_icon_file(APPLE_TOUCH_ICON, "image/png")
 
 
 @app.get("/apple-touch-icon-precomposed.png")
-@app.get("/diseasemind/apple-touch-icon-precomposed.png")
+@app.get("/dtdismind/apple-touch-icon-precomposed.png")
 def apple_touch_icon_precomposed() -> Response:
     return serve_icon_file(APPLE_TOUCH_ICON, "image/png")
 
@@ -2062,7 +2062,7 @@ def meta_research_summary() -> dict[str, Any]:
             {
                 "dataset": "Drug-Target merged layer",
                 "table": "src_dti_layer_known_predicted_merged_tx07",
-                "description": "Integrated known and predicted DTI layer used for DiseaseMind Drug-Target edges.",
+                "description": "Integrated known and predicted DTI layer used for DTDisMind Drug-Target edges.",
             },
             {
                 "dataset": "Drug-Disease known",
@@ -2075,7 +2075,7 @@ def meta_research_summary() -> dict[str, Any]:
                 "description": "CTD-based Target-Disease evidence including exact and substring matching.",
             },
             {
-                "dataset": "DiseaseMind expanded prediction set",
+                "dataset": "DTDisMind expanded prediction set",
                 "table": "src_highconfidence_expand_vote4_top50_tx07",
                 "description": "Prediction rows after vote>=2 screening plus resultsdti TXGNN disease-candidate expansion; used for predicted Drug-Disease, Target-Disease, and synchronized Drug-Target edges.",
             },
@@ -2105,7 +2105,7 @@ def meta_research_summary() -> dict[str, Any]:
             (
                 "src_expanded_dti_candidates_txgnn",
                 "resultsdti TXGNN disease-candidate expansion",
-                "Seven-model DTI candidates with TXGNN disease assignment; new drug-target-disease keys are promoted into the DiseaseMind prediction layer with full audit status.",
+                "Seven-model DTI candidates with TXGNN disease assignment; new drug-target-disease keys are promoted into the DTDisMind prediction layer with full audit status.",
             ),
             (
                 "ncrna_disease_candidates",
@@ -2994,11 +2994,11 @@ def meta_research_summary() -> dict[str, Any]:
         }
 
         result_tables = [
-            {"name": "DiseaseMind network nodes", "rows": overview["nodes"], "description": "Unified node table used by the platform."},
-            {"name": "DiseaseMind network edges", "rows": overview["edges"], "description": "Unified edge table used by the platform."},
+            {"name": "DTDisMind network nodes", "rows": overview["nodes"], "description": "Unified node table used by the platform."},
+            {"name": "DTDisMind network edges", "rows": overview["edges"], "description": "Unified edge table used by the platform."},
             {"name": "Disease aliases", "rows": overview["disease_aliases"], "description": "Disease synonym expansion and normalization mapping."},
             {"name": "Predicted high-confidence rows", "rows": pred["total_rows"], "description": "Rows retained in the current high-confidence prediction table."},
-            {"name": "Pipeline shrinkage summary", "rows": 5, "description": "Scale reduction from raw DTI candidates to DiseaseMind evidence results."},
+            {"name": "Pipeline shrinkage summary", "rows": 5, "description": "Scale reduction from raw DTI candidates to DTDisMind evidence results."},
             {"name": "Support tier overview", "rows": len(algo_distribution) + len(vote_distribution), "description": "Evidence-method and seven-model support tiers for retained rows."},
             {"name": "Drug-level prediction distribution", "rows": len(drug_distribution), "description": "Top retained drugs ranked by prediction evidence-row count."},
             {"name": "Target-level prediction distribution", "rows": len(target_distribution), "description": "Top retained targets ranked by prediction evidence-row count."},
@@ -3095,7 +3095,7 @@ def meta_research_summary() -> dict[str, Any]:
                     {
                         "name": "Disease-linked evidence result table",
                         "rows": released_disease_summary["released_rows"],
-                        "description": "Disease-linked evidence rows incorporated into the current DiseaseMind evidence set through the broadened DTI intake together with curated drug-disease and target-disease intersection.",
+                        "description": "Disease-linked evidence rows incorporated into the current DTDisMind evidence set through the broadened DTI intake together with curated drug-disease and target-disease intersection.",
                     },
                     {
                         "name": "Evidence target summary",
@@ -4022,7 +4022,7 @@ def online_analysis(
             [focus],
         ).fetchone()
         if not focus_row:
-            raise HTTPException(status_code=404, detail=f"DiseaseMind network node not found: {focus}")
+            raise HTTPException(status_code=404, detail=f"DTDisMind network node not found: {focus}")
 
         focus_type = focus_row["node_type"]
         focus_label = focus_row["display_name"]
@@ -4196,7 +4196,7 @@ def online_analysis_subgraph(
             [focus],
         ).fetchone()
         if not focus_row:
-            raise HTTPException(status_code=404, detail=f"DiseaseMind network node not found: {focus}")
+            raise HTTPException(status_code=404, detail=f"DTDisMind network node not found: {focus}")
 
         where_sql, params = build_online_analysis_where(
             focus=focus,

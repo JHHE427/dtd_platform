@@ -6,9 +6,9 @@ export default function HelpPage() {
       <div className="help-wrap">
         <div className="help-hero card">
         <div className="help-hero-text">
-            <h2>DiseaseMind User Guide</h2>
+            <h2>DTDisMind User Guide</h2>
             <p className="muted">
-              This guide describes the DiseaseMind Drug · Target · Disease · Mind system, its structured
+              This guide describes the DTDisMind Drug · Target · Disease · Mind system, its structured
               result tables, and the supported disease-centered network-analysis workflow.
             </p>
             <div className="help-badges">
@@ -70,7 +70,7 @@ export default function HelpPage() {
               <div className="step-num">1</div>
               <div className="step-body">
                 <div className="step-title">Query a Record</div>
-                <div className="muted">Use quick search or a DiseaseMind record identifier to define the analysis center.</div>
+                <div className="muted">Use quick search or a DTDisMind record identifier to define the analysis center.</div>
               </div>
             </div>
             <div className="help-step">
@@ -143,7 +143,7 @@ export default function HelpPage() {
           <article className="card panel-pad">
             <h3>Platform Notes</h3>
             <ul>
-              <li>The DiseaseMind home page provides entry to network analysis and evidence result tables</li>
+              <li>The DTDisMind home page provides entry to network analysis and evidence result tables</li>
               <li>The database view provides sortable result records, support metrics, and linked record access</li>
               <li>Exports are available for current network views and structured result tables</li>
             </ul>

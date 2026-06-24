@@ -125,7 +125,7 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
       <div className="header-inner">
         <button className="brand" onClick={() => onPageChange("home")}>
           <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 64 64" className="brand-logo" role="img" aria-label="DiseaseMind">
+            <svg viewBox="0 0 64 64" className="brand-logo" role="img" aria-label="DTDisMind">
               <defs>
                 <linearGradient id="dm-brain" x1="12" y1="10" x2="54" y2="54" gradientUnits="userSpaceOnUse">
                   <stop offset="0%" stopColor="#eff6ff" />
@@ -147,7 +147,7 @@ export default function Header({ page, onPageChange, onQuickSearch, onSuggest })
             </svg>
           </span>
           <span className="brand-text">
-            <strong>DiseaseMind</strong>
+            <strong>DTDisMind</strong>
             <span>Drug · Target · Disease · Mind</span>
             <em>Disease-centered AI system</em>
           </span>

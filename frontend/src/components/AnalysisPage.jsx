@@ -596,7 +596,7 @@ export default function AnalysisPage({
     <section className="page is-active analysis-page">
       <div className="analysis-header">
         <div>
-          <h2>DiseaseMind Network Analysis</h2>
+          <h2>DTDisMind Network Analysis</h2>
           <div className="analysis-subtitle">Use the Drug · Target · Disease · Mind system to inspect retained prediction evidence, curated knowledge layers, and query-specific network subsets.</div>
         </div>
         <div className="toolbar">
@@ -641,7 +641,7 @@ export default function AnalysisPage({
       <section className={`card panel-pad online-analysis-panel ${collapsedSections.onlineAnalysis ? "is-collapsed" : ""}`}>
         <div className="card-head">
           <h3>Online Analysis</h3>
-          <div className="muted">Run a filtered query around a DiseaseMind drug, target, disease, or ncRNA record.</div>
+          <div className="muted">Run a filtered query around a DTDisMind drug, target, disease, or ncRNA record.</div>
         </div>
         <SectionToggle
           collapsed={collapsedSections.onlineAnalysis}
@@ -655,7 +655,7 @@ export default function AnalysisPage({
             <strong>Dynamic result generation</strong>
             <span>Apply thresholds and return a compact evidence-result subset.</span>
           </div>
-          <span className="online-analysis-banner-tag">DiseaseMind network only</span>
+          <span className="online-analysis-banner-tag">DTDisMind network only</span>
         </div>
         <div className="online-analysis-presets">
           {ONLINE_ANALYSIS_PRESETS.map((preset) => (
@@ -881,7 +881,7 @@ export default function AnalysisPage({
             </section>
           </>
         ) : (
-          <div className="muted">Use the current center or enter any DiseaseMind Drug, Target, Disease, or ncRNA identifier to generate a query-specific analysis subset.</div>
+          <div className="muted">Use the current center or enter any DTDisMind Drug, Target, Disease, or ncRNA identifier to generate a query-specific analysis subset.</div>
         )}
           </>
         ) : null}

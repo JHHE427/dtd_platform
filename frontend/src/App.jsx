@@ -380,7 +380,7 @@ export default function App() {
     const next = { ...onlineAnalysisState, ...overrides };
     const focusId = (next.focus_id || "").trim();
     if (!focusId) {
-      showToast("warn", "Select a DiseaseMind record before running online analysis.");
+      showToast("warn", "Select a DTDisMind record before running online analysis.");
       return;
     }
     try {
@@ -397,7 +397,7 @@ export default function App() {
     const next = { ...onlineAnalysisState, ...overrides };
     const focusId = (next.focus_id || "").trim();
     if (!focusId) {
-      showToast("warn", "Select a DiseaseMind record before loading an online-analysis subgraph.");
+      showToast("warn", "Select a DTDisMind record before loading an online-analysis subgraph.");
       return;
     }
     try {
@@ -423,7 +423,7 @@ export default function App() {
     try {
       const r = await api(`/api/search?${query({ q, limit: 1 })}`);
       if (!r.items.length) {
-        showToast("warn", `No DiseaseMind record matched "${q}"`);
+        showToast("warn", `No DTDisMind record matched "${q}"`);
         return;
       }
       const node = r.items[0];
@@ -468,7 +468,7 @@ export default function App() {
         })}`
       );
       if (!data.found) {
-        showToast("warn", `No DiseaseMind path was identified within ${pathState.max_hops} hops`);
+        showToast("warn", `No DTDisMind path was identified within ${pathState.max_hops} hops`);
         return;
       }
       setGraph({
@@ -635,7 +635,7 @@ export default function App() {
     if (!row) return;
     const nextCenter = row.Disease_ID || row.Target_ID || row.Drug_ID;
     if (!nextCenter) {
-      showToast("warn", "The selected online-analysis row is not linked to an openable DiseaseMind record.");
+      showToast("warn", "The selected online-analysis row is not linked to an openable DTDisMind record.");
       return;
     }
     setCenterNode(nextCenter);
@@ -875,7 +875,7 @@ export default function App() {
                 onCompareModes={compareModes}
                 onFitGraph={() => {
                   if (!graph?.nodes?.length) {
-                    showToast("warn", "No DiseaseMind network view is currently available for fitting");
+                    showToast("warn", "No DTDisMind network view is currently available for fitting");
                     return;
                   }
                   setFitSignal((v) => v + 1);

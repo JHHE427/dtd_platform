@@ -43,13 +43,13 @@ def test_health(client):
     assert data.get("edges", 0) > 0
 
 
-def test_diseasemind_subpath_health(client):
+def test_dtdismind_subpath_health(client):
     _skip_if_no_db()
-    index_resp = client.get("/diseasemind/")
+    index_resp = client.get("/dtdismind/")
     assert index_resp.status_code == 200
     assert "text/html" in index_resp.headers.get("content-type", "")
 
-    api_resp = client.get("/diseasemind/api/health")
+    api_resp = client.get("/dtdismind/api/health")
     assert api_resp.status_code == 200
     data = api_resp.json()
     assert data.get("ok") is True
