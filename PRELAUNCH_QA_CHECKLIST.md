@@ -1,4 +1,4 @@
-# DTD Atlas Pre-Launch QA Checklist
+# DTDisMind Pre-Launch QA Checklist
 
 ## 1. Startup
 

@@ -2399,7 +2399,7 @@ export default function DatabasePage({
           <div className="dti-heatmap-card">
             <div className="dti-heatmap-head">
               <strong>Consensus Result Table</strong>
-              <span>High-consensus retained rows are additionally checked against curated ncRNA-drug evidence through shared drugs, so ncRNA-linked consensus coverage can be reviewed before reading the full table.</span>
+              <span>Core-supported retained rows are additionally checked against curated ncRNA-drug evidence through shared drugs, so ncRNA-linked consensus coverage can be reviewed before reading the full table.</span>
             </div>
             <div className="result-summary-strip">
               <span className="result-summary-pill">
@@ -2424,7 +2424,7 @@ export default function DatabasePage({
             <table className="result-table">
                 <thead>
                   <tr>
-                    <th>High-consensus case</th>
+                    <th>Core-supported case</th>
                     <th>Target</th>
                     <th>Disease</th>
                     <th>Support</th>
@@ -2867,7 +2867,7 @@ export default function DatabasePage({
               {highConsensusCases.length ? (
                 <span className="result-summary-pill">
                   <strong>{highConsensusCases.length}</strong>
-                  <em>High-consensus results</em>
+                  <em>Core-supported results</em>
                 </span>
               ) : null}
             </div>

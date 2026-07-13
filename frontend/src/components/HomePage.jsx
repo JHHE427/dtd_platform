@@ -1027,7 +1027,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
       icon: "model",
     },
     {
-      label: "High-consensus rows",
+      label: "Core-supported rows",
       value: consensusTotal,
       note: "multi-method support",
       icon: "analysis",
@@ -1206,7 +1206,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             </span>
             <span className="result-summary-pill">
               <strong>{consensusTotal.toLocaleString()}</strong>
-              <em>High-consensus rows</em>
+              <em>Core-supported rows</em>
             </span>
             <span className="result-summary-pill">
               <strong>{approvedResultTotal.toLocaleString()}</strong>
@@ -3429,7 +3429,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
               <div className="result-summary-strip">
                 <span className="result-summary-pill">
                   <strong>{supportTierOverview.high_consensus_rows}</strong>
-                  <em>High-consensus rows</em>
+                  <em>Core-supported rows</em>
                 </span>
               </div>
             ) : null}
@@ -3445,7 +3445,7 @@ export default function HomePage({ stats, researchSummary, onAnalyze, onOpenData
             <div className="result-summary-strip">
               <span className="result-summary-pill">
                 <strong>{highConsensusCases.length}</strong>
-                <em>High-consensus rows</em>
+                <em>Core-supported rows</em>
               </span>
             </div>
             <div className="result-table-wrap">

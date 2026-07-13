@@ -1,14 +1,14 @@
 [Unit]
-Description=DiseaseMind FastAPI Service
+Description=DTDisMind FastAPI Service
 After=network.target
 
 [Service]
 Type=simple
 User=admin1
 Group=admin1
-WorkingDirectory=/home/admin1/diseasemind/app
-Environment=DTD_DB_PATH=/home/admin1/diseasemind/data/dtd_network.sqlite
-ExecStart=/home/admin1/miniforge3/envs/dtd/bin/uvicorn app:app --host 0.0.0.0 --port 8099
+WorkingDirectory=/opt/dtdismind/app
+Environment=DTD_DB_PATH=/opt/dtdismind/data/dtd_network.sqlite
+ExecStart=/opt/conda/envs/dtd/bin/uvicorn app:app --host 0.0.0.0 --port 8099
 Restart=always
 RestartSec=3
 

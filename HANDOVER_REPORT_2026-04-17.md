@@ -1,4 +1,4 @@
-# DTD Atlas 平台接手报告
+# DTDisMind 平台接手报告
 
 更新时间：2026-04-17
 
@@ -262,4 +262,3 @@ npm run build
 - 正式数据库：`/Users/jhhe/Documents/Playground/dtd_vote2_formal_build/dtd_network_vote2_formal.sqlite`
 - 前端源码：`/Users/jhhe/Documents/Playground/dtd_platform/frontend/src`
 - 实际上线文件：`/Users/jhhe/Documents/Playground/dtd_platform/static`
-
