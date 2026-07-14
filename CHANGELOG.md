@@ -24,3 +24,4 @@ Repository changes:
 - Updated production URL references to `/dtdismind/`.
 - Added an MIT License for source code.
 - Added explicit source-database licensing notes for third-party data, including DrugBank-derived records.
+- Normalized release tag metadata to the maintainer GitHub noreply identity.
